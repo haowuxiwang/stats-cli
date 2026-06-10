@@ -41,3 +41,17 @@ def test_dixon(sample_values):
 def test_unknown_method():
     with pytest.raises(ValueError, match="Unknown method"):
         outlier(values=[1, 2, 3], method="invalid")
+
+
+def test_grubbs_no_outliers_clean():
+    """Clean data should have zero outliers."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 10.1]
+    result = outlier(values=values, method="grubbs")
+    assert result["n_outliers"] == 0
+
+
+def test_grubbs_detects_outlier():
+    """Extreme value should be detected as outlier."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 100.0]
+    result = outlier(values=values, method="grubbs")
+    assert result["n_outliers"] >= 1

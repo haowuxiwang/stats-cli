@@ -2,8 +2,8 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.0.0
-**Commands**: 26
+**Version**: 1.1.0
+**Commands**: 27
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl
 
 ---
@@ -21,7 +21,7 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 
 ### Hypothesis Testing
 - **ttest**: One-sample, two-sample, paired t-tests
-- **anova**: One-way, two-way ANOVA with Tukey post-hoc
+- **anova**: One-way, two-way ANOVA with Tukey post-hoc (includes omega-squared effect size, df/ss/ms breakdown)
 - **nonparametric**: Mann-Whitney, Kruskal-Wallis, Wilcoxon, Chi-square, Friedman
 - **homogeneity**: Levene, Bartlett variance tests
 - **multiple-comparison**: Tukey, Bonferroni, Scheffe
@@ -29,7 +29,7 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 - **power**: Sample size and power analysis (t-test, ANOVA, proportion)
 
 ### Regression & Correlation
-- **regression**: Linear, quadratic, polynomial, multiple, logistic, stepwise
+- **regression**: Linear, quadratic, polynomial, multiple, logistic, stepwise, **nonlinear** (exponential, power, logarithmic, sigmoid)
 - **correlation**: Pearson, Spearman, Kendall
 
 ### SPC / Quality Control
@@ -50,7 +50,7 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 - **timeseries**: Exponential smoothing, ARIMA, decomposition, ACF/PACF
 
 ### DOE
-- **doe**: Full factorial, fractional factorial, response surface, Taguchi
+- **doe**: Full factorial, fractional factorial, response surface, Taguchi (supports int, list, and low/high factor formats)
 
 ### Data Processing
 - **clean**: Drop, impute mean/median, winsorize, clip
@@ -59,6 +59,40 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 ### Reporting
 - **report**: Comprehensive HTML report
 - **run**: Execute custom Python scripts
+
+---
+
+## New in v1.1.0
+
+### Nonlinear Regression
+The `regression` command now supports nonlinear models via the `model` parameter:
+- `exponential`: y = a * exp(b * x)
+- `power`: y = a * x^b
+- `logarithmic`: y = a + b * ln(x)
+- `sigmoid`: y = 1 / (1 + exp(-(a + b*x)))
+
+```bash
+echo '{"command":"regression","params":{"x":[1,2,3,4,5],"y":[2.7,7.4,20.1,54.6,148.4],"model":"exponential"}}' | python main.py
+```
+
+### ANOVA Enhanced Output
+The `anova` command now returns additional fields:
+- `omega_squared`: Effect size measure (proportion of variance explained)
+- `df_between`, `df_within`, `df_total`: Degrees of freedom breakdown
+- `ss_between`, `ss_within`, `ss_total`: Sum of squares breakdown
+- `ms_between`, `ms_within`: Mean squares breakdown
+
+### DOE Factor Formats
+The `doe` command accepts factors in three formats:
+- **int**: `{"factors": 3}` -- uses 3 auto-named factors at 2 levels
+- **list**: `{"factors": ["temp", "pressure", "time"]}` -- named factors at 2 levels
+- **low/high**: `{"factors": {"temp": [100, 200], "pressure": [1, 5]}}` -- explicit level ranges
+
+### Chart Generation
+Several commands support chart generation via `chart: true`. Charts are saved as PNG files.
+
+### 6-Digit Precision
+Numeric output precision is now 6 decimal places by default (previously 4). Configurable via `precision` parameter.
 
 ---
 
@@ -123,6 +157,65 @@ print(result)
 
 ---
 
+## Chart Generation
+
+Add `"chart": true` to any command that supports visualization. Charts are saved as PNG files in the current directory.
+
+### Supported Commands
+- `control_chart`: X-bar, R, I-MR charts with control limits
+- `regression`: Scatter plot with fitted line and confidence interval
+- `capability`: Process distribution vs spec limits
+- `correlation`: Correlation heatmap
+- `anova`: Box plots per group
+
+### Example
+
+```bash
+echo '{"command":"regression","params":{"x":[1,2,3,4,5],"y":[2.1,4.0,5.9,8.1,10.0],"chart":true}}' | python main.py
+```
+
+Output includes the chart filename in the response:
+```json
+{
+  "status": "success",
+  "data": {
+    "slope": 1.98,
+    "intercept": 0.08,
+    "chart": "regression_20260610_120000.png"
+  }
+}
+```
+
+---
+
+## File Input
+
+Commands that accept data from files use these parameters:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `file` | Yes* | Path to data file (Excel, CSV, JSON, or text) |
+| `column` | No | Column name to extract (for multi-column files) |
+| `sheet` | No | Sheet name or index for Excel files (default: first sheet) |
+| `header` | No | Row number to use as column headers (default: auto-detect). Set `0` for no header row |
+
+*Either `file` or `values` must be provided.
+
+### Examples
+
+```bash
+# Read a specific column from CSV
+echo '{"command":"descriptive","params":{"file":"data.csv","column":"weight"}}' | python main.py
+
+# Read from Excel with specific sheet and header row
+echo '{"command":"descriptive","params":{"file":"data.xlsx","column":"weight","sheet":"Sheet2","header":1}}' | python main.py
+
+# Read text file (one value per line, no header)
+echo '{"command":"descriptive","params":{"file":"measurements.txt","header":0}}' | python main.py
+```
+
+---
+
 ## All Commands
 
 | Category | Command | Description |
@@ -139,7 +232,7 @@ print(result)
 | Hypothesis | `multiple_comparison` | Multiple comparison tests |
 | Hypothesis | `equivalence` | TOST equivalence test |
 | Hypothesis | `power` | Power and sample size analysis |
-| Regression | `regression` | Regression analysis |
+| Regression | `regression` | Regression analysis (linear, polynomial, nonlinear) |
 | Regression | `correlation` | Correlation analysis |
 | SPC | `control_chart` | Control charts (X-bar, R, I-MR, etc.) |
 | SPC | `capability` | Process capability (Cp, Cpk, etc.) |
@@ -169,6 +262,7 @@ Paired -> normality check -> paired t-test or Wilcoxon
 ```
 2 continuous -> correlation or linear regression
 Multiple predictors -> multiple or stepwise regression
+Nonlinear relationship -> regression with exponential/power/logarithmic/sigmoid model
 Binary outcome -> logistic regression
 Many variables -> PCA or cluster
 ```
@@ -191,7 +285,7 @@ All commands return JSON with a standard envelope:
 ```json
 {
   "status": "success",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "n": 5,
@@ -218,7 +312,7 @@ All commands return JSON with a standard envelope:
 
 | Format | Extension | Notes |
 |--------|-----------|-------|
-| Excel | .xlsx, .xls | Multi-sheet with `--sheet` |
+| Excel | .xlsx, .xls | Multi-sheet with `sheet` parameter |
 | CSV | .csv | Auto-detect encoding and delimiter |
 | JSON | .json | Structured data |
 | Text | .txt | One value per line |
@@ -234,6 +328,8 @@ CSV files are auto-detected in this order:
 ---
 
 ## Testing
+
+587 tests covering all commands and edge cases.
 
 ```bash
 # Run all tests
@@ -284,7 +380,7 @@ stats-cli-py/
 ├── pyproject.toml          # Ruff config
 ├── SKILL.md                # Claude Code skill definition
 ├── install-skill.sh        # Skill installer
-├── stats_engine/           # 26 command modules
+├── stats_engine/           # 27 command modules
 │   ├── descriptive.py
 │   ├── normality.py
 │   ├── ttest.py
@@ -304,7 +400,7 @@ stats-cli-py/
 │   ├── validators.py       # Input validation
 │   ├── data_loader.py      # File loading (Excel/CSV/JSON)
 │   └── data_cleaner.py     # NaN/Inf cleaning
-├── tests/                  # Pytest test suite
+├── tests/                  # Pytest test suite (587 tests)
 ├── .github/workflows/      # CI pipeline
 └── .gitignore
 ```

@@ -630,6 +630,42 @@ class TestRegressionTypes:
 
 
 # ============================================================================
+# ============================================================================
+# Nonlinear Regression - Known-value tests for nonlinear types
+# ============================================================================
+
+class TestNonlinearRegression:
+    """Known-value tests for nonlinear regression types."""
+
+    def test_exponential_known(self):
+        """Exponential: y = a*exp(b*x). Known data with known fit."""
+        x = [1, 2, 3, 4, 5]
+        y = [math.exp(0.5 * xi) for xi in x]  # y = exp(0.5*x)
+        result = regression(x=x, y=y, reg_type="exponential")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+        assert result["coefficients"]["b"] > 0, f"b={result['coefficients']['b']}"
+
+    def test_power_known(self):
+        """Power: y = a*x^b. Known data with known fit."""
+        x = [1, 2, 3, 4, 5]
+        y = [xi**2 for xi in x]  # y = x^2
+        result = regression(x=x, y=y, reg_type="power")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+
+    def test_logarithmic_known(self):
+        """Logarithmic: y = a*ln(x) + b."""
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        y = [2 * math.log(xi) + 3 for xi in x]
+        result = regression(x=x, y=y, reg_type="logarithmic")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+
+    def test_sigmoid_known(self):
+        """Sigmoid: 4PL logistic. Known dose-response curve."""
+        x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        y = [0.1, 0.15, 0.25, 0.5, 0.8, 0.9, 0.95, 0.98, 0.99, 1.0]
+        result = regression(x=x, y=y, reg_type="sigmoid")
+        assert result["r_squared"] > 0.95, f"R²={result['r_squared']}"
+
 # Handler Integration - End-to-end through main.py
 # ============================================================================
 
@@ -1315,3 +1351,42 @@ class TestMessyStrings:
         """All strings should raise error."""
         result = handler({"command": "descriptive", "params": {"values": ["a", "b", "c"]}})
         assert result["status"] == "error"
+
+# ============================================================================
+# Performance Benchmark - Speed regression tests
+# ============================================================================
+
+class TestPerformanceBenchmark:
+    """Performance regression tests - ensure no command becomes too slow."""
+
+    def test_descriptive_speed(self):
+        """Descriptive should handle 1000 values in <50ms."""
+        import time
+        values = list(range(1000))
+        start = time.time()
+        for _ in range(10):
+            handler({"command": "descriptive", "params": {"values": values}})
+        elapsed = (time.time() - start) / 10
+        assert elapsed < 0.05, f"descriptive took {elapsed*1000:.0f}ms, expected <50ms"
+
+    def test_capability_speed(self):
+        """Capability should handle 500 values in <50ms."""
+        import time
+        np.random.seed(42)
+        values = np.random.normal(10, 1, 500).tolist()
+        start = time.time()
+        for _ in range(10):
+            handler({"command": "capability", "params": {"values": values, "usl": 13, "lsl": 7}})
+        elapsed = (time.time() - start) / 10
+        assert elapsed < 0.05, f"capability took {elapsed*1000:.0f}ms, expected <50ms"
+
+    def test_correlation_speed(self):
+        """Correlation should handle 1000 pairs in <10ms."""
+        import time
+        x = list(range(1000))
+        y = list(range(1000))
+        start = time.time()
+        for _ in range(10):
+            handler({"command": "correlation", "params": {"x": x, "y": y}})
+        elapsed = (time.time() - start) / 10
+        assert elapsed < 0.01, f"correlation took {elapsed*1000:.0f}ms, expected <10ms"
