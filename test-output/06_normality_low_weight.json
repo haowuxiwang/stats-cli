@@ -1,0 +1,31 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.523505+00:00",
+  "data": {
+    "n": 150,
+    "shapiro_wilk": {
+      "statistic": 0.9817,
+      "p_value": 0.0429,
+      "normal": "False"
+    },
+    "anderson_darling": {
+      "statistic": 0.7481,
+      "critical_values": {
+        "15.0%": 0.562,
+        "10.0%": 0.64,
+        "5.0%": 0.767,
+        "2.5%": 0.895,
+        "1.0%": 1.065
+      },
+      "normal": true
+    },
+    "lilliefors": {
+      "statistic": 0.0887,
+      "p_value": 0.1775,
+      "normal": "True"
+    },
+    "is_normal": "True",
+    "interpretation": "Data appears to be normally distributed"
+  }
+}

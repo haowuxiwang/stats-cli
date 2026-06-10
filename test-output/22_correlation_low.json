@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.545722+00:00",
+  "data": {
+    "method": "pearson",
+    "n": 150,
+    "correlation": 0.0561,
+    "r_squared": 0.0032,
+    "p_value": 0.495,
+    "significant": "False",
+    "strength": "very weak",
+    "direction": "positive",
+    "interpretation": "Very weak positive correlation (r=0.0561, p=0.495)"
+  }
+}

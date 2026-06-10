@@ -1,0 +1,38 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.544728+00:00",
+  "data": {
+    "mean": 180.5095,
+    "std_within": 2.8377,
+    "std_overall": 3.0044,
+    "usl": 190.0,
+    "lsl": 170.0,
+    "target": 180.0,
+    "n": 210,
+    "cp": 1.1746,
+    "cpk": 1.1148,
+    "cpu": 1.1148,
+    "cpl": 1.2345,
+    "pp": 1.1095,
+    "ppk": 1.053,
+    "ppu": 1.053,
+    "ppl": 1.166,
+    "cpm": 1.0964,
+    "cp_ci_lower": 1.072,
+    "cp_ci_upper": 1.2991,
+    "cpk_ci_lower": 0.9424,
+    "cpk_ci_upper": 1.2872,
+    "rating": "Marginal",
+    "rating_desc": "Process is marginally capable, improvement recommended",
+    "performance": {
+      "z_upper": 3.1589,
+      "z_lower": 3.4981,
+      "ppm_upper": 791.85,
+      "ppm_lower": 234.31,
+      "ppm_total": 1026.16,
+      "yield_pct": 99.8974
+    },
+    "interpretation": "Cp = 1.1746. Cpk = 1.1148. Cpm = 1.0964. Process is marginally capable, improvement recommended. Expected yield = 99.8974%"
+  }
+}

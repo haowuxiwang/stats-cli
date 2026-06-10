@@ -1,0 +1,23 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.523505+00:00",
+  "data": {
+    "n": 210,
+    "mean": 180.5095,
+    "median": 181.0,
+    "std": 3.0044,
+    "rsd_percent": 1.66,
+    "min": 170.0,
+    "max": 189.0,
+    "range": 19.0,
+    "q1": 178.25,
+    "q3": 182.0,
+    "iqr": 3.75,
+    "ci_95_lower": 180.1008,
+    "ci_95_upper": 180.9182,
+    "skewness": 0.076,
+    "kurtosis": 0.4723,
+    "interpretation": "n=210, mean=180.5095, std=3.0044, RSD=1.66%"
+  }
+}

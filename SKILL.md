@@ -1,0 +1,590 @@
+---
+name: stats-cli-py
+description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, or chi-square tests. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square."
+---
+
+# stats-cli-py
+
+Pure Python statistical analysis tool for manufacturing and quality engineering, powered by scipy + statsmodels. All I/O is JSON — designed to be called as an AI-agent skill.
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+Pure Python — no R, no external runtime. Dependencies: scipy, statsmodels, pandas, numpy, openpyxl, scikit-learn.
+
+### Invocation
+
+```bash
+# Pipe JSON via stdin
+echo '{"command":"descriptive","params":{"values":[1,2,3]}}' | python main.py
+
+# From a JSON file
+python main.py input.json
+
+# From Python code
+from main import handler
+result = handler({"command": "descriptive", "params": {"values": [1, 2, 3]}})
+```
+
+### Chart Generation
+
+Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands: `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`.
+
+```python
+{"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5], "chart": true}}
+# Response includes: "chart_base64": "iVBORw0KGgo..."
+```
+
+### File-Based Input
+
+Most commands accept `"file"` instead of `"values"` to load data from Excel/CSV/JSON/text files:
+
+```python
+{"command": "descriptive", "params": {"file": "data.xlsx", "column": "weight", "sheet": "Batch1"}}
+{"command": "control_chart", "params": {"chart_type": "imr", "file": "data.csv", "column": "measurement"}}
+{"command": "capability", "params": {"file": "data.xlsx", "column": "weight", "usl": 11.0, "lsl": 9.0}}
+```
+
+Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/index), `header` (row number for header, `null` for no header, default `0`).
+
+---
+
+## Quick Start: Don't Know What Analysis to Use?
+
+**Follow this decision tree:**
+
+1. **用户描述模糊时** → 先用 `explore` 查看数据结构
+2. **比较数据** → 看下面的"比较分析决策树"
+3. **关系分析** → 看下面的"关系分析决策树"
+4. **预测/趋势** → 看下面的"预测分析决策树"
+5. **质量控制** → 看下面的"质量控制决策树"
+
+---
+
+## 智能引导流程（用户模糊请求时）
+
+**当用户只说"帮我分析数据"、"看看这个文件"等模糊请求时，按以下流程引导：**
+
+```
+用户上传文件 / 说"帮我分析数据"
+    │
+    ├── 第1步：explore 查看数据结构
+    │   ├── 多 sheet？
+    │   │   ├── 是 → 返回所有 sheet 名称，问用户："文件包含 N 个 sheet：[列表]，请指定要分析哪个 sheet"
+    │   │   └── 否 → 继续
+    │   ├── 多列？
+    │   │   ├── 有多个数值列 → 列出列名和基本统计，问用户："发现以下数值列：[列表]，请指定要分析哪列"
+    │   │   └── 只有1列 → 自动选中
+    │   └── 无数值列 → 提示："未发现数值数据，请检查文件格式"
+    │
+    ├── 第2步：descriptive + normality（必做，建立数据基线）
+    │   ├── descriptive：n, mean, std, RSD%, min, max, range, CI
+    │   └── normality：Shapiro-Wilk + Anderson-Darling + Lilliefors → is_normal
+    │
+    ├── 第3步：根据数据特征推荐分析方向
+    │   │
+    │   ├── 有规格限（USL/LSL）？
+    │   │   └── 推荐：capability（过程能力）+ control_chart（控制图）
+    │   │
+    │   ├── 用户提到"比较"、"差异"、"两批"？
+    │   │   └── 推荐：ttest（正态）或 nonparametric（非正态）
+    │   │
+    │   ├── 用户提到"趋势"、"稳定性"、"监控"？
+    │   │   └── 推荐：control_chart + trend
+    │   │
+    │   ├── 用户提到"关系"、"相关"、"影响"？
+    │   │   └── 推荐：correlation + regression
+    │   │
+    │   ├── 用户提到"预测"、"未来"？
+    │   │   └── 推荐：timeseries
+    │   │
+    │   └── 不确定？
+    │       └── 输出数据摘要 + 列出所有适用的分析类型，让用户选择
+    │
+    └── 第4步：执行推荐的分析，输出结果和解读
+```
+
+**关键原则：**
+- 永远先 `explore` 再分析，不要假设数据结构
+- 多 sheet 文件必须让用户选择 sheet，不要默认第一个
+- `explore` 返回的 `sheets` 字段包含所有可用 sheet 名称
+- `explore` 返回的 `hint` 字段提示用户还有其他 sheet
+- `load_data` 返回的 `_available_sheets` 字段也可用于发现 sheet
+
+---
+
+## Decision Tree 1: 比较分析（两组或多组数据比较）
+
+```
+用户想比较数据
+    │
+    ├── 只有2组？
+    │   ├── 数据是正态的？ → ttest (先用 normality 检查)
+    │   │   ├── 等方差？ → two_sample t-test
+    │   │   └── 不等方差？ → two_sample t-test (自动检测)
+    │   └── 数据非正态？ → nonparametric mann_whitney
+    │
+    ├── 有3+组？
+    │   ├── 数据是正态的？ → anova one_way
+    │   │   └── 显著？ → multiple_comparison tukey
+    │   └── 数据非正态？ → nonparametric kruskal_wallis
+    │
+    └── 配对数据？（同一样本前后对比）
+        ├── 正态？ → ttest paired
+        └── 非正态？ → nonparametric wilcoxon
+```
+
+**前置检查流程：**
+```python
+# 1. 先检查正态性
+{"command": "normality", "params": {"values": [10.2, 10.5, ...]}}
+
+# 2. 根据结果选择检验方法
+# 如果 p > 0.05 (正态) → 用参数检验 (ttest, anova)
+# 如果 p <= 0.05 (非正态) → 用非参数检验 (nonparametric)
+```
+
+---
+
+## Decision Tree 2: 关系分析（变量之间是否有关系）
+
+```
+用户想分析变量关系
+    │
+    ├── 两个连续变量？
+    │   ├── 看相关性 → correlation
+    │   └── 看因果关系 → regression linear
+    │
+    ├── 多个自变量影响一个因变量？
+    │   ├── 线性关系 → regression multiple
+    │   └── 自动选择重要变量 → regression stepwise
+    │
+    ├── 因变量是分类变量（0/1）？
+    │   └── regression logistic
+    │
+    └── 多个变量同时分析？
+        ├── 降维 → multivariate pca
+        ├── 分组 → multivariate cluster
+        └── 分类 → multivariate discriminant
+```
+
+---
+
+## Decision Tree 3: 预测/趋势分析
+
+```
+用户想预测或分析趋势
+    │
+    ├── 数据有季节性？
+    │   ├── 有 → timeseries decomposition (frequency=周期长度)
+    │   └── 无 → 继续
+    │
+    ├── 想预测未来值？
+    │   ├── 短期预测 → timeseries exp_smoothing
+    │   └── 长期预测 → timeseries arima
+    │
+    └── 想检测趋势是否存在？
+        └── trend (CUSUM/EWMA/Runs test)
+```
+
+---
+
+## Decision Tree 4: 质量控制
+
+```
+用户想做质量控制/SPC
+    │
+    ├── 监控过程稳定性？
+    │   ├── 个体值 → control_chart imr
+    │   ├── 子组均值 → control_chart xbar
+    │   └── 计数数据 → control_chart p/np/c/u
+    │
+    ├── 评估过程能力？
+    │   ├── 先检查正态性
+    │   ├── 正态 → capability (Cp/Cpk)
+    │   └── 非正态 → capability capability_type=boxcox
+    │
+    ├── 验证测量系统？
+    │   └── gage_rr crossed/nested/attribute
+    │
+    └── 分析失效/寿命？
+        └── reliability weibull/stability
+```
+
+---
+
+## Scenario-Based Workflows
+
+### 场景1: "帮我分析这组数据"
+
+用户给了你一堆数据，不知道从哪开始。标准流程：explore → descriptive → normality → 下一步。
+
+```python
+# Step 1: 查看数据结构（如果是文件）
+{"command": "explore", "params": {"file": "data.xlsx"}}
+
+# Step 2: 描述性统计 — 均值、标准差、分布概况
+{"command": "descriptive", "params": {"values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4]}}
+
+# Step 3: 正态性检验 — 决定后续用什么方法
+{"command": "normality", "params": {"values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4]}}
+
+# Step 4: 根据结果选择下一步
+# 正态 (p > 0.05) → 可以做 t-test, ANOVA, capability
+# 非正态 (p <= 0.05) → 用 nonparametric 或 transform boxcox 后再分析
+# 有异常值？→ 先用 outlier 检测
+```
+
+### 场景2: "比较两批物料是否一致"
+
+两批样品对比，核心问题是"差异是否显著"。
+
+```python
+# Step 1: 两组数据分别检查正态性
+{"command": "normality", "params": {"values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3]}}
+{"command": "normality", "params": {"values": [10.8, 11.0, 10.9, 10.7, 11.1, 10.8, 10.9]}}
+
+# Step 2a: 两组都正态 → t-test（自动检测等方差）
+{"command": "ttest", "params": {
+    "test_type": "two_sample",
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3],
+    "values2": [10.8, 11.0, 10.9, 10.7, 11.1, 10.8, 10.9]
+}}
+
+# Step 2b: 非正态 → Mann-Whitney U 检验
+{"command": "nonparametric", "params": {
+    "test_type": "mann_whitney",
+    "x": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3],
+    "y": [10.8, 11.0, 10.9, 10.7, 11.1, 10.8, 10.9]
+}}
+
+# Step 3 (可选): 如果需要证明"等效"而非"不同" → 等效性检验
+{"command": "equivalence", "params": {
+    "test_type": "tost",
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4],
+    "values2": [10.3, 10.4, 10.2, 10.5, 10.3],
+    "delta": 0.5
+}}
+```
+
+### 场景3: "评估工艺稳定性"
+
+工艺是否稳定可控，需要控制图 + 过程能力 + 趋势分析三件套。
+
+```python
+# Step 1: 控制图 — 过程是否受控
+{"command": "control_chart", "params": {
+    "chart_type": "imr",
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4,
+               10.3, 10.2, 10.4, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2]
+}}
+
+# Step 2: 过程能力 — 是否满足规格要求
+{"command": "capability", "params": {
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4,
+               10.3, 10.2, 10.4, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2],
+    "usl": 11.0,
+    "lsl": 9.0
+}}
+
+# Step 3: 趋势分析 — 是否有渐变/漂移
+{"command": "trend", "params": {
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4,
+               10.3, 10.2, 10.4, 10.5, 10.3, 10.1, 10.4, 10.6, 10.3, 10.2],
+    "test_type": "cusum"
+}}
+
+# 如果数据非正态，先做 Box-Cox 变换再算能力
+{"command": "transform", "params": {"values": [...], "method": "boxcox"}}
+```
+
+### 场景4: "验证测量系统"
+
+MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
+
+```python
+# Gage R&R 交叉实验（最常用：3个操作员 × 10个零件 × 3次测量）
+{"command": "gage_rr", "params": {
+    "analysis_type": "crossed",
+    "measurements": [10.1, 10.2, 10.1, 10.3, 10.2, 10.1, 10.4, 10.3, 10.2,
+                     10.2, 10.3, 10.2, 10.5, 10.4, 10.3, 10.1, 10.2, 10.1,
+                     10.3, 10.4, 10.3, 10.2, 10.1, 10.2, 10.4, 10.5, 10.4,
+                     10.1, 10.0, 10.1, 10.3, 10.2, 10.3, 10.2, 10.1, 10.2,
+                     10.5, 10.4, 10.5, 10.3, 10.2, 10.3, 10.4, 10.3, 10.4,
+                     10.2, 10.1, 10.2, 10.4, 10.3, 10.4, 10.1, 10.0, 10.1,
+                     10.3, 10.4, 10.3, 10.5, 10.4, 10.5, 10.2, 10.1, 10.2,
+                     10.4, 10.3, 10.4, 10.2, 10.1, 10.2, 10.3, 10.2, 10.3,
+                     10.5, 10.6, 10.5, 10.3, 10.4, 10.3, 10.4, 10.5, 10.4,
+                     10.1, 10.2, 10.1, 10.3, 10.2, 10.3, 10.2, 10.1, 10.2],
+    "parts": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,
+              1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,
+              1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10],
+    "operators": ["A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A",
+                  "B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B","B",
+                  "C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C","C"],
+    "tolerance": 1.0
+}}
+
+# 结果解读：%GR&R < 10% 可接受, 10-30% 有条件接受, > 30% 不可接受
+# ndc (可区分类别数) >= 5 表示测量系统有足够分辨力
+```
+
+### 场景5: "预测未来趋势"
+
+基于历史数据预测未来走势。
+
+```python
+# Step 1: ACF 分析 — 查看数据模式（自相关性、周期性）
+{"command": "timeseries", "params": {
+    "analysis_type": "acf",
+    "values": [10, 12, 11, 13, 14, 12, 15, 16, 14, 17, 18, 16, 19, 20, 18],
+    "max_lag": 10
+}}
+
+# Step 2a: 短期预测 → 指数平滑
+{"command": "timeseries", "params": {
+    "analysis_type": "exp_smoothing",
+    "values": [10, 12, 11, 13, 14, 12, 15, 16, 14, 17, 18, 16, 19, 20, 18],
+    "n_forecast": 6
+}}
+
+# Step 2b: 长期预测 / 有季节性 → ARIMA
+{"command": "timeseries", "params": {
+    "analysis_type": "arima",
+    "values": [10, 12, 11, 13, 14, 12, 15, 16, 14, 17, 18, 16, 19, 20, 18],
+    "n_forecast": 12
+}}
+
+# Step 2c: 有明显季节性 → 先分解再预测
+{"command": "timeseries", "params": {
+    "analysis_type": "decomposition",
+    "values": [100, 120, 110, 130, 105, 125, 115, 135, 108, 128, 118, 138,
+               110, 130, 120, 140, 115, 135, 125, 145, 118, 138, 128, 148],
+    "frequency": 12
+}}
+```
+
+---
+
+## All Commands (27 commands)
+
+### Data Exploration
+```python
+{"command": "explore", "params": {"file": "data.xlsx"}}
+{"command": "discover"}
+{"command": "discover", "params": {"command_name": "capability"}}
+{"command": "discover", "params": {"category": "spc"}}
+```
+
+### Basic Statistics
+```python
+{"command": "descriptive", "params": {"values": [10.2, 10.5, 10.3]}}
+{"command": "normality", "params": {"values": [10.2, 10.5, 10.3]}}
+{"command": "outlier", "params": {"values": [10.2, 10.5, 10.3], "method": "grubbs"}}
+```
+
+### Hypothesis Testing
+```python
+{"command": "ttest", "params": {"test_type": "one_sample", "values": [10.2, 10.5], "mu": 10.0}}
+{"command": "ttest", "params": {"test_type": "two_sample", "values": [10.2, 10.5], "values2": [11.3, 11.5]}}
+{"command": "ttest", "params": {"test_type": "paired", "values": [10.2, 10.5], "values2": [10.8, 11.0]}}
+{"command": "anova", "params": {"anova_type": "one_way", "groups": [[10.2, 10.5], [11.3, 11.5], [12.1, 12.4]]}}
+{"command": "anova", "params": {"anova_type": "two_way", "groups": [], "data": {"factor_a": ["A","A","A","B","B","B"], "factor_b": ["X","Y","X","Y","X","Y"], "values": [10,12,11,15,14,16]}}}
+{"command": "nonparametric", "params": {"test_type": "mann_whitney", "x": [10.2, 10.5], "y": [11.3, 11.5]}}
+{"command": "nonparametric", "params": {"test_type": "kruskal_wallis", "groups": [[10.2, 10.5], [11.3, 11.5]]}}
+{"command": "nonparametric", "params": {"test_type": "wilcoxon", "x": [10.2, 10.5], "y": [10.8, 11.0]}}
+{"command": "nonparametric", "params": {"test_type": "chi_square", "observed": [50, 30, 20]}}
+{"command": "nonparametric", "params": {"test_type": "friedman", "groups": [[10.2, 10.5], [11.3, 11.5], [12.1, 12.4]]}}
+{"command": "homogeneity", "params": {"test_type": "levene", "groups": [[10.2, 10.5], [11.3, 11.5]]}}
+{"command": "equivalence", "params": {"test_type": "tost", "values": [10.2, 10.5], "values2": [10.3, 10.6], "delta": 0.5}}
+{"command": "multiple_comparison", "params": {"test_type": "tukey", "groups": [[10.2, 10.5], [11.3, 11.5], [12.1, 12.4]]}}
+{"command": "power", "params": {"analysis_type": "t_test", "effect_size": 0.5, "power": 0.80}}
+```
+
+### Regression
+```python
+{"command": "regression", "params": {"x": [1, 2, 3], "y": [2, 4, 6]}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4], "y": [2, 4, 8, 16], "reg_type": "quadratic"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4], "y": [2, 4, 8, 16], "reg_type": "polynomial", "degree": 3}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [0, 0, 1, 1, 1], "reg_type": "logistic"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2.7, 7.4, 20, 54, 148], "reg_type": "exponential"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [1, 4, 9, 16, 25], "reg_type": "power"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [0, 0.69, 1.1, 1.39, 1.61], "reg_type": "logarithmic"}}
+{"command": "regression", "params": {"x": [1,2,3,4,5,6,7,8,9,10], "y": [0.1,0.1,0.2,0.5,0.8,0.9,0.95,0.98,0.99,1.0], "reg_type": "sigmoid"}}
+{"command": "regression", "params": {"x_columns": ["x1", "x2"], "y_column": "y", "reg_type": "multiple", "file": "data.csv"}}
+{"command": "regression", "params": {"x_columns": ["x1", "x2"], "y_column": "y", "reg_type": "stepwise", "file": "data.csv"}}
+{"command": "correlation", "params": {"x": [1, 2, 3], "y": [2, 4, 6]}}
+```
+
+### SPC / Quality Control
+```python
+{"command": "control_chart", "params": {"chart_type": "imr", "values": [10.2, 10.5, 10.3]}}
+{"command": "control_chart", "params": {"chart_type": "xbar", "values": [...], "subgroup_size": 5}}
+{"command": "control_chart", "params": {"chart_type": "p", "values": [...], "subgroup_size": 100}}
+{"command": "capability", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}}
+{"command": "capability", "params": {"values": [...], "usl": 11.0, "lsl": 9.0, "target": 10.0}}
+{"command": "trend", "params": {"values": [...], "test_type": "cusum"}}
+{"command": "trend", "params": {"values": [...], "test_type": "ewma"}}
+{"command": "trend", "params": {"values": [...], "test_type": "runs"}}
+```
+
+### DOE (Design of Experiments)
+
+Factor formats: `levels: int` (number of levels), `levels: list` (explicit values), `low/high` (two levels).
+
+```python
+{"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "Temp", "levels": 3}, {"name": "Time", "levels": 2}]}}
+{"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "Temp", "levels": [100, 150, 200]}, {"name": "Time", "levels": [30, 60]}]}}
+{"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "Temp", "low": 100, "high": 200}, {"name": "Time", "low": 30, "high": 60}]}}
+{"command": "doe", "params": {"doe_type": "fractional_factorial", "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}, {"name": "C", "levels": 2}]}}
+{"command": "doe", "params": {"doe_type": "taguchi", "factors": [{"name": "A", "levels": 3}, {"name": "B", "levels": 3}]}}
+```
+
+### MSA / Measurement System Analysis
+```python
+{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [...], "parts": [...], "operators": [...], "tolerance": 10.0}}
+{"command": "gage_rr", "params": {"analysis_type": "nested", "measurements": [...], "parts": [...], "operators": [...]}}
+{"command": "gage_rr", "params": {"analysis_type": "attribute", "measurements": [...], "parts": [...], "operators": [...]}}
+```
+
+### Reliability / Survival Analysis
+```python
+{"command": "reliability", "params": {"analysis_type": "weibull", "times": [100, 200, 300], "status": [1, 1, 1]}}
+{"command": "reliability", "params": {"analysis_type": "kaplan_meier", "times": [100, 200, 300], "status": [1, 0, 1]}}
+{"command": "reliability", "params": {"analysis_type": "distribution", "times": [100, 200, 300], "status": [1, 1, 1]}}
+{"command": "reliability", "params": {"analysis_type": "stability", "times": [0, 3, 6, 9, 12], "values": [100, 99, 98, 97, 96], "lsl": 90}}
+```
+
+### Multivariate Analysis
+```python
+{"command": "multivariate", "params": {"analysis_type": "pca", "columns": ["x1", "x2", "x3"], "file": "data.csv"}}
+{"command": "multivariate", "params": {"analysis_type": "cluster", "method": "kmeans", "n_clusters": 3, "file": "data.csv"}}
+{"command": "multivariate", "params": {"analysis_type": "discriminant", "columns": ["x1", "x2"], "group_column": "group", "file": "data.csv"}}
+{"command": "multivariate", "params": {"analysis_type": "correlation_matrix", "file": "data.csv"}}
+```
+
+### Time Series
+```python
+{"command": "timeseries", "params": {"analysis_type": "exp_smoothing", "values": [10, 12, 11, 13, 14], "frequency": 4}}
+{"command": "timeseries", "params": {"analysis_type": "arima", "values": [...], "n_forecast": 12}}
+{"command": "timeseries", "params": {"analysis_type": "decomposition", "values": [...], "frequency": 12}}
+{"command": "timeseries", "params": {"analysis_type": "acf", "values": [...], "max_lag": 20}}
+```
+
+### Advanced Statistical Methods
+```python
+{"command": "advanced", "params": {"analysis_type": "exact_test", "observed": [[10, 5], [3, 12]]}}
+{"command": "advanced", "params": {"analysis_type": "mcnemar", "observed": [[10, 5], [15, 20]]}}
+{"command": "advanced", "params": {"analysis_type": "cochran_q", "data": [[1,0,1,1,0], [1,1,0,1,1], [0,1,1,0,1]]}}
+{"command": "advanced", "params": {"analysis_type": "mixed_effects", "groups": [...], "group_ids": [...]}}
+```
+
+### Data Processing
+```python
+{"command": "clean", "params": {"values": [...], "method": "impute_mean"}}
+{"command": "clean", "params": {"values": [...], "method": "impute_median"}}
+{"command": "clean", "params": {"values": [...], "method": "winsorize"}}
+{"command": "clean", "params": {"values": [...], "method": "clip"}}
+{"command": "transform", "params": {"values": [...], "method": "boxcox"}}
+{"command": "transform", "params": {"values": [...], "method": "log"}}
+{"command": "transform", "params": {"values": [...], "method": "sqrt"}}
+{"command": "transform", "params": {"values": [...], "method": "johnson"}}
+{"command": "transform", "params": {"values": [...], "method": "standardize"}}
+```
+
+### Reporting
+```python
+{"command": "report", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}}
+```
+
+### Custom Script
+```python
+{"command": "run", "params": {"script": "result = {'sum': sum(data['values']), 'count': len(data['values'])}", "data": {"values": [1, 2, 3]}}}
+```
+
+---
+
+## Output Format
+
+All commands return a standard JSON envelope:
+
+### Success
+```json
+{
+  "status": "success",
+  "version": "1.1.0",
+  "timestamp": "2026-06-09T10:00:00Z",
+  "data": {
+    "total": 103.5,
+    "mean": 10.35,
+    "std": 0.14,
+    "n": 10
+  }
+}
+```
+
+**Notes:**
+- `descriptive` returns `total` (sum of all values), `mean`, `std`, `n`, `median`, `min`, `max`, `range`, `q1`, `q3`, `iqr`, `ci_95_lower`, `ci_95_upper`, `skewness`, `kurtosis`
+- `anova` (one_way) returns `f_statistic`, `p_value`, `significant`, `eta_squared`, `omega_squared`, `df_between`, `df_within`, `ss_between`, `ss_within`, `ms_between`, `ms_within`
+- All numeric values are rounded to 6 decimal places (configurable via `DEFAULT_PRECISION` in `utils/output.py`)
+- `NaN` and `Inf` values in input are automatically filtered
+
+### Error
+```json
+{
+  "status": "error",
+  "error_type": "VALIDATION_ERROR",
+  "message": "At least 3 values are required for normality test",
+  "suggestion": "Provide more data points or use descriptive command instead"
+}
+```
+
+**Error types:**
+| error_type | Meaning |
+|------------|---------|
+| `INVALID_INPUT` | JSON parse failure or malformed request |
+| `MISSING_COMMAND` | No `command` field in input |
+| `VALIDATION_ERROR` | Invalid parameters (missing required fields, wrong types, insufficient data) |
+| `FILE_NOT_FOUND` | Specified file does not exist |
+| `MISSING_DEPENDENCY` | Python package not installed |
+| `MEMORY_ERROR` | Out of memory, reduce data size |
+| `INTERNAL_ERROR` | Unexpected error (includes exception type) |
+
+Every response includes `status`, so check it before reading `data`. On error, `suggestion` tells you how to fix it.
+
+---
+
+## File Support
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| Excel | .xlsx, .xls | Multi-sheet supported (use `sheet` param) |
+| CSV | .csv | Auto-detect encoding (utf-8, gbk, gb2312, latin-1) and delimiter |
+| JSON | .json | Structured data |
+| Text | .txt | One value per line |
+
+All file-based commands accept `file` + optional `column` and `sheet` params:
+```python
+{"command": "descriptive", "params": {"file": "data.xlsx", "column": "weight", "sheet": "Sheet1"}}
+```
+
+---
+
+## Dependencies
+
+| Package | Min Version | Purpose |
+|---------|-------------|---------|
+| scipy | >= 1.10 | Core statistical tests, distributions |
+| statsmodels | >= 0.14 | Time series, regression, ANOVA |
+| pandas | >= 1.5 | Data loading, DataFrame operations |
+| numpy | >= 1.23 | Numerical computation |
+| openpyxl | >= 3.0 | Excel file support (.xlsx) |
+| scikit-learn | >= 1.0 | Clustering, PCA, discriminant analysis |
+
+Install all at once:
+```bash
+pip install -r requirements.txt
+```

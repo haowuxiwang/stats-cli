@@ -1,0 +1,209 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.073990+00:00",
+  "data": {
+    "file": "D:\\learn\\claudecode\\stats-cli\\excel\\灌装装量数据.xlsx",
+    "n_rows": 163,
+    "n_columns": 14,
+    "numeric_columns": [
+      "Unnamed: 13"
+    ],
+    "text_columns": [
+      "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4",
+      "Unnamed: 5",
+      "Unnamed: 6",
+      "Unnamed: 7",
+      "Unnamed: 8",
+      "Unnamed: 9",
+      "Unnamed: 10",
+      "Unnamed: 11",
+      "Unnamed: 12"
+    ],
+    "columns": [
+      {
+        "name": "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据",
+        "dtype": "object",
+        "non_null": 161,
+        "null": 2
+      },
+      {
+        "name": "Unnamed: 1",
+        "dtype": "object",
+        "non_null": 147,
+        "null": 16
+      },
+      {
+        "name": "Unnamed: 2",
+        "dtype": "object",
+        "non_null": 146,
+        "null": 17
+      },
+      {
+        "name": "Unnamed: 3",
+        "dtype": "object",
+        "non_null": 146,
+        "null": 17
+      },
+      {
+        "name": "Unnamed: 4",
+        "dtype": "object",
+        "non_null": 146,
+        "null": 17
+      },
+      {
+        "name": "Unnamed: 5",
+        "dtype": "object",
+        "non_null": 146,
+        "null": 17
+      },
+      {
+        "name": "Unnamed: 6",
+        "dtype": "object",
+        "non_null": 146,
+        "null": 17
+      },
+      {
+        "name": "Unnamed: 7",
+        "dtype": "object",
+        "non_null": 151,
+        "null": 12
+      },
+      {
+        "name": "Unnamed: 8",
+        "dtype": "object",
+        "non_null": 151,
+        "null": 12
+      },
+      {
+        "name": "Unnamed: 9",
+        "dtype": "object",
+        "non_null": 151,
+        "null": 12
+      },
+      {
+        "name": "Unnamed: 10",
+        "dtype": "object",
+        "non_null": 150,
+        "null": 13
+      },
+      {
+        "name": "Unnamed: 11",
+        "dtype": "object",
+        "non_null": 150,
+        "null": 13
+      },
+      {
+        "name": "Unnamed: 12",
+        "dtype": "object",
+        "non_null": 150,
+        "null": 13
+      },
+      {
+        "name": "Unnamed: 13",
+        "dtype": "float64",
+        "non_null": 5,
+        "null": 158,
+        "mean": 1277.7995,
+        "min": 0.9975,
+        "max": 1598.0
+      }
+    ],
+    "sample_data": [
+      {
+        "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据": "   样本数      灌装工位",
+        "Unnamed: 1": "灌装工位1\n  灌装量（g）",
+        "Unnamed: 2": "灌装工位2\n  灌装量（g）",
+        "Unnamed: 3": "灌装工位3\n  灌装量（g）",
+        "Unnamed: 4": "灌装工位4\n  灌装量（g）",
+        "Unnamed: 5": "灌装工位5\n  灌装量（g）",
+        "Unnamed: 6": "灌装工位6\n  灌装量（g）",
+        "Unnamed: 7": "灌装工位7\n  灌装量（g）",
+        "Unnamed: 8": "灌装工位8\n  灌装量（g）",
+        "Unnamed: 9": "灌装工位9\n  灌装量（g）",
+        "Unnamed: 10": "灌装工位10\n  灌装量（g）",
+        "Unnamed: 11": "灌装工位11\n  灌装量（g）",
+        "Unnamed: 12": "灌装工位12\n  灌装量（g）",
+        "Unnamed: 13": NaN
+      },
+      {
+        "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据": 1,
+        "Unnamed: 1": NaN,
+        "Unnamed: 2": NaN,
+        "Unnamed: 3": NaN,
+        "Unnamed: 4": NaN,
+        "Unnamed: 5": NaN,
+        "Unnamed: 6": NaN,
+        "Unnamed: 7": NaN,
+        "Unnamed: 8": 2.946,
+        "Unnamed: 9": 3.043,
+        "Unnamed: 10": NaN,
+        "Unnamed: 11": NaN,
+        "Unnamed: 12": NaN,
+        "Unnamed: 13": NaN
+      },
+      {
+        "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据": 2,
+        "Unnamed: 1": 3.015,
+        "Unnamed: 2": 3.035,
+        "Unnamed: 3": 3.025,
+        "Unnamed: 4": 3.033,
+        "Unnamed: 5": 3.025,
+        "Unnamed: 6": 3.049,
+        "Unnamed: 7": 3.025,
+        "Unnamed: 8": 3.013,
+        "Unnamed: 9": 3.061,
+        "Unnamed: 10": 3.03,
+        "Unnamed: 11": 3.047,
+        "Unnamed: 12": 2.997,
+        "Unnamed: 13": NaN
+      },
+      {
+        "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据": 3,
+        "Unnamed: 1": 3.021,
+        "Unnamed: 2": 2.991,
+        "Unnamed: 3": 3,
+        "Unnamed: 4": 3.007,
+        "Unnamed: 5": 3.019,
+        "Unnamed: 6": 3.026,
+        "Unnamed: 7": 3.012,
+        "Unnamed: 8": 3.002,
+        "Unnamed: 9": 2.97,
+        "Unnamed: 10": 2.993,
+        "Unnamed: 11": 3.028,
+        "Unnamed: 12": 2.993,
+        "Unnamed: 13": NaN
+      },
+      {
+        "7.2-A2-4 灌装工艺过程控制研究记录-注射用谷胱甘肽0.6g（商业化）测试数据": 4,
+        "Unnamed: 1": 3.008,
+        "Unnamed: 2": 2.98,
+        "Unnamed: 3": 3.017,
+        "Unnamed: 4": 3.011,
+        "Unnamed: 5": 2.998,
+        "Unnamed: 6": 3.002,
+        "Unnamed: 7": 3.026,
+        "Unnamed: 8": 3.01,
+        "Unnamed: 9": 2.961,
+        "Unnamed: 10": 3.011,
+        "Unnamed: 11": 3.032,
+        "Unnamed: 12": 3.011,
+        "Unnamed: 13": NaN
+      }
+    ],
+    "sheet": "谷胱-1",
+    "n_sheets": 6,
+    "sheets": [
+      "腺苷 -1",
+      "谷胱",
+      "谷胱-1",
+      "替加",
+      "替加-1",
+      "腺苷"
+    ]
+  }
+}

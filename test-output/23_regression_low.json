@@ -1,0 +1,33 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.546722+00:00",
+  "data": {
+    "regression_type": "linear",
+    "n": 150,
+    "coefficients": {
+      "intercept": 3.3907,
+      "slope": 0.0135
+    },
+    "std_errors": {
+      "intercept": 3.5411,
+      "slope": 0.0197
+    },
+    "ci_intercept": [
+      -3.6069,
+      10.3884
+    ],
+    "ci_slope": [
+      -0.0255,
+      0.0525
+    ],
+    "r_squared": 0.0032,
+    "r": 0.0561,
+    "adj_r_squared": -0.0036,
+    "f_statistic": 0.4679,
+    "p_value": 0.495,
+    "significant": "False",
+    "residual_std": 1.1593,
+    "equation": "y = 0.0135 * x + 3.3907"
+  }
+}

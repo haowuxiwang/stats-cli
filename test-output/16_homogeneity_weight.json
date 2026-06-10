@@ -1,0 +1,15 @@
+{
+  "status": "success",
+  "version": "1.0.0",
+  "timestamp": "2026-06-09T07:37:33.532183+00:00",
+  "data": {
+    "test_type": "levene",
+    "n_groups": 2,
+    "n_total": 360,
+    "statistic": 40.876,
+    "p_value": 0.0,
+    "significant": "True",
+    "alpha": 0.05,
+    "interpretation": "Variances are significantly different (W=40.88, p=0.0)"
+  }
+}

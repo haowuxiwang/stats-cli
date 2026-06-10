@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "stats-cli-py"
+version = "1.0.0"
+description = "Pure Python statistical analysis tool for manufacturing and quality engineering"
+requires-python = ">=3.9"
+license = "MIT"
+dependencies = [
+    "scipy>=1.10",
+    "statsmodels>=0.14",
+    "pandas>=1.5",
+    "numpy>=1.23",
+    "openpyxl>=3.0",
+    "scikit-learn>=1.0",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+stats-cli = "main:main"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "SIM", "UP"]
+ignore = ["E501", "SIM105", "SIM102", "SIM108", "B904"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["stats_engine", "utils"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v"
