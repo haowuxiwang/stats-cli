@@ -71,3 +71,82 @@ def test_fractional_factorial_list_levels():
     factors = [{"name": "A", "levels": [0, 1]}, {"name": "B", "levels": [0, 1]}, {"name": "C", "levels": [0, 1]}]
     result = doe(doe_type="fractional_factorial", factors=factors)
     assert result["doe_type"] == "fractional_factorial"
+
+
+def test_factors_not_list():
+    """Factors must be a list."""
+    with pytest.raises(ValueError, match="factors must be a list"):
+        doe(doe_type="full_factorial", factors="invalid")
+
+
+def test_empty_factors():
+    """Empty factors should raise error."""
+    with pytest.raises(ValueError, match="At least one factor"):
+        doe(doe_type="full_factorial", factors=[])
+
+
+def test_factor_levels_too_small():
+    """Factor with levels < 2 should raise error."""
+    with pytest.raises(ValueError, match="levels.*must be >= 2"):
+        doe(doe_type="full_factorial", factors=[{"name": "A", "levels": 1}])
+
+
+def test_factor_list_levels_too_small():
+    """Factor with < 2 level values should raise error."""
+    with pytest.raises(ValueError, match="need at least 2 level values"):
+        doe(doe_type="full_factorial", factors=[{"name": "A", "levels": [10]}])
+
+
+def test_factor_invalid_levels_type():
+    """Factor with invalid levels type should raise error."""
+    with pytest.raises(ValueError, match="levels.*must be int or list"):
+        doe(doe_type="full_factorial", factors=[{"name": "A", "levels": "invalid"}])
+
+
+def test_factor_no_levels():
+    """Factor without levels or low/high should raise error."""
+    with pytest.raises(ValueError, match="must have.*levels"):
+        doe(doe_type="full_factorial", factors=[{"name": "A"}])
+
+
+def test_full_factorial_3_factors():
+    """Full factorial with 3 factors."""
+    factors = [
+        {"name": "A", "levels": 2},
+        {"name": "B", "levels": 2},
+        {"name": "C", "levels": 2}
+    ]
+    result = doe(doe_type="full_factorial", factors=factors)
+    assert result["n_runs"] == 8
+
+
+def test_response_surface_with_responses():
+    """Response surface with response data."""
+    factors = [{"name": "A", "levels": 3}, {"name": "B", "levels": 3}]
+    # Generate design first to get correct number of runs
+    design_result = doe(doe_type="response_surface", factors=factors)
+    n_runs = design_result["n_runs"]
+    # Create responses matching design matrix size
+    responses = list(range(1, n_runs + 1))
+    result = doe(doe_type="response_surface", factors=factors, responses=responses)
+    assert result["doe_type"] == "response_surface"
+    assert "design_matrix" in result
+
+
+def test_taguchi_with_array():
+    """Taguchi with specified orthogonal array."""
+    factors = [{"name": "A", "levels": 3}, {"name": "B", "levels": 3}]
+    result = doe(doe_type="taguchi", factors=factors, orthogonal_array="L9")
+    assert result["doe_type"] == "taguchi"
+
+
+def test_fractional_factorial_with_resolution():
+    """Fractional factorial with specified resolution."""
+    factors = [
+        {"name": "A", "levels": 2},
+        {"name": "B", "levels": 2},
+        {"name": "C", "levels": 2},
+        {"name": "D", "levels": 2}
+    ]
+    result = doe(doe_type="fractional_factorial", factors=factors, resolution=3)
+    assert result["doe_type"] == "fractional_factorial"

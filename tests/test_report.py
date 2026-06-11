@@ -41,3 +41,106 @@ def test_discover_command_fields():
         assert "category" in cmd, f"{name} missing category"
         assert "input" in cmd, f"{name} missing input"
         assert "output_fields" in cmd, f"{name} missing output_fields"
+
+
+def test_export_excel():
+    """Export report to Excel."""
+    import os
+    import tempfile
+
+    from stats_engine.report import export_excel
+
+    np.random.seed(42)
+    values = np.random.normal(10, 0.5, 50).tolist()
+    report_data = report(values=values, usl=12, lsl=8)
+
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = export_excel(report_data, output_path=tmp_path)
+        assert result["format"] == "excel"
+        assert result["output_path"] == tmp_path
+        assert result["file_size"] > 0
+        assert "sheets" in result
+        assert os.path.exists(tmp_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def test_export_pdf():
+    """Export report to PDF."""
+    import os
+    import tempfile
+
+    from stats_engine.report import export_pdf
+
+    np.random.seed(42)
+    values = np.random.normal(10, 0.5, 50).tolist()
+    report_data = report(values=values, usl=12, lsl=8)
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = export_pdf(report_data, output_path=tmp_path)
+        assert result["format"] == "pdf"
+        assert result["output_path"] == tmp_path
+        assert result["file_size"] > 0
+        assert os.path.exists(tmp_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def test_export_excel_via_handler():
+    """Export Excel through handler."""
+    import os
+    import tempfile
+
+    from main import handler
+
+    np.random.seed(42)
+    values = np.random.normal(10, 0.5, 50).tolist()
+    report_data = report(values=values, usl=12, lsl=8)
+
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = handler({
+            "command": "export_excel",
+            "params": {"report_data": report_data, "output_path": tmp_path}
+        })
+        assert result["status"] == "success"
+        assert result["data"]["format"] == "excel"
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def test_export_pdf_via_handler():
+    """Export PDF through handler."""
+    import os
+    import tempfile
+
+    from main import handler
+
+    np.random.seed(42)
+    values = np.random.normal(10, 0.5, 50).tolist()
+    report_data = report(values=values, usl=12, lsl=8)
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        result = handler({
+            "command": "export_pdf",
+            "params": {"report_data": report_data, "output_path": tmp_path}
+        })
+        assert result["status"] == "success"
+        assert result["data"]["format"] == "pdf"
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)

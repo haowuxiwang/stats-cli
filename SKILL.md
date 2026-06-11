@@ -505,6 +505,54 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "run", "params": {"script": "result = {'sum': sum(data['values']), 'count': len(data['values'])}", "data": {"values": [1, 2, 3]}}}
 ```
 
+### Workflow Automation (工作流自动化)
+
+```python
+# Multi-step workflow with automatic assumption checking
+{"command": "workflow", "params": {
+    "steps": [
+        {"command": "clean", "params": {"method": "drop"}},
+        {"command": "descriptive"},
+        {"command": "normality"},
+        {"command": "capability", "params": {"usl": 11.0, "lsl": 9.0}}
+    ],
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4],
+    "auto_check": true
+}}
+
+# Predefined workflow templates
+{"command": "workflow_template", "params": {
+    "template_name": "manufacturing",
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4],
+    "usl": 11.0, "lsl": 9.0
+}}
+
+# Check statistical assumptions before analysis
+{"command": "check_assumptions", "params": {
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4],
+    "test_type": "ttest"
+}}
+
+# Get recommended statistical test
+{"command": "recommend", "params": {
+    "data_description": {
+        "goal": "compare means of two groups",
+        "n_groups": 2
+    }
+}}
+```
+
+**Available templates:**
+- `manufacturing`: clean → descriptive → normality → capability → report
+- `comparison`: clean → descriptive → normality → homogeneity → ttest/anova
+- `capability`: clean → descriptive → normality → capability
+- `exploration`: clean → descriptive → normality → outlier
+- `reliability`: descriptive → weibull analysis
+- `doe`: full factorial design → regression analysis
+- `timeseries`: descriptive → exponential smoothing
+- `regression`: descriptive → correlation → regression
+- `multivariate`: PCA → cluster analysis
+
 ---
 
 ## Output Format

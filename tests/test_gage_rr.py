@@ -38,3 +38,109 @@ def test_nested(gage_data):
 def test_unknown_type():
     with pytest.raises(ValueError, match="Unknown analysis_type"):
         gage_rr(analysis_type="invalid", measurements=[1, 2], parts=[1, 2], operators=["A", "B"])
+
+
+def test_attribute():
+    """Attribute agreement analysis with pass/fail data."""
+    # 10 samples, 2 operators, 2 replicates
+    reference = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+    ratings = [
+        [[1, 1], [1, 1]],  # Sample 1
+        [[1, 1], [1, 0]],  # Sample 2
+        [[1, 1], [1, 1]],  # Sample 3
+        [[1, 0], [1, 1]],  # Sample 4
+        [[1, 1], [1, 1]],  # Sample 5
+        [[0, 0], [0, 0]],  # Sample 6
+        [[0, 0], [0, 1]],  # Sample 7
+        [[0, 0], [0, 0]],  # Sample 8
+        [[0, 1], [0, 0]],  # Sample 9
+        [[0, 0], [0, 0]],  # Sample 10
+    ]
+    result = gage_rr(analysis_type="attribute", reference=reference, ratings=ratings)
+    assert result["analysis_type"] == "attribute_agreement"
+    assert result["n_samples"] == 10
+    assert result["n_operators"] == 2
+    assert result["n_replicates"] == 2
+    assert "overall" in result
+    assert "operators" in result
+    assert result["overall"]["agreement_pct"] > 0
+
+
+def test_bias():
+    """Bias study with known reference value."""
+    np.random.seed(42)
+    measurements = np.random.normal(10.5, 0.2, 20).tolist()
+    result = gage_rr(analysis_type="bias", measurements=measurements, reference_value=10.0)
+    assert result["analysis_type"] == "bias"
+    assert result["n"] == 20
+    assert result["reference_value"] == 10.0
+    assert "bias" in result
+    assert "bias_pct" in result
+    assert "t_statistic" in result
+    assert "p_value" in result
+    assert "significant" in result
+
+
+def test_bias_no_significant():
+    """Bias study where bias is not significant."""
+    np.random.seed(42)
+    measurements = np.random.normal(10.0, 0.5, 30).tolist()
+    result = gage_rr(analysis_type="bias", measurements=measurements, reference_value=10.0)
+    assert result["analysis_type"] == "bias"
+    assert abs(result["bias"]) < 0.5
+
+
+def test_linearity():
+    """Linearity study across reference values."""
+    np.random.seed(42)
+    reference_values = [10, 20, 30, 40, 50]
+    measurements = []
+    for ref in reference_values:
+        measurements.extend(np.random.normal(ref, 0.5, 5).tolist())
+    ref_expanded = []
+    for ref in reference_values:
+        ref_expanded.extend([ref] * 5)
+
+    result = gage_rr(analysis_type="linearity", reference_values=ref_expanded, measurements=measurements)
+    assert result["analysis_type"] == "linearity"
+    assert "slope" in result
+    assert "intercept" in result
+    assert "r_squared" in result
+    assert "linearity" in result
+    assert abs(result["slope"] - 1.0) < 0.2
+
+
+def test_stability():
+    """Stability study with time series data."""
+    np.random.seed(42)
+    measurements = np.random.normal(100, 1, 30).tolist()
+    time_points = list(range(30))
+    result = gage_rr(analysis_type="stability", measurements=measurements, time_points=time_points)
+    assert result["analysis_type"] == "stability"
+    assert result["n"] == 30
+    assert "mean" in result
+    assert "sd" in result
+    assert "ucl" in result
+    assert "lcl" in result
+    assert "out_of_control" in result
+    assert "trend_slope" in result
+    assert "trend_p_value" in result
+
+
+def test_stability_with_tolerance():
+    """Stability study with tolerance parameter."""
+    np.random.seed(42)
+    measurements = np.random.normal(100, 1, 30).tolist()
+    result = gage_rr(analysis_type="stability", measurements=measurements, tolerance=10.0)
+    assert result["analysis_type"] == "stability"
+    assert "pct_tolerance" in result
+
+
+def test_stability_no_time():
+    """Stability study without time points."""
+    np.random.seed(42)
+    measurements = np.random.normal(100, 1, 30).tolist()
+    result = gage_rr(analysis_type="stability", measurements=measurements)
+    assert result["analysis_type"] == "stability"
+    assert result["trend_slope"] is None
+    assert result["trend_p_value"] is None

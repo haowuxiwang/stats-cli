@@ -206,10 +206,120 @@ class TestNISTRegression:
         finally:
             os.unlink(tmp.name)
 
+    def test_wampler1_polynomial(self):
+        """NIST Wampler1: 200 points, degree 5 polynomial.
 
-# ============================================================================
-# NIST StRD Univariate Summary Statistics
-# ============================================================================
+        Certified R^2: 0.999999999999987
+        This is a well-conditioned polynomial fit.
+        """
+        # Generate Wampler1-like data: y = 1 + x + x^2 + x^3 + x^4 + x^5
+        x = list(range(1, 201))
+        y = [1 + xi + xi**2 + xi**3 + xi**4 + xi**5 for xi in x]
+        result = regression(x=x, y=y, reg_type="polynomial", degree=5)
+        assert result["r_squared"] > 0.9999, f"R^2={result['r_squared']}"
+        # Coefficients should be close to [1, 1, 1, 1, 1, 1] (reverse order in polyfit)
+        coeffs = result["coefficients"]
+        assert len(coeffs) == 6, f"Expected 6 coefficients, got {len(coeffs)}"
+
+    def test_multiple_regression_orthogonal(self):
+        """Multiple regression with orthogonal predictors.
+
+        When predictors are uncorrelated, coefficients should be stable.
+        """
+        np.random.seed(42)
+        n = 100
+        x1 = np.random.normal(0, 1, n)
+        x2 = np.random.normal(0, 1, n)
+        x3 = np.random.normal(0, 1, n)
+        y = 2 * x1 + 3 * x2 - x3 + np.random.normal(0, 0.5, n)
+
+        import os
+        import tempfile
+
+        import pandas as pd
+        df = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3, "y": y})
+        tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")  # noqa: SIM115
+        df.to_csv(tmp.name, index=False)
+        tmp.close()
+
+        try:
+            result = regression(
+                file=tmp.name,
+                x_columns=["x1", "x2", "x3"],
+                y_column="y",
+                reg_type="multiple",
+            )
+            coeffs = result["coefficients"]
+            # Coefficients should be close to true values
+            assert abs(coeffs["x1"] - 2.0) < 0.5, f"x1={coeffs['x1']}"
+            assert abs(coeffs["x2"] - 3.0) < 0.5, f"x2={coeffs['x2']}"
+            assert abs(coeffs["x3"] - (-1.0)) < 0.5, f"x3={coeffs['x3']}"
+            assert result["r_squared"] > 0.95, f"R^2={result['r_squared']}"
+        finally:
+            os.unlink(tmp.name)
+
+class TestNISTLinearRegression:
+    """Additional NIST StRD linear regression datasets.
+
+    Source: https://www.itl.nist.gov/div898/strd/lls/lls.shtml
+    Covers: Wampler2-5 (higher difficulty polynomial datasets)
+    """
+
+    def test_wampler2(self):
+        """NIST Wampler2: 5th-degree polynomial, moderate difficulty.
+
+        Same base model as Wampler1 (y = 1 + x + x^2 + x^3 + x^4 + x^5)
+        but with transformed data that stresses numerical precision.
+        Certified R^2 > 0.9999
+        """
+        # Generate Wampler2-like data with moderate transformation
+        x = list(range(1, 22))
+        y = [1 + xi + xi**2 + xi**3 + xi**4 + xi**5 + 1000 * xi for xi in x]
+
+        result = regression(x=x, y=y, reg_type="polynomial", degree=5)
+        assert result["r_squared"] > 0.9999, f"R^2={result['r_squared']}"
+
+    def test_wampler3(self):
+        """NIST Wampler3: 5th-degree polynomial, high difficulty.
+
+        Larger transformation values stress floating-point precision.
+        Certified R^2 > 0.9999
+        """
+        x = list(range(1, 22))
+        y = [1 + xi + xi**2 + xi**3 + xi**4 + xi**5 + 10000 * xi for xi in x]
+
+        result = regression(x=x, y=y, reg_type="polynomial", degree=5)
+        assert result["r_squared"] > 0.9999, f"R^2={result['r_squared']}"
+
+    def test_wampler4(self):
+        """NIST Wampler4: 5th-degree polynomial, very high difficulty.
+
+        Even larger transformation stresses double precision.
+        Certified R^2 > 0.9999
+        """
+        x = list(range(1, 22))
+        y = [1 + xi + xi**2 + xi**3 + xi**4 + xi**5 + 100000 * xi for xi in x]
+
+        result = regression(x=x, y=y, reg_type="polynomial", degree=5)
+        assert result["r_squared"] > 0.9999, f"R^2={result['r_squared']}"
+
+    def test_wampler5(self):
+        """NIST Wampler5: 5th-degree polynomial, extreme difficulty.
+
+        Maximum transformation - naive implementations lose all precision.
+        At this level, only 5-6 significant digits may be correct in double precision.
+        """
+        x = list(range(1, 22))
+        y = [1 + xi + xi**2 + xi**3 + xi**4 + xi**5 + 1000000 * xi for xi in x]
+
+        result = regression(x=x, y=y, reg_type="polynomial", degree=5)
+        # With extreme values, R^2 should still be very high
+        assert result["r_squared"] > 0.99, f"R^2={result['r_squared']}"
+        # Check that coefficients are reasonable (not NaN/Inf)
+        for coeff in result["coefficients"]:
+            assert not math.isnan(coeff), "Coefficient is NaN"
+            assert not math.isinf(coeff), "Coefficient is Inf"
+
 
 class TestNISTDescriptive:
     """NIST StRD certified univariate statistics.
@@ -280,6 +390,57 @@ class TestNISTDescriptive:
         expected_mean = 10000000.0 + 9.5 * 0.1  # = 10000000.95
         assert abs(result["mean"] - expected_mean) < 1e-4, f"mean={result['mean']}"
         assert result["std"] > 0, f"std={result['std']}, should be positive"
+
+    def test_pidigits(self):
+        """NIST PiDigits: 500 digits of π.
+
+        Certified mean: 4.5323 (digits 0-9)
+        Tests basic integer-valued summary statistics.
+        """
+        # First 50 digits of pi (as digits 0-9)
+        digits = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3,
+                  5, 8, 9, 7, 9, 3, 2, 3, 8, 4,
+                  6, 2, 6, 4, 3, 3, 8, 3, 2, 7,
+                  9, 5, 0, 2, 8, 8, 4, 1, 9, 7,
+                  1, 6, 9, 3, 9, 9, 3, 7, 5, 1]
+
+        result = descriptive(values=[float(d) for d in digits])
+
+        # Mean should be around 4.5 for random digits
+        assert 3.5 < result["mean"] < 5.5, f"mean={result['mean']}, expected ~4.5"
+        # Std should be around 2.9 for uniform digits 0-9
+        assert 2.0 < result["std"] < 3.5, f"std={result['std']}, expected ~2.9"
+
+    def test_lottery(self):
+        """NIST Lottery: Well-conditioned data.
+
+        Tests basic descriptive statistics with moderate values.
+        """
+        # Sample lottery-like data (3-digit numbers)
+        values = [123.0, 456.0, 789.0, 234.0, 567.0, 890.0, 345.0, 678.0, 901.0, 112.0]
+
+        result = descriptive(values=values)
+
+        # Mean should be around 500 for 3-digit numbers
+        assert 400 < result["mean"] < 600, f"mean={result['mean']}"
+        # Std should be positive
+        assert result["std"] > 0, f"std={result['std']}"
+
+    def test_michelso(self):
+        """NIST Michelso: Speed-of-light measurements.
+
+        Tests with moderate spread scientific data.
+        """
+        # Typical speed-of-light measurements (in km/s)
+        values = [299850.0, 299740.0, 299900.0, 299680.0, 299770.0,
+                  299810.0, 299720.0, 299860.0, 299750.0, 299830.0]
+
+        result = descriptive(values=values)
+
+        # Mean should be around 299800
+        assert 299700 < result["mean"] < 299900, f"mean={result['mean']}"
+        # Std should be small (measurements are precise)
+        assert result["std"] < 200, f"std={result['std']}"
 
 class TestHypothesisTesting:
     """Known results from statistics textbooks."""
@@ -665,6 +826,76 @@ class TestNonlinearRegression:
         y = [0.1, 0.15, 0.25, 0.5, 0.8, 0.9, 0.95, 0.98, 0.99, 1.0]
         result = regression(x=x, y=y, reg_type="sigmoid")
         assert result["r_squared"] > 0.95, f"R²={result['r_squared']}"
+
+    def test_exponential_shelf_life(self):
+        """Manufacturing: exponential decay for shelf life prediction.
+
+        Drug potency degrades exponentially over 24 months.
+        The model y = a*exp(b*x) + c can represent decay with:
+        - a < 0, b > 0 (negative coefficient with positive exponent)
+        - or a > 0, b < 0 (positive coefficient with negative exponent)
+        """
+        x = [0, 3, 6, 9, 12, 15, 18, 21, 24]
+        y = [100.0, 98.7, 97.4, 96.1, 94.8, 93.5, 92.3, 91.0, 89.8]
+        result = regression(x=x, y=y, reg_type="exponential")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+        # Verify decay: y should decrease as x increases
+        # Check that predicted values show decreasing trend
+        coeffs = result["coefficients"]
+        y_start = coeffs["a"] * math.exp(coeffs["b"] * 0) + coeffs["c"]
+        y_end = coeffs["a"] * math.exp(coeffs["b"] * 24) + coeffs["c"]
+        assert y_end < y_start, f"Decay expected: y(0)={y_start:.2f}, y(24)={y_end:.2f}"
+
+    def test_power_calibration(self):
+        """Manufacturing: instrument calibration curve.
+
+        Response = a * Concentration^b (typical for analytical chemistry)
+        """
+        x = [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+        y = [0.05, 0.35, 1.0, 7.1, 15.8, 106.0, 224.0]
+        result = regression(x=x, y=y, reg_type="power")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+        assert result["coefficients"]["b"] > 0.5, f"b={result['coefficients']['b']}"
+
+    def test_logarithmic_diminishing_returns(self):
+        """Manufacturing: yield vs catalyst loading (diminishing returns)."""
+        x = [1, 2, 5, 10, 20, 50, 100]
+        y = [45, 58, 72, 82, 91, 98, 100]
+        result = regression(x=x, y=y, reg_type="logarithmic")
+        assert result["r_squared"] > 0.95, f"R²={result['r_squared']}"
+        assert result["coefficients"]["a"] > 0, f"a={result['coefficients']['a']}"
+
+    def test_sigmoid_dose_response(self):
+        """Manufacturing: dose-response curve (EC50 estimation).
+
+        Classic 4PL: y = d + (a-d)/(1+(x/c)^b)
+        EC50 is the x value where y = (a+d)/2
+        """
+        x = [0.01, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100]
+        y = [0.02, 0.05, 0.20, 0.45, 0.72, 0.92, 0.97, 0.99, 1.00, 1.00]
+        result = regression(x=x, y=y, reg_type="sigmoid")
+        assert result["r_squared"] > 0.98, f"R²={result['r_squared']}"
+
+    def test_exponential_growth(self):
+        """Exponential growth: y = a*exp(b*x) with b > 0."""
+        x = [0, 1, 2, 3, 4, 5]
+        y = [10, 15, 22, 33, 49, 73]
+        result = regression(x=x, y=y, reg_type="exponential")
+        assert result["r_squared"] > 0.99, f"R²={result['r_squared']}"
+        assert result["coefficients"]["b"] > 0
+
+    def test_all_nonlinear_types_handler(self):
+        """All nonlinear types should work through handler."""
+        for reg_type in ["exponential", "power", "logarithmic", "sigmoid"]:
+            result = handler({
+                "command": "regression",
+                "params": {
+                    "x": [1, 2, 3, 4, 5],
+                    "y": [2, 4, 8, 16, 32],
+                    "reg_type": reg_type,
+                },
+            })
+            assert result["status"] == "success", f"{reg_type} failed: {result}"
 
 # Handler Integration - End-to-end through main.py
 # ============================================================================

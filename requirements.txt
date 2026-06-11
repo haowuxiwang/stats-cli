@@ -5,3 +5,4 @@ numpy>=1.23
 openpyxl>=3.0
 scikit-learn>=1.0
 matplotlib>=3.5
+fpdf2>=2.8

@@ -19,7 +19,7 @@ class TestCommandsStructure:
         valid_categories = {
             "basic", "hypothesis", "spc", "regression",
             "doe", "msa", "reliability", "multivariate",
-            "advanced", "data", "report"
+            "advanced", "data", "report", "workflow"
         }
         for name, cmd in COMMANDS.items():
             assert cmd["category"] in valid_categories, f"{name}: invalid category '{cmd['category']}'"

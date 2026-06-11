@@ -112,19 +112,38 @@ def _wilcoxon(x, y, alpha):
 
 
 def _chi_square(observed, expected, alpha):
-    """Chi-square test."""
+    """Chi-square test.
+
+    Supports both:
+    - 1D: Goodness of fit (observed frequencies vs expected)
+    - 2D: Test of independence (contingency table)
+    """
     obs = np.array(observed, dtype=float)
 
-    if expected is not None:
+    if obs.ndim == 2:
+        # Contingency table - test of independence
+        stat, p, dof, expected_freq = sp_stats.chi2_contingency(obs)
+        n = np.sum(obs)
+        k = obs.shape[0]
+        exp = expected_freq
+    elif expected is not None:
+        # Goodness of fit with expected frequencies
         exp = np.array(expected, dtype=float)
         stat, p = sp_stats.chisquare(obs, f_exp=exp)
+        stat = float(stat)
+        p = float(p)
+        n = np.sum(obs)
+        k = len(obs)
+        dof = k - 1
     else:
         # Goodness of fit (equal proportions)
         stat, p = sp_stats.chisquare(obs)
-
-    n = np.sum(obs)
-    k = len(obs)
-    df = k - 1
+        stat = float(stat)
+        p = float(p)
+        n = np.sum(obs)
+        k = len(obs)
+        dof = k - 1
+        exp = np.full(k, n / k)
 
     # Cramér's V
     v = np.sqrt(stat / n) if n > 0 else 0
@@ -133,14 +152,14 @@ def _chi_square(observed, expected, alpha):
         "test_type": "chi_square",
         "n": int(n),
         "k": k,
-        "df": df,
+        "df": int(dof),
         "chi2_statistic": r(stat),
         "p_value": r(p),
         "significant": p < alpha,
         "cramers_v": r(v),
         "alpha": alpha,
-        "observed": [r(v, 2) for v in obs],
-        "expected": [r(v, 2) for v in (exp if expected is not None else np.full(k, n / k))],
+        "observed": obs.tolist(),
+        "expected": np.asarray(exp).tolist(),
         "interpretation": (
             f"Significant difference from expected (chi2={r(stat, 2)}, p={r(p)})"
             if p < alpha

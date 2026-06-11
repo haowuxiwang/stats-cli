@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-stats-cli-py is a Python statistical analysis CLI/library for manufacturing and quality engineering. It provides 26 statistical commands (descriptive stats, hypothesis testing, SPC, capability, DOE, MSA, reliability, etc.) designed to be called as an AI-agent skill. All I/O is JSON.
+stats-cli-py is a Python statistical analysis CLI/library for manufacturing and quality engineering. It provides 33 statistical commands (descriptive stats, hypothesis testing, SPC, capability, DOE, MSA, reliability, workflow automation, report export, etc.) designed to be called as an AI-agent skill. All I/O is JSON.
 
 ## Commands
 
@@ -48,6 +48,7 @@ pytest tests/test_specific.py::test_fn  # single test
 - **DOE/MSA:** `doe`, `gage_rr`
 - **Advanced:** `reliability`, `multivariate`, `timeseries`
 - **Data:** `explore`, `clean`, `transform`, `report`, `discover`, `run`
+- **Workflow:** `workflow`, `check_assumptions`, `recommend`
 
 ## Key Conventions
 

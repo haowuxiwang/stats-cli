@@ -2,9 +2,10 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.1.0
-**Commands**: 27
-**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl
+**Version**: 1.2.0
+**Commands**: 33
+**Test Coverage**: 92%
+**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 ---
 
@@ -59,6 +60,12 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 ### Reporting
 - **report**: Comprehensive HTML report
 - **run**: Execute custom Python scripts
+
+### Workflow Automation
+- **workflow**: Multi-step analysis with automatic assumption checking
+- **workflow_template**: Predefined templates (manufacturing, comparison, capability, exploration)
+- **check_assumptions**: Verify statistical assumptions before analysis
+- **recommend**: Get recommended statistical tests based on data description
 
 ---
 

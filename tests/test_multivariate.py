@@ -52,3 +52,53 @@ def test_correlation_matrix(pca_data):
 def test_unknown_type():
     with pytest.raises(ValueError, match="Unknown analysis_type"):
         multivariate(analysis_type="invalid", values=[[1, 2]])
+
+
+def test_pca_no_values():
+    """PCA without values should raise error."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="pca")
+
+
+def test_cluster_no_values():
+    """Cluster without values should raise error."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="cluster")
+
+
+def test_cluster_unknown_method():
+    """Unknown cluster method should raise error."""
+    with pytest.raises(ValueError, match="Unknown method"):
+        multivariate(analysis_type="cluster", values=[[1, 2], [3, 4]], method="invalid")
+
+
+def test_correlation_matrix_spearman(pca_data):
+    """Spearman correlation matrix."""
+    result = multivariate(analysis_type="correlation_matrix", values=pca_data.tolist(), method="spearman")
+    assert result["method"] == "spearman"
+    assert "matrix" in result
+
+
+def test_correlation_matrix_kendall(pca_data):
+    """Kendall correlation matrix."""
+    result = multivariate(analysis_type="correlation_matrix", values=pca_data.tolist(), method="kendall")
+    assert result["method"] == "kendall"
+    assert "matrix" in result
+
+
+def test_correlation_matrix_unknown_method(pca_data):
+    """Unknown correlation method should raise error."""
+    with pytest.raises(ValueError, match="Unknown method"):
+        multivariate(analysis_type="correlation_matrix", values=pca_data.tolist(), method="invalid")
+
+
+def test_correlation_matrix_no_values():
+    """Correlation matrix without values should raise error."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="correlation_matrix")
+
+
+def test_discriminant_no_file():
+    """Discriminant without file should raise error."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="discriminant")

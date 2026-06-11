@@ -1,0 +1,26 @@
+{
+  "command": "workflow",
+  "params": {
+    "steps": [
+      {
+        "command": "descriptive",
+        "params": {}
+      },
+      {
+        "command": "normality",
+        "params": {}
+      },
+      {
+        "command": "capability",
+        "params": {
+          "usl": 11.0,
+          "lsl": 9.0
+        }
+      }
+    ],
+    "values": [10.2, 10.5, 10.3, 10.1, 10.4, 10.6, 10.2, 10.3, 10.5, 10.4,
+               10.1, 10.3, 10.5, 10.2, 10.4, 10.6, 10.3, 10.2, 10.5, 10.4,
+               10.3, 10.2, 10.4, 10.5, 10.3, 10.1, 10.4, 10.5, 10.3, 10.2],
+    "auto_check": true
+  }
+}

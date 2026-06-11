@@ -191,6 +191,30 @@ def _route(command, params):
         from stats_engine.report import report
 
         return report(**params)
+    elif command == "workflow":
+        from stats_engine.workflow import workflow
+
+        return workflow(**params)
+    elif command == "check_assumptions":
+        from stats_engine.assumptions import check_assumptions
+
+        return check_assumptions(**params)
+    elif command == "recommend":
+        from stats_engine.assumptions import recommend_test
+
+        return recommend_test(**params)
+    elif command == "workflow_template":
+        from stats_engine.workflow import workflow_template
+
+        return workflow_template(**params)
+    elif command == "export_excel":
+        from stats_engine.report import export_excel
+
+        return export_excel(**params)
+    elif command == "export_pdf":
+        from stats_engine.report import export_pdf
+
+        return export_pdf(**params)
     elif command == "run":
         return _run_script(params)
     else:
