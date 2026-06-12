@@ -152,7 +152,7 @@ def _runs_test(arr, target, alpha):
         "expected_runs": r(expected_runs, 2),
         "z_statistic": r(z),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "interpretation": (
             "Significant non-random pattern detected" if p_value < alpha else "No significant non-random pattern"
         ),

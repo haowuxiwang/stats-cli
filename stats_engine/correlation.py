@@ -71,7 +71,7 @@ def correlation(x, y, method="pearson"):
         "correlation": r(corr),
         "r_squared": r(r_sq),
         "p_value": r(p),
-        "significant": p < 0.05,
+        "significant": bool(p < 0.05),
         "strength": strength,
         "direction": direction,
         "interpretation": f"{strength.capitalize()} {direction} correlation (r={r(corr)}, p={r(p)})",

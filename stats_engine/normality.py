@@ -31,7 +31,7 @@ def normality(values):
         result["shapiro_wilk"] = {
             "statistic": r(stat),
             "p_value": r(p),
-            "normal": p > 0.05,
+            "normal": bool(p > 0.05),
         }
 
     # Anderson-Darling test
@@ -53,7 +53,7 @@ def normality(values):
         result["lilliefors"] = {
             "statistic": r(ks_stat),
             "p_value": r(ks_p),
-            "normal": ks_p > 0.05,
+            "normal": bool(ks_p > 0.05),
         }
 
     # Overall assessment (majority vote)
@@ -65,7 +65,7 @@ def normality(values):
     if "lilliefors" in result:
         normals.append(result["lilliefors"]["normal"])
 
-    result["is_normal"] = sum(normals) >= len(normals) / 2
+    result["is_normal"] = bool(sum(normals) >= len(normals) / 2)
     result["interpretation"] = (
         "Data appears to be normally distributed"
         if result["is_normal"]

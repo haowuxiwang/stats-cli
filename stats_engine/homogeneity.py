@@ -40,7 +40,7 @@ def _levene(arrays, alpha):
         "n_total": n,
         "statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Variances are significantly different (W={r(stat, 2)}, p={r(p)})"
@@ -63,7 +63,7 @@ def _bartlett(arrays, alpha):
         "n_total": n,
         "statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Variances are significantly different (B={r(stat, 2)}, p={r(p)})"

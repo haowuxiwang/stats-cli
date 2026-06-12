@@ -410,7 +410,7 @@ def _bias(measurements, reference_value, **kwargs):
         "bias_pct": r(bias_pct, 2),
         "t_statistic": r(t_stat),
         "p_value": r(p_value),
-        "significant": p_value < 0.05,
+        "significant": bool(p_value < 0.05),
         "interpretation": (
             f"Significant bias detected (bias={r(bias)}, p={r(p_value)})"
             if p_value < 0.05
@@ -471,7 +471,7 @@ def _stability(measurements, time_points=None, reference_value=None, tolerance=N
         "n_out_of_control": len(ooc),
         "trend_slope": r(slope) if slope is not None else None,
         "trend_p_value": r(p_trend) if p_trend is not None else None,
-        "trend_significant": p_trend < 0.05 if p_trend is not None else None,
+        "trend_significant": bool(p_trend < 0.05) if p_trend is not None else None,
         "interpretation": (
             "Measurement system appears stable - no out-of-control points"
             if len(ooc) == 0

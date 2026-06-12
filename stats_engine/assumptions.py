@@ -85,12 +85,12 @@ def _check_normality(values):
     # Shapiro-Wilk test (most powerful for n < 50)
     if n <= 5000:
         stat, p_value = sp_stats.shapiro(values)
-        passed = p_value > 0.05
+        passed = bool(p_value > 0.05)
     else:
         # For large samples, use Anderson-Darling
         result = sp_stats.anderson(values, dist='norm')
         # Use 5% significance level (index 2)
-        passed = result.statistic < result.critical_values[2]
+        passed = bool(result.statistic < result.critical_values[2])
         p_value = None
 
     return {
@@ -149,7 +149,7 @@ def _check_sample_size(values, test_type):
 def _check_homogeneity(values1, values2):
     """Check homogeneity of variance using Levene's test."""
     stat, p_value = sp_stats.levene(values1, values2)
-    passed = p_value > 0.05
+    passed = bool(p_value > 0.05)
 
     return {
         "test": "levene",
@@ -163,7 +163,7 @@ def _check_homogeneity(values1, values2):
 def _check_homogeneity_groups(groups):
     """Check homogeneity of variance for multiple groups."""
     stat, p_value = sp_stats.levene(*groups)
-    passed = p_value > 0.05
+    passed = bool(p_value > 0.05)
 
     return {
         "test": "levene",

@@ -1018,6 +1018,90 @@ class TestAnscombeQuartetExtended:
             xi = anscombe[f"x{i}"]
             assert len(xi) == len(set(xi)), f"x{i} has duplicate values: {xi}"
 
+    def test_correlation_similar(self, anscombe):
+        """All 4 datasets should have similar correlation coefficients (r ~0.82)."""
+        from stats_engine.correlation import correlation
+        corrs = []
+        for i in range(1, 5):
+            x = anscombe[f"x{i}"]
+            y = anscombe[f"y{i}"]
+            result = correlation(x=x, y=y, method="pearson")
+            corrs.append(result["correlation"])
+
+        # All correlations should be ~0.816
+        for i, r in enumerate(corrs, 1):
+            assert abs(r - 0.816) < 0.02, f"Dataset {i}: r={r}, expected ~0.816"
+
+        # All correlations should be within 0.01 of each other
+        assert max(corrs) - min(corrs) < 0.01, f"Correlations vary too much: {corrs}"
+
+    def test_residual_std_similar(self, anscombe):
+        """All 4 datasets should have similar residual standard errors."""
+        res_stds = []
+        for i in range(1, 5):
+            x = anscombe[f"x{i}"]
+            y = anscombe[f"y{i}"]
+            result = regression(x=x, y=y, reg_type="linear")
+            res_stds.append(result["residual_std"])
+
+        # All residual stds should be ~1.24
+        for i, rs in enumerate(res_stds, 1):
+            assert abs(rs - 1.24) < 0.1, f"Dataset {i}: residual_std={rs}, expected ~1.24"
+
+        # All residual stds should be within 0.1 of each other
+        assert max(res_stds) - min(res_stds) < 0.1, f"Residual stds vary too much: {res_stds}"
+
+    def test_each_dataset_individual(self, anscombe):
+        """Verify each dataset individually with known certified values."""
+        # NIST certified values for Anscombe's Quartet
+        certified = {
+            1: {"mean": 7.5009, "std": 2.0316, "slope": 0.5001, "intercept": 3.0001, "r": 0.8164},
+            2: {"mean": 7.5009, "std": 2.0317, "slope": 0.5000, "intercept": 3.0009, "r": 0.8162},
+            3: {"mean": 7.5000, "std": 2.0304, "slope": 0.4997, "intercept": 3.0025, "r": 0.8163},
+            4: {"mean": 7.5009, "std": 2.0306, "slope": 0.4999, "intercept": 3.0017, "r": 0.8165},
+        }
+
+        from stats_engine.correlation import correlation
+
+        for i in range(1, 5):
+            x = anscombe[f"x{i}"]
+            y = anscombe[f"y{i}"]
+
+            desc = descriptive(values=y)
+            reg = regression(x=x, y=y, reg_type="linear")
+            corr = correlation(x=x, y=y, method="pearson")
+
+            cert = certified[i]
+            assert abs(desc["mean"] - cert["mean"]) < 0.001, f"Dataset {i}: mean={desc['mean']}"
+            assert abs(desc["std"] - cert["std"]) < 0.002, f"Dataset {i}: std={desc['std']}"
+            assert abs(reg["coefficients"]["slope"] - cert["slope"]) < 0.001, f"Dataset {i}: slope={reg['coefficients']['slope']}"
+            assert abs(reg["coefficients"]["intercept"] - cert["intercept"]) < 0.002, f"Dataset {i}: intercept={reg['coefficients']['intercept']}"
+            assert abs(corr["correlation"] - cert["r"]) < 0.001, f"Dataset {i}: r={corr['correlation']}"
+
+    def test_x_mean_similar(self, anscombe):
+        """All 4 x-datasets should have similar means."""
+        x_means = []
+        for i in range(1, 5):
+            x = anscombe[f"x{i}"]
+            result = descriptive(values=x)
+            x_means.append(result["mean"])
+
+        # All x means should be ~9.0
+        for i, m in enumerate(x_means, 1):
+            assert abs(m - 9.0) < 0.1, f"Dataset {i}: x_mean={m}, expected ~9.0"
+
+    def test_x_variance_similar(self, anscombe):
+        """All 4 x-datasets should have similar variances."""
+        x_stds = []
+        for i in range(1, 5):
+            x = anscombe[f"x{i}"]
+            result = descriptive(values=x)
+            x_stds.append(result["std"])
+
+        # All x stds should be ~3.32
+        for i, s in enumerate(x_stds, 1):
+            assert abs(s - 3.32) < 0.2, f"Dataset {i}: x_std={s}, expected ~3.32"
+
 
 # ============================================================================
 # Classic Textbook Datasets - Well-known results with certified values

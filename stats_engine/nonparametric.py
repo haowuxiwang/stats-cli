@@ -50,7 +50,7 @@ def _mann_whitney(x, y, alpha):
         "n2": n2,
         "u_statistic": r(u_stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "effect_size": r(effect_size),
         "alpha": alpha,
         "interpretation": (
@@ -78,7 +78,7 @@ def _kruskal_wallis(groups, alpha):
         "n_total": n,
         "h_statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "effect_size": r(epsilon_sq),
         "alpha": alpha,
         "interpretation": (
@@ -101,7 +101,7 @@ def _wilcoxon(x, y, alpha):
         "n": len(x),
         "w_statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant difference between paired samples (W={r(stat, 2)}, p={r(p)})"
@@ -155,7 +155,7 @@ def _chi_square(observed, expected, alpha):
         "df": int(dof),
         "chi2_statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "cramers_v": r(v),
         "alpha": alpha,
         "observed": obs.tolist(),
@@ -182,7 +182,7 @@ def _friedman(groups, alpha):
         "n_observations": n,
         "chi2_statistic": r(stat),
         "p_value": r(p),
-        "significant": p < alpha,
+        "significant": bool(p < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant difference between groups (chi2={r(stat, 2)}, p={r(p)})"

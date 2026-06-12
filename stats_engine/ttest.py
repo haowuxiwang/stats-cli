@@ -61,7 +61,7 @@ def _one_sample_ttest(arr, mu, alpha):
         "hypothesized_mean": mu,
         "t_statistic": r(t_stat),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "ci_95": [r(ci_lower), r(ci_upper)],
         "interpretation": (
@@ -92,7 +92,7 @@ def _two_sample_ttest(arr1, arr2, alpha):
         "mean_difference": r(mean1 - mean2),
         "t_statistic": r(t_stat),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant difference between groups (p={r(p_value)})"
@@ -128,7 +128,7 @@ def _paired_ttest(arr1, arr2, alpha):
         "std_difference": r(std_diff),
         "t_statistic": r(t_stat),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "ci_95": [r(ci_lower), r(ci_upper)],
         "interpretation": (

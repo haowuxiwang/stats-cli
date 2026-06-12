@@ -131,7 +131,7 @@ def _simple_linear(x, y, alpha):
         "adj_r_squared": r(1 - (1 - r_sq) * (n - 1) / (n - 2)),
         "f_statistic": r(f_stat),
         "p_value": r(p_f),
-        "significant": p_f < alpha,
+        "significant": bool(p_f < alpha),
         "residual_std": r(np.sqrt(ms_res)),
         "equation": f"y = {r(slope)} * x + {r(intercept)}",
     }

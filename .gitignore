@@ -78,6 +78,8 @@ output/*.html
 output/*.png
 output/*.pdf
 *.html
+report.pdf
+report.xlsx
 
 # Test data
 test_data.csv

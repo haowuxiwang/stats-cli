@@ -60,7 +60,7 @@ def _tukey(means, ns, mse, df_within, k, alpha):
             q_stat = abs(diff) / se if se > 0 else 0
             p_value = 1 - _studentized_range_cdf(q_stat, k, df_within)
 
-            is_sig = q_stat > q_crit
+            is_sig = bool(q_stat > q_crit)
             comp = {
                 "group_i": i,
                 "group_j": j,
@@ -103,7 +103,7 @@ def _bonferroni(means, ns, mse, df_within, k, alpha):
             t_stat = abs(diff) / se if se > 0 else 0
             p_value = 2 * (1 - sp_stats.t.cdf(t_stat, df_within))
 
-            is_sig = p_value < alpha_adj
+            is_sig = bool(p_value < alpha_adj)
             t_crit = sp_stats.t.ppf(1 - alpha_adj / 2, df_within)
 
             comp = {
@@ -145,7 +145,7 @@ def _scheffe(means, ns, mse, df_within, k, alpha):
             se = np.sqrt(mse * (1 / ns[i] + 1 / ns[j]))
             f_stat = (diff**2) / ((k - 1) * se**2) if se > 0 else 0
 
-            is_sig = f_stat > f_crit
+            is_sig = bool(f_stat > f_crit)
             scheffe_crit = np.sqrt((k - 1) * f_crit) * se
 
             comp = {

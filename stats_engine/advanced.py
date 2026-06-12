@@ -110,7 +110,7 @@ def _exact_test(observed, alpha=0.05, **kwargs):
         "n_total": n_total,
         "odds_ratio": r(odds_ratio),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant association (OR={r(odds_ratio)}, p={r(p_value)})"
@@ -157,7 +157,7 @@ def _mcnemar(observed, alpha=0.05, **kwargs):
         "c_discordant": int(c),
         "chi2": r(chi2) if chi2 is not None else None,
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant change in paired proportions (p={r(p_value)})"
@@ -212,7 +212,7 @@ def _cochran_q(data, alpha=0.05, **kwargs):
         "q_statistic": r(q_stat),
         "df": k - 1,
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "alpha": alpha,
         "interpretation": (
             f"Significant difference between treatments (Q={r(q_stat)}, p={r(p_value)})"

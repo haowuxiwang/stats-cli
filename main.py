@@ -29,7 +29,7 @@ def handler(input_data):
     command = input_data.get("command")
     params = input_data.get("params", {})
     # Protect caller's dict from mutation
-    params = dict(params)
+    params = dict(params or {})
 
     if not command:
         return error(

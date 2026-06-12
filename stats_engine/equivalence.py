@@ -50,7 +50,7 @@ def _tost(x, y, delta, alpha):
     p_lower = 1 - sp_stats.t.cdf(t_lower, df)
 
     p_tost = max(p_upper, p_lower)
-    equivalent = p_tost < alpha
+    equivalent = bool(p_tost < alpha)
 
     # 90% CI for the difference
     t_crit = sp_stats.t.ppf(1 - alpha, df)
@@ -96,7 +96,7 @@ def _one_sample_tost(arr, mu, delta, alpha):
     p_lower = 1 - sp_stats.t.cdf(t_lower, df)
 
     p_tost = max(p_upper, p_lower)
-    equivalent = p_tost < alpha
+    equivalent = bool(p_tost < alpha)
 
     t_crit = sp_stats.t.ppf(1 - alpha, df)
     ci_lower = diff - t_crit * se

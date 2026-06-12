@@ -80,7 +80,7 @@ def _one_way_anova(groups, alpha):
         "n_total": n_total,
         "f_statistic": r(f_stat),
         "p_value": r(p_value),
-        "significant": p_value < alpha,
+        "significant": bool(p_value < alpha),
         "eta_squared": r(eta_sq),
         "df_between": df_between,
         "df_within": df_within,

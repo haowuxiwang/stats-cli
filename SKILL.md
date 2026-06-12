@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, or chi-square tests. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square."
+description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, chi-square tests, workflow automation, PDF/Excel export, or assumption checking. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square, 工作流, workflow, 假设检查, 方法推荐, PDF导出, Excel导出."
 ---
 
 # stats-cli-py
@@ -552,6 +552,19 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 - `timeseries`: descriptive → exponential smoothing
 - `regression`: descriptive → correlation → regression
 - `multivariate`: PCA → cluster analysis
+
+### Report Export (报告导出)
+
+```python
+# Generate report first
+report_data = handler({"command": "report", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}})
+
+# Export to Excel
+handler({"command": "export_excel", "params": {"report_data": report_data["data"], "output_path": "report.xlsx"}})
+
+# Export to PDF
+handler({"command": "export_pdf", "params": {"report_data": report_data["data"], "output_path": "report.pdf"}})
+```
 
 ---
 
