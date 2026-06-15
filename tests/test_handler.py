@@ -1,6 +1,10 @@
 """Tests for main.py handler and routing."""
 
 import json
+import subprocess
+import sys
+import tempfile
+import os
 
 import pytest
 
@@ -192,3 +196,128 @@ def test_handler_file_not_found():
     })
     assert result["status"] == "error"
     assert result["error_type"] == "FILE_NOT_FOUND"
+
+
+class TestMainCLI:
+    """Test main() CLI entry point via subprocess."""
+
+    def test_stdin_input(self):
+        """main() should read from stdin."""
+        r = subprocess.run(
+            [sys.executable, "main.py"],
+            input='{"command":"descriptive","params":{"values":[1,2,3,4,5]}}',
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        assert r.returncode == 0
+        out = json.loads(r.stdout)
+        assert out["status"] == "success"
+
+    def test_file_input(self):
+        """main() should read from file argument."""
+        tmpfile = tempfile.mktemp(suffix=".json")
+        with open(tmpfile, "w") as f:
+            json.dump({"command": "descriptive", "params": {"values": [1, 2, 3]}}, f)
+        try:
+            r = subprocess.run(
+                [sys.executable, "main.py", tmpfile],
+                capture_output=True, text=True, encoding="utf-8",
+            )
+            assert r.returncode == 0
+            out = json.loads(r.stdout)
+            assert out["status"] == "success"
+        finally:
+            os.unlink(tmpfile)
+
+    def test_file_not_found(self):
+        """main() should handle missing file gracefully."""
+        r = subprocess.run(
+            [sys.executable, "main.py", "/nonexistent/file.json"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        assert r.returncode == 0
+        out = json.loads(r.stdout)
+        assert out["status"] == "error"
+        assert out["error_type"] == "FILE_NOT_FOUND"
+
+    def test_invalid_json_stdin(self):
+        """main() should handle invalid JSON gracefully."""
+        r = subprocess.run(
+            [sys.executable, "main.py"],
+            input="not json",
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        assert r.returncode == 0
+        out = json.loads(r.stdout)
+        assert out["status"] == "error"
+        assert out["error_type"] == "INVALID_JSON"
+
+    def test_error_output(self):
+        """main() should output valid JSON on error."""
+        r = subprocess.run(
+            [sys.executable, "main.py"],
+            input='{"command":"nonexistent"}',
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        assert r.returncode == 0
+        out = json.loads(r.stdout)
+        assert out["status"] == "error"
+
+
+class TestMainDirect:
+    """Test main() directly for coverage."""
+
+    def test_main_stdin(self, monkeypatch, capsys):
+        """main() reads from stdin when no args."""
+        import main as main_module
+        monkeypatch.setattr("sys.argv", ["main.py"])
+        monkeypatch.setattr("sys.stdin.read", lambda: '{"command":"descriptive","params":{"values":[1,2,3]}}')
+        main_module.main()
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)
+        assert out["status"] == "success"
+
+    def test_main_file(self, monkeypatch, capsys):
+        """main() reads from file when arg provided."""
+        import main as main_module
+        tmpfile = tempfile.mktemp(suffix=".json")
+        with open(tmpfile, "w") as f:
+            json.dump({"command": "descriptive", "params": {"values": [1, 2, 3]}}, f)
+        try:
+            monkeypatch.setattr("sys.argv", ["main.py", tmpfile])
+            main_module.main()
+            captured = capsys.readouterr()
+            out = json.loads(captured.out)
+            assert out["status"] == "success"
+        finally:
+            os.unlink(tmpfile)
+
+    def test_main_file_not_found(self, monkeypatch, capsys):
+        """main() handles missing file."""
+        import main as main_module
+        monkeypatch.setattr("sys.argv", ["main.py", "/nonexistent.json"])
+        main_module.main()
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)
+        assert out["status"] == "error"
+        assert out["error_type"] == "FILE_NOT_FOUND"
+
+    def test_main_invalid_json(self, monkeypatch, capsys):
+        """main() handles invalid JSON."""
+        import main as main_module
+        monkeypatch.setattr("sys.argv", ["main.py"])
+        monkeypatch.setattr("sys.stdin.read", lambda: "not json")
+        main_module.main()
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)
+        assert out["status"] == "error"
+        assert out["error_type"] == "INVALID_JSON"
+
+    def test_main_generic_error(self, monkeypatch, capsys):
+        """main() handles generic exceptions."""
+        import main as main_module
+        monkeypatch.setattr("sys.argv", ["main.py"])
+        monkeypatch.setattr("sys.stdin.read", lambda: None)  # Will cause TypeError
+        main_module.main()
+        captured = capsys.readouterr()
+        out = json.loads(captured.out)
+        assert out["status"] == "error"
