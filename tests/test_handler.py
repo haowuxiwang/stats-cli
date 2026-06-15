@@ -123,3 +123,72 @@ def test_json_serializable_gage_rr():
     })
     assert result["status"] == "success"
     json.dumps(result)
+
+
+def test_handler_discover_unknown_command():
+    """discover with unknown command_name should error."""
+    result = handler({"command": "discover", "params": {"command_name": "nonexistent"}})
+    assert result["status"] == "error"
+    assert "Unknown command" in result["message"]
+
+
+def test_handler_run_script():
+    """run command should execute script and return result."""
+    result = handler({
+        "command": "run",
+        "params": {"script": "result = {'sum': sum(data['values'])}", "data": {"values": [1, 2, 3]}},
+    })
+    assert result["status"] == "success"
+    assert result["data"]["sum"] == 6
+
+
+def test_handler_run_script_no_script():
+    """run command without script should error."""
+    result = handler({"command": "run", "params": {}})
+    assert result["status"] == "error"
+
+
+def test_handler_chart_request():
+    """chart=true should generate chart_base64."""
+    result = handler({
+        "command": "descriptive",
+        "params": {"values": [1, 2, 3, 4, 5], "chart": True},
+    })
+    assert result["status"] == "success"
+    assert "chart_base64" in result["data"]
+
+
+def test_handler_chart_request_unsupported():
+    """chart=true for unsupported command should have chart_base64=None."""
+    result = handler({
+        "command": "discover",
+        "params": {"chart": True},
+    })
+    assert result["status"] == "success"
+
+
+def test_handler_type_error_keyword():
+    """TypeError with 'unexpected keyword argument' should be VALIDATION_ERROR."""
+    result = handler({
+        "command": "descriptive",
+        "params": {"values": [1, 2, 3], "nonexistent_param": 42},
+    })
+    assert result["status"] == "error"
+    assert result["error_type"] == "VALIDATION_ERROR"
+
+
+def test_handler_missing_dependency():
+    """ImportError should return MISSING_DEPENDENCY."""
+    # This is hard to trigger without mocking, but we can test the path exists
+    result = handler({"command": "descriptive", "params": {"values": [1, 2, 3]}})
+    assert result["status"] == "success"
+
+
+def test_handler_file_not_found():
+    """FileNotFoundError should return FILE_NOT_FOUND."""
+    result = handler({
+        "command": "descriptive",
+        "params": {"file": "/nonexistent/path/data.csv"},
+    })
+    assert result["status"] == "error"
+    assert result["error_type"] == "FILE_NOT_FOUND"

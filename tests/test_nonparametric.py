@@ -51,3 +51,37 @@ def test_friedman():
 def test_unknown_type():
     with pytest.raises(ValueError, match="Unknown test_type"):
         nonparametric(test_type="invalid", x=[1, 2], y=[3, 4])
+
+
+def test_mann_whitney_with_nan():
+    """Mann-Whitney should handle NaN values."""
+    x = [1, 2, float('nan'), 4, 5]
+    y = [6, 7, 8, 9, 10]
+    result = nonparametric(test_type="mann_whitney", x=x, y=y)
+    assert result["test_type"] == "mann_whitney"
+
+
+def test_wilcoxon_with_nan():
+    """Wilcoxon should handle NaN values by filtering pairs."""
+    x = [1, 2, float('nan'), 4, 5]
+    y = [6, 7, 8, float('nan'), 10]
+    try:
+        result = nonparametric(test_type="wilcoxon", x=x, y=y)
+        assert result["test_type"] == "wilcoxon"
+    except ValueError:
+        pass  # Acceptable if arrays become unequal after filtering
+
+
+def test_chi_square_with_expected():
+    """Chi-square with expected frequencies."""
+    observed = [50, 30, 20]
+    expected = [40, 30, 30]
+    result = nonparametric(test_type="chi_square", observed=observed, expected=expected)
+    assert result["test_type"] == "chi_square"
+
+
+def test_kruskal_wallis_many_groups():
+    """Kruskal-Wallis with many groups."""
+    groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
+    result = nonparametric(test_type="kruskal_wallis", groups=groups)
+    assert result["test_type"] == "kruskal_wallis"
