@@ -6,12 +6,12 @@ from scipy import stats as sp_stats
 from utils.output import r
 
 
-def anova(anova_type, groups, alpha=0.05, data=None):
+def anova(groups, anova_type="one_way", alpha=0.05, data=None):
     """Perform ANOVA.
 
     Args:
-        anova_type: 'one_way' or 'two_way'
         groups: List of lists (one_way) or dict with 'factor_a', 'factor_b', 'values' (two_way)
+        anova_type: 'one_way' or 'two_way' (default: 'one_way')
         alpha: Significance level
         data: DataFrame for two_way (alternative to groups)
 
@@ -19,6 +19,8 @@ def anova(anova_type, groups, alpha=0.05, data=None):
         Dict with ANOVA results
     """
     if anova_type == "one_way":
+        if not groups:
+            raise ValueError("groups parameter is required for one_way ANOVA")
         return _one_way_anova(groups, alpha)
     elif anova_type == "two_way":
         return _two_way_anova(groups, alpha, data)

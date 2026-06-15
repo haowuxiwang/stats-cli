@@ -33,6 +33,26 @@ All notable changes to stats-cli-py will be documented in this file.
 - Each parameter now includes: `name`, `required` (boolean), `type`, `desc`
 - AI agents can query `discover {"command_name": "xxx"}` to get required/optional distinction
 
+### Improved (Visualization - Chart Coverage)
+
+- Chart coverage: 16/33 (48%) → 22/33 (67%)
+- New chart types: ACF plot, Pareto chart, residual plot, Weibull plot, variance component plot, outlier highlight plot, missing values plot, t-test boxplot, means comparison plot, TOST diagram, power curve
+- New commands with charts: ttest, explore, homogeneity, multiple_comparison, equivalence, power
+- Fixed regression label negative intercept format bug
+- Eliminated redundant matplotlib imports (moved to module level)
+
+### Improved (Module Refactoring)
+
+- Replaced `_route()` 146-line if/elif chain with dictionary lookup + importlib
+- Extracted `_generate_chart()` 208-line monolith to `chart_handlers.py` module
+- Added `to_array()` utility to `utils/validators.py` (used by 7 modules)
+- Reduced `main.py` from ~430 lines to ~200 lines
+- New commands now require only 2 file changes (module + discover.py) instead of 4
+
+### Fixed
+
+- Fixed `anova` command requiring `anova_type` as positional argument (now defaults to "one_way")
+
 ## [1.0.0] - 2026-06-09
 
 ### Added

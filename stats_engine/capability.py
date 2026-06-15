@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def capability(values, usl=None, lsl=None, target=None, capability_type="normal"):
@@ -19,12 +20,8 @@ def capability(values, usl=None, lsl=None, target=None, capability_type="normal"
     Returns:
         Dict with capability results
     """
-    arr = np.array(values, dtype=float)
-    arr = arr[np.isfinite(arr)]
+    arr = to_array(values, min_n=2, name="values")
     n = len(arr)
-
-    if n < 2:
-        raise ValueError("Need at least 2 data points")
     if usl is None and lsl is None:
         raise ValueError("At least one specification limit (USL or LSL) is required")
     if usl is not None and lsl is not None and usl <= lsl:

@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def trend(values, test_type="cusum", target=None, alpha=0.05):
@@ -18,11 +19,7 @@ def trend(values, test_type="cusum", target=None, alpha=0.05):
     Returns:
         Dict with trend analysis results
     """
-    arr = np.array(values, dtype=float)
-    n = len(arr)
-
-    if n < 3:
-        raise ValueError("Need at least 3 data points for trend analysis")
+    arr = to_array(values, min_n=3, name="values")
 
     if target is None:
         target = float(np.mean(arr))

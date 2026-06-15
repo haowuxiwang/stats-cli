@@ -74,32 +74,63 @@ def handler(input_data):
         return error(f"{type(e).__name__}: {e}", "INTERNAL_ERROR")
 
 
+# Command registry: command_name -> (module_path, function_name)
+# Commands not in this registry: 'discover' (handled specially), 'run' (handled specially)
+COMMAND_REGISTRY = {
+    "explore": ("stats_engine.explore", "explore"),
+    "power": ("stats_engine.power", "power"),
+    "regression": ("stats_engine.regression", "regression"),
+    "multivariate": ("stats_engine.multivariate", "multivariate"),
+    "descriptive": ("stats_engine.descriptive", "descriptive"),
+    "normality": ("stats_engine.normality", "normality"),
+    "ttest": ("stats_engine.ttest", "ttest"),
+    "anova": ("stats_engine.anova", "anova"),
+    "correlation": ("stats_engine.correlation", "correlation"),
+    "outlier": ("stats_engine.outlier", "outlier"),
+    "control_chart": ("stats_engine.control_chart", "control_chart"),
+    "capability": ("stats_engine.capability", "capability"),
+    "trend": ("stats_engine.trend", "trend"),
+    "nonparametric": ("stats_engine.nonparametric", "nonparametric"),
+    "homogeneity": ("stats_engine.homogeneity", "homogeneity"),
+    "equivalence": ("stats_engine.equivalence", "equivalence"),
+    "multiple_comparison": ("stats_engine.multiple_comparison", "multiple_comparison"),
+    "doe": ("stats_engine.doe", "doe"),
+    "gage_rr": ("stats_engine.gage_rr", "gage_rr"),
+    "reliability": ("stats_engine.reliability", "reliability"),
+    "timeseries": ("stats_engine.timeseries", "timeseries"),
+    "advanced": ("stats_engine.advanced", "advanced"),
+    "clean": ("stats_engine.clean", "clean"),
+    "transform": ("stats_engine.transform", "transform"),
+    "report": ("stats_engine.report", "report"),
+    "workflow": ("stats_engine.workflow", "workflow"),
+    "check_assumptions": ("stats_engine.assumptions", "check_assumptions"),
+    "recommend": ("stats_engine.assumptions", "recommend_test"),
+    "workflow_template": ("stats_engine.workflow", "workflow_template"),
+    "export_excel": ("stats_engine.report", "export_excel"),
+    "export_pdf": ("stats_engine.report", "export_pdf"),
+}
+
+# Commands that don't need file-based data loading
+NO_DATA_COMMANDS = {"discover", "explore", "power", "regression", "multivariate", "run"}
+
+
 def _route(command, params):
     """Route command to appropriate statistical module."""
-    from utils.data_loader import load_data
+    import importlib
 
-    # Commands that don't need data loading
+    # Special commands
     if command == "discover":
         return _discover(params)
-    if command == "explore":
-        from stats_engine.explore import explore
+    if command == "run":
+        return _run_script(params)
 
-        return explore(**params)
-    if command == "power":
-        from stats_engine.power import power
+    # Lookup command in registry
+    if command not in COMMAND_REGISTRY:
+        raise ValueError(f"Unknown command: {command}. Use 'discover' to list available commands.")
 
-        return power(**params)
-    if command == "regression":
-        from stats_engine.regression import regression
-
-        return regression(**params)
-    if command == "multivariate":
-        from stats_engine.multivariate import multivariate
-
-        return multivariate(**params)
-
-    # Load data if file provided
-    if "file" in params and "values" not in params:
+    # Load data from file if needed
+    if command not in NO_DATA_COMMANDS and "file" in params and "values" not in params:
+        from utils.data_loader import load_data
         header = params.pop("header", 0)
         data = load_data(
             file=params.pop("file"), column=params.pop("column", None),
@@ -107,119 +138,11 @@ def _route(command, params):
         )
         params["values"] = data["values"]
 
-    # Route to specific command
-    if command == "descriptive":
-        from stats_engine.descriptive import descriptive
-
-        return descriptive(**params)
-    elif command == "normality":
-        from stats_engine.normality import normality
-
-        return normality(**params)
-    elif command == "ttest":
-        from stats_engine.ttest import ttest
-
-        return ttest(**params)
-    elif command == "anova":
-        from stats_engine.anova import anova
-
-        return anova(**params)
-    elif command == "correlation":
-        from stats_engine.correlation import correlation
-
-        return correlation(**params)
-    elif command == "outlier":
-        from stats_engine.outlier import outlier
-
-        return outlier(**params)
-    elif command == "control_chart":
-        from stats_engine.control_chart import control_chart
-
-        return control_chart(**params)
-    elif command == "capability":
-        from stats_engine.capability import capability
-
-        return capability(**params)
-    elif command == "trend":
-        from stats_engine.trend import trend
-
-        return trend(**params)
-    elif command == "nonparametric":
-        from stats_engine.nonparametric import nonparametric
-
-        return nonparametric(**params)
-    elif command == "homogeneity":
-        from stats_engine.homogeneity import homogeneity
-
-        return homogeneity(**params)
-    elif command == "equivalence":
-        from stats_engine.equivalence import equivalence
-
-        return equivalence(**params)
-    elif command == "multiple_comparison":
-        from stats_engine.multiple_comparison import multiple_comparison
-
-        return multiple_comparison(**params)
-    elif command == "doe":
-        from stats_engine.doe import doe
-
-        return doe(**params)
-    elif command == "gage_rr":
-        from stats_engine.gage_rr import gage_rr
-
-        return gage_rr(**params)
-    elif command == "reliability":
-        from stats_engine.reliability import reliability
-
-        return reliability(**params)
-    elif command == "timeseries":
-        from stats_engine.timeseries import timeseries
-
-        return timeseries(**params)
-    elif command == "advanced":
-        from stats_engine.advanced import advanced
-
-        return advanced(**params)
-    elif command == "clean":
-        from stats_engine.clean import clean
-
-        return clean(**params)
-    elif command == "transform":
-        from stats_engine.transform import transform
-
-        return transform(**params)
-    elif command == "report":
-        from stats_engine.report import report
-
-        return report(**params)
-    elif command == "workflow":
-        from stats_engine.workflow import workflow
-
-        return workflow(**params)
-    elif command == "check_assumptions":
-        from stats_engine.assumptions import check_assumptions
-
-        return check_assumptions(**params)
-    elif command == "recommend":
-        from stats_engine.assumptions import recommend_test
-
-        return recommend_test(**params)
-    elif command == "workflow_template":
-        from stats_engine.workflow import workflow_template
-
-        return workflow_template(**params)
-    elif command == "export_excel":
-        from stats_engine.report import export_excel
-
-        return export_excel(**params)
-    elif command == "export_pdf":
-        from stats_engine.report import export_pdf
-
-        return export_pdf(**params)
-    elif command == "run":
-        return _run_script(params)
-    else:
-        raise ValueError(f"Unknown command: {command}. Use 'discover' to list available commands.")
+    # Lazy import and call
+    module_path, func_name = COMMAND_REGISTRY[command]
+    module = importlib.import_module(module_path)
+    func = getattr(module, func_name)
+    return func(**params)
 
 
 def _discover(params):
@@ -274,75 +197,10 @@ def _run_script(params):
 def _generate_chart(command, result, params):
     """Generate chart for supported commands. Returns base64 PNG or None."""
     try:
-        from stats_engine.charts import (
-            capability_plot,
-            control_chart_plot,
-            histogram,
-            qq_plot,
-            scatter_with_regression,
-            time_series_plot,
-        )
-
-        if command == "descriptive":
-            return histogram(result.get("_values", []), title="Distribution")
-
-        elif command == "normality":
-            return qq_plot(result.get("_values", []), title="Q-Q Plot")
-
-        elif command == "control_chart":
-            return control_chart_plot(
-                result.get("_values", []),
-                chart_type=result.get("chart_type", "imr"),
-                ucl=result.get("ucl"),
-                cl=result.get("cl"),
-                lcl=result.get("lcl"),
-                out_of_control=result.get("out_of_control", []),
-            )
-
-        elif command == "capability":
-            return capability_plot(
-                result.get("_values", []),
-                usl=result.get("usl"),
-                lsl=result.get("lsl"),
-                target=result.get("target"),
-                cp=result.get("cp"),
-                cpk=result.get("cpk"),
-            )
-
-        elif command == "correlation":
-            return scatter_with_regression(
-                params.get("x", []), params.get("y", []),
-                title="Correlation",
-            )
-
-        elif command == "regression":
-            coeffs = result.get("coefficients", {})
-            slope = intercept = None
-            if isinstance(coeffs, dict):
-                slope = coeffs.get("slope")
-                intercept = coeffs.get("intercept")
-            return scatter_with_regression(
-                params.get("x", []), params.get("y", []),
-                title=f'Regression ({result.get("regression_type", "")})',
-                slope=slope, intercept=intercept,
-                r_squared=result.get("r_squared"),
-            )
-
-        elif command == "timeseries":
-            return time_series_plot(
-                result.get("_values", []),
-                title=f'Time Series ({result.get("analysis_type", "")})',
-                fitted=result.get("fitted_values"),
-                forecast=result.get("forecast"),
-            )
-
-        elif command == "report":
-            vals = result.get("_values", [])
-            if vals:
-                return histogram(vals, title="Report - Distribution")
-        elif command == "doe":
-            # DOE charts (Pareto of factor effects) not yet implemented
-            return None
+        from stats_engine.chart_handlers import CHART_HANDLERS
+        handler = CHART_HANDLERS.get(command)
+        if handler:
+            return handler(result, params)
     except Exception as e:
         logging.debug("Chart generation failed for %s: %s", command, e)
     return None

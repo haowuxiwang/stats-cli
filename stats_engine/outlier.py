@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def outlier(values, method="grubbs", alpha=0.05):
@@ -17,11 +18,7 @@ def outlier(values, method="grubbs", alpha=0.05):
     Returns:
         Dict with outlier detection results
     """
-    arr = np.array(values, dtype=float)
-    n = len(arr)
-
-    if n < 3:
-        return {"error": True, "message": "Need at least 3 data points for outlier detection"}
+    arr = to_array(values, min_n=3, name="values")
 
     if method == "grubbs":
         return _grubbs(arr, alpha)

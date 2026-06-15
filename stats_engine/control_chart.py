@@ -3,6 +3,7 @@
 import numpy as np
 
 from utils.output import r
+from utils.validators import to_array
 
 # d2 constants for subgroup sizes 2..10
 D2 = {2: 1.128, 3: 1.693, 4: 2.059, 5: 2.326, 6: 2.534, 7: 2.704, 8: 2.847, 9: 2.970, 10: 3.078}
@@ -26,7 +27,7 @@ def control_chart(chart_type, values, subgroup_size=5, sample_size=None, target=
     Returns:
         Dict with chart data
     """
-    values = np.array(values, dtype=float)
+    values = to_array(values, min_n=2, name="values")
     n = len(values)
 
     if n < 2:

@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def descriptive(values):
@@ -15,11 +16,8 @@ def descriptive(values):
     Returns:
         Dict with descriptive statistics
     """
-    arr = np.array(values, dtype=float)
-    arr = arr[np.isfinite(arr)]
+    arr = to_array(values, min_n=1, name="values")
     n = len(arr)
-    if n < 1:
-        raise ValueError("At least 1 finite value is required for descriptive statistics")
 
     if n == 1:
         val = float(arr[0])

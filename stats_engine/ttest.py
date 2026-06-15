@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def ttest(test_type, values, values2=None, mu=0, alpha=0.05):
@@ -19,10 +20,7 @@ def ttest(test_type, values, values2=None, mu=0, alpha=0.05):
     Returns:
         Dict with test results
     """
-    arr1 = np.array(values, dtype=float)
-
-    if len(arr1) < 2:
-        raise ValueError("At least 2 values are required for t-test")
+    arr1 = to_array(values, min_n=2, name="values")
 
     if test_type == "one_sample":
         return _one_sample_ttest(arr1, mu, alpha)

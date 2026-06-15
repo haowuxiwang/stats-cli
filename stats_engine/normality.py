@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def normality(values):
@@ -15,7 +16,7 @@ def normality(values):
     Returns:
         Dict with normality test results
     """
-    arr = np.array(values, dtype=float)
+    arr = to_array(values, min_n=3, name="values")
     n = len(arr)
 
     result = {"n": n}

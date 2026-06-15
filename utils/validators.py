@@ -1,4 +1,27 @@
-"""Input validation utilities."""
+"""Input validation and data preparation utilities."""
+
+import numpy as np
+
+
+def to_array(values, min_n=2, name="values"):
+    """Convert values to numpy array, filter non-finite values, validate minimum count.
+
+    Args:
+        values: Input data (list, array, or other iterable)
+        min_n: Minimum number of valid values required (default 2)
+        name: Name for error messages
+
+    Returns:
+        numpy array with only finite values
+
+    Raises:
+        ValueError: If fewer than min_n valid values remain after filtering
+    """
+    arr = np.array(values, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if len(arr) < min_n:
+        raise ValueError(f"'{name}' must have at least {min_n} valid values, got {len(arr)}")
+    return arr
 
 
 def validate_values(values, min_count=2, name="values"):
