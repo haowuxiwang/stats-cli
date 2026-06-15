@@ -23,10 +23,17 @@ def correlation(x, y, method="pearson"):
     if len(x) != len(y):
         raise ValueError("x and y must have the same length")
 
+    # Filter pairs where either value is NaN/Inf
+    mask = np.isfinite(x) & np.isfinite(y)
+    x = x[mask]
+    y = y[mask]
     n = len(x)
 
+    if n < 2:
+        raise ValueError("Need at least 2 valid paired values for correlation")
+
     # Check for constant input (correlation undefined)
-    if np.std(x) == 0 or np.std(y) == 0:
+    if np.std(x) < 1e-12 or np.std(y) < 1e-12:
         return {
             "method": method,
             "n": len(x),

@@ -15,7 +15,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 pip install -r requirements.txt
 ```
 
-Pure Python — no R, no external runtime. Dependencies: scipy, statsmodels, pandas, numpy, openpyxl, scikit-learn.
+Pure Python — no R, no external runtime. Dependencies: scipy, statsmodels, pandas, numpy, openpyxl, scikit-learn, matplotlib, fpdf2.
 
 ### Invocation
 
@@ -33,7 +33,7 @@ result = handler({"command": "descriptive", "params": {"values": [1, 2, 3]}})
 
 ### Chart Generation
 
-Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands: `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`.
+Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands: `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`, `ttest`, `anova`, `homogeneity`, `multiple_comparison`, `equivalence`, `power`, `multivariate`, `trend`, `outlier`, `reliability`, `gage_rr`, `nonparametric`, `explore`, `doe`.
 
 ```python
 {"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5], "chart": true}}
@@ -406,7 +406,7 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 
 ---
 
-## All Commands (27 commands)
+## All Commands (33 commands)
 
 ### Data Exploration
 ```python
@@ -626,7 +626,7 @@ All commands return a standard JSON envelope:
 ```json
 {
   "status": "success",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "total": 103.5,

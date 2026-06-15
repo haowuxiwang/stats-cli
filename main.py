@@ -202,12 +202,13 @@ def _generate_chart(command, result, params):
         if handler:
             return handler(result, params)
     except Exception as e:
-        logging.debug("Chart generation failed for %s: %s", command, e)
+        logging.warning("Chart generation failed for %s: %s", command, e)
     return None
 
 
 def main():
     """CLI entry point - read JSON from stdin or file."""
+    logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
     try:
         if len(sys.argv) > 1:
             with open(sys.argv[1]) as f:

@@ -1,9 +1,9 @@
 """Homogeneity of variance tests: Levene, Bartlett."""
 
-import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def homogeneity(test_type, groups, alpha=0.05):
@@ -17,7 +17,7 @@ def homogeneity(test_type, groups, alpha=0.05):
     Returns:
         Dict with test results
     """
-    arrays = [np.array(g, dtype=float) for g in groups]
+    arrays = [to_array(g, min_n=2, name=f"group_{i}") for i, g in enumerate(groups)]
 
     if test_type == "levene":
         return _levene(arrays, alpha)

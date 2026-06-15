@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def nonparametric(test_type, x=None, y=None, groups=None, observed=None, expected=None, alpha=0.05):
@@ -22,11 +23,13 @@ def nonparametric(test_type, x=None, y=None, groups=None, observed=None, expecte
         Dict with test results
     """
     if test_type == "mann_whitney":
-        return _mann_whitney(np.array(x), np.array(y), alpha)
+        return _mann_whitney(to_array(x, min_n=2, name="x"),
+                             to_array(y, min_n=2, name="y"), alpha)
     elif test_type == "kruskal_wallis":
         return _kruskal_wallis(groups, alpha)
     elif test_type == "wilcoxon":
-        return _wilcoxon(np.array(x), np.array(y), alpha)
+        return _wilcoxon(to_array(x, min_n=2, name="x"),
+                         to_array(y, min_n=2, name="y"), alpha)
     elif test_type == "chi_square":
         return _chi_square(observed, expected, alpha)
     elif test_type == "friedman":
