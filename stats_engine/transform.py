@@ -1,5 +1,7 @@
 """Data transformation: log, sqrt, Box-Cox, Johnson, rank, standardize."""
 
+import logging
+
 import numpy as np
 from scipy import stats as sp_stats
 
@@ -64,8 +66,9 @@ def transform(values, method="log", **kwargs):
             transformed = sp.norm.ppf(transformed)
             lambda_val = None
             offset = 0
-        except Exception:
+        except Exception as e:
             # Fallback to Box-Cox
+            logging.debug("Johnson transform failed, falling back to Box-Cox: %s", e)
             offset = abs(np.min(arr)) + 1
             transformed, lambda_val = sp_stats.boxcox(arr + offset)
 

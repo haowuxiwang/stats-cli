@@ -84,7 +84,7 @@ def boxplot(groups, labels=None, title="Box Plot"):
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    bp = ax.boxplot(groups, patch_artist=True, labels=labels)
+    bp = ax.boxplot(groups, patch_artist=True, tick_labels=labels)
 
     colors = ['steelblue', 'coral', 'green', 'purple', 'orange']
     for i, patch in enumerate(bp['boxes']):

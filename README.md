@@ -2,7 +2,7 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.2.0
+**Version**: 1.2.1
 **Commands**: 33
 **Test Coverage**: 92%
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2

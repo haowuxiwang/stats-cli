@@ -1,11 +1,13 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, chi-square tests, workflow automation, PDF/Excel export, or assumption checking. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square, 工作流, workflow, 假设检查, 方法推荐, PDF导出, Excel导出."
+description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, chi-square tests, workflow automation, PDF/Excel export, or assumption checking. NOT for: real-time streaming, text analysis, image data, non-numeric datasets, database queries. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square, 工作流, workflow, 假设检查, 方法推荐, PDF导出, Excel导出."
 ---
 
 # stats-cli-py
 
 Pure Python statistical analysis tool for manufacturing and quality engineering, powered by scipy + statsmodels. All I/O is JSON — designed to be called as an AI-agent skill.
+
+**For AI Agents:** Not sure which command to use? Call `discover` first — it returns all available commands with their parameters and examples. Use `discover {"command_name": "xxx"}` to get required/optional parameter details before constructing your request.
 
 ## Installation
 
@@ -53,6 +55,38 @@ Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/i
 ---
 
 ## Quick Start: Don't Know What Analysis to Use?
+
+**不确定用什么命令？先调用 `discover` 获取帮助：**
+
+```python
+{"command": "discover"}                                    # 列出所有命令
+{"command": "discover", "params": {"category": "spc"}}     # 按类别筛选
+{"command": "discover", "params": {"command_name": "ttest"}}  # 查看参数详情（含 required/type）
+```
+
+**Intent-to-Command 快速查找：**
+
+| 用户意图 | 推荐命令 | 备注 |
+|----------|----------|------|
+| 描述数据特征 | `descriptive` | 均值、中位数、标准差、置信区间 |
+| 检查是否正态 | `normality` | Shapiro-Wilk, Anderson-Darling |
+| 比较两组数据 | `ttest` / `nonparametric` | 正态用 ttest，非正态用 nonparametric |
+| 比较多组数据 | `anova` | 正态+等方差用 anova，否则用 nonparametric |
+| 检查过程能力 | `capability` | 需要 USL/LSL |
+| 监控过程稳定性 | `control_chart` | imr/xbar/r/p/np/c/u/ewma/cusum |
+| 检测异常值 | `outlier` | grubbs/dixon/iqr/zscore |
+| 分析相关性 | `correlation` | pearson/spearman/kendall |
+| 回归/预测 | `regression` | linear/polynomial/logistic 等 10 种 |
+| 时间序列分析 | `timeseries` | exp_smoothing/arima/decomposition |
+| 趋势检测 | `trend` | cusum/ewma/runs |
+| 测量系统分析 | `gage_rr` | crossed/nested/attribute |
+| 可靠性分析 | `reliability` | weibull/kaplan_meier |
+| 实验设计 | `doe` | full_factorial/fractional/taguchi |
+| 多变量分析 | `multivariate` | pca/cluster/discriminant |
+| 功效/样本量 | `power` | t_test/anova/proportion |
+| 数据清洗 | `clean` | drop/impute/winsorize/clip |
+| 数据变换 | `transform` | log/sqrt/boxcox/johnson |
+| 不确定用什么 | `recommend` | 描述目标，工具推荐方法 |
 
 **Follow this decision tree:**
 
@@ -126,15 +160,18 @@ Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/i
     │   │   ├── 等方差？ → two_sample t-test
     │   │   └── 不等方差？ → two_sample t-test (自动检测)
     │   └── 数据非正态？ → nonparametric mann_whitney
+    │       └── 也考虑：transform boxcox → 重新检验正态性 → 若正态则用 ttest
     │
     ├── 有3+组？
     │   ├── 数据是正态的？ → anova one_way
     │   │   └── 显著？ → multiple_comparison tukey
     │   └── 数据非正态？ → nonparametric kruskal_wallis
+    │       └── 也考虑：transform boxcox → 重新检验正态性 → 若正态则用 anova
     │
     └── 配对数据？（同一样本前后对比）
         ├── 正态？ → ttest paired
         └── 非正态？ → nonparametric wilcoxon
+            └── 也考虑：transform boxcox → 重新检验正态性 → 若正态则用 ttest paired
 ```
 
 **前置检查流程：**
@@ -298,7 +335,7 @@ Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/i
 }}
 
 # 如果数据非正态，先做 Box-Cox 变换再算能力
-{"command": "transform", "params": {"values": [...], "method": "boxcox"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "boxcox"}}
 ```
 
 ### 场景4: "验证测量系统"
@@ -422,13 +459,13 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 ### SPC / Quality Control
 ```python
 {"command": "control_chart", "params": {"chart_type": "imr", "values": [10.2, 10.5, 10.3]}}
-{"command": "control_chart", "params": {"chart_type": "xbar", "values": [...], "subgroup_size": 5}}
-{"command": "control_chart", "params": {"chart_type": "p", "values": [...], "subgroup_size": 100}}
-{"command": "capability", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}}
-{"command": "capability", "params": {"values": [...], "usl": 11.0, "lsl": 9.0, "target": 10.0}}
-{"command": "trend", "params": {"values": [...], "test_type": "cusum"}}
-{"command": "trend", "params": {"values": [...], "test_type": "ewma"}}
-{"command": "trend", "params": {"values": [...], "test_type": "runs"}}
+{"command": "control_chart", "params": {"chart_type": "xbar", "values": [[10.1,10.2,10.0],[10.3,10.1,10.2],[10.0,10.1,10.3],[10.2,10.0,10.1],[10.1,10.3,10.2]], "subgroup_size": 3}}
+{"command": "control_chart", "params": {"chart_type": "p", "values": [5,3,4,6,2,3,5,4,3,4], "subgroup_size": 100}}
+{"command": "capability", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "usl": 11.0, "lsl": 9.0}}
+{"command": "capability", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "usl": 11.0, "lsl": 9.0, "target": 10.0}}
+{"command": "trend", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "test_type": "cusum"}}
+{"command": "trend", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "test_type": "ewma"}}
+{"command": "trend", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "test_type": "runs"}}
 ```
 
 ### DOE (Design of Experiments)
@@ -445,9 +482,9 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 
 ### MSA / Measurement System Analysis
 ```python
-{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [...], "parts": [...], "operators": [...], "tolerance": 10.0}}
-{"command": "gage_rr", "params": {"analysis_type": "nested", "measurements": [...], "parts": [...], "operators": [...]}}
-{"command": "gage_rr", "params": {"analysis_type": "attribute", "measurements": [...], "parts": [...], "operators": [...]}}
+{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [[10,11,10],[11,12,11],[10,11,10]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"], "tolerance": 10.0}}
+{"command": "gage_rr", "params": {"analysis_type": "nested", "measurements": [[10,11,10],[11,12,11],[10,11,10]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"]}}
+{"command": "gage_rr", "params": {"analysis_type": "attribute", "measurements": [[1,0,1],[0,1,0],[1,1,0]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"]}}
 ```
 
 ### Reliability / Survival Analysis
@@ -469,9 +506,9 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 ### Time Series
 ```python
 {"command": "timeseries", "params": {"analysis_type": "exp_smoothing", "values": [10, 12, 11, 13, 14], "frequency": 4}}
-{"command": "timeseries", "params": {"analysis_type": "arima", "values": [...], "n_forecast": 12}}
-{"command": "timeseries", "params": {"analysis_type": "decomposition", "values": [...], "frequency": 12}}
-{"command": "timeseries", "params": {"analysis_type": "acf", "values": [...], "max_lag": 20}}
+{"command": "timeseries", "params": {"analysis_type": "arima", "values": [10,12,11,13,14,13,15,14,16,15,17,16], "n_forecast": 12}}
+{"command": "timeseries", "params": {"analysis_type": "decomposition", "values": [10,12,11,13,14,13,15,14,16,15,17,16], "frequency": 12}}
+{"command": "timeseries", "params": {"analysis_type": "acf", "values": [10,12,11,13,14,13,15,14,16,15,17,16], "max_lag": 20}}
 ```
 
 ### Advanced Statistical Methods
@@ -479,31 +516,37 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "advanced", "params": {"analysis_type": "exact_test", "observed": [[10, 5], [3, 12]]}}
 {"command": "advanced", "params": {"analysis_type": "mcnemar", "observed": [[10, 5], [15, 20]]}}
 {"command": "advanced", "params": {"analysis_type": "cochran_q", "data": [[1,0,1,1,0], [1,1,0,1,1], [0,1,1,0,1]]}}
-{"command": "advanced", "params": {"analysis_type": "mixed_effects", "groups": [...], "group_ids": [...]}}
+{"command": "advanced", "params": {"analysis_type": "mixed_effects", "groups": [[10,11,10],[11,12,11],[10,11,10]], "group_ids": ["A","B","A"]}}
 ```
 
 ### Data Processing
 ```python
-{"command": "clean", "params": {"values": [...], "method": "impute_mean"}}
-{"command": "clean", "params": {"values": [...], "method": "impute_median"}}
-{"command": "clean", "params": {"values": [...], "method": "winsorize"}}
-{"command": "clean", "params": {"values": [...], "method": "clip"}}
-{"command": "transform", "params": {"values": [...], "method": "boxcox"}}
-{"command": "transform", "params": {"values": [...], "method": "log"}}
-{"command": "transform", "params": {"values": [...], "method": "sqrt"}}
-{"command": "transform", "params": {"values": [...], "method": "johnson"}}
-{"command": "transform", "params": {"values": [...], "method": "standardize"}}
+{"command": "clean", "params": {"values": [10.1, 10.2, null, 10.3, 10.1], "method": "impute_mean"}}
+{"command": "clean", "params": {"values": [10.1, 10.2, null, 10.3, 10.1], "method": "impute_median"}}
+{"command": "clean", "params": {"values": [10.1, 10.2, 100.0, 10.3, 10.1], "method": "winsorize"}}
+{"command": "clean", "params": {"values": [10.1, 10.2, 100.0, 10.3, 10.1], "method": "clip"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "boxcox"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "log"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "sqrt"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "johnson"}}
+{"command": "transform", "params": {"values": [1.2, 1.5, 1.3, 1.4, 1.6, 1.1, 1.3], "method": "standardize"}}
 ```
 
 ### Reporting
 ```python
-{"command": "report", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}}
+{"command": "report", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "usl": 11.0, "lsl": 9.0}}
 ```
 
 ### Custom Script
 ```python
 {"command": "run", "params": {"script": "result = {'sum': sum(data['values']), 'count': len(data['values'])}", "data": {"values": [1, 2, 3]}}}
 ```
+
+**Sandbox restrictions:** The `run` command executes in a restricted environment:
+- Available builtins: `abs`, `all`, `any`, `bool`, `dict`, `enumerate`, `filter`, `float`, `frozenset`, `int`, `isinstance`, `len`, `list`, `map`, `max`, `min`, `print`, `range`, `round`, `set`, `sorted`, `str`, `sum`, `tuple`, `type`, `zip`
+- NOT available: `__import__`, `open`, `exec`, `eval`, `getattr`, `compile`, `globals`, `locals`
+- No file I/O, no network access, no module imports
+- Set `result` variable to return data from your script
 
 ### Workflow Automation (工作流自动化)
 
@@ -519,6 +562,13 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
     "values": [10.2, 10.5, 10.3, 10.1, 10.4],
     "auto_check": true
 }}
+
+**`auto_check` behavior:**
+- When `auto_check: true`, the tool checks statistical assumptions between steps
+- If assumptions fail, the step still executes but the response includes `warnings` with recommendations
+- The workflow continues even if a step fails — check `steps_results[i].status` for each step
+- Failed steps return `{"status": "error", ...}` in their position in `steps_results`
+- Use `recommendations` field to decide whether to retry with different parameters
 
 # Predefined workflow templates
 {"command": "workflow_template", "params": {
@@ -557,7 +607,7 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 
 ```python
 # Generate report first
-report_data = handler({"command": "report", "params": {"values": [...], "usl": 11.0, "lsl": 9.0}})
+report_data = handler({"command": "report", "params": {"values": [10.1,10.2,10.0,10.3,10.1,10.2,10.0,10.1,10.3,10.2], "usl": 11.0, "lsl": 9.0}})
 
 # Export to Excel
 handler({"command": "export_excel", "params": {"report_data": report_data["data"], "output_path": "report.xlsx"}})
@@ -587,11 +637,37 @@ All commands return a standard JSON envelope:
 }
 ```
 
+**Top 5 command output examples:**
+
+**descriptive** — `{"command":"descriptive","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
+```json
+{"status":"success","data":{"n":5,"mean":10.14,"median":10.1,"std":0.114,"rsd_percent":1.1243,"min":10.0,"max":10.3,"range":0.3,"q1":10.1,"q3":10.2,"iqr":0.1,"ci_95_lower":10.0,"ci_95_upper":10.28,"skewness":-0.2693,"kurtosis":-1.1333}}
+```
+
+**normality** — `{"command":"normality","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
+```json
+{"status":"success","data":{"shapiro_wilk":{"statistic":0.987,"p_value":0.97},"anderson_darling":{"statistic":0.22,"critical_values":{}},"lilliefors":{"statistic":0.15,"p_value":0.8},"is_normal":true}}
+```
+
+**ttest** — `{"command":"ttest","params":{"test_type":"two_sample","values":[10.2,10.5],"values2":[11.3,11.5]}}`
+```json
+{"status":"success","data":{"test_type":"two_sample","t_statistic":-4.24,"p_value":0.051,"significant":false,"ci_95":[-2.26,0.02]}}
+```
+
+**capability** — `{"command":"capability","params":{"values":[10.1,10.2,10.0,10.3],"usl":11.0,"lsl":9.0}}`
+```json
+{"status":"success","data":{"cp":2.72,"cpk":2.57,"pp":2.72,"ppk":2.57,"rating":"Excellent","performance":{"ppm_above":0,"ppm_below":0}}}
+```
+
+**control_chart** — `{"command":"control_chart","params":{"chart_type":"imr","values":[10.1,10.2,10.0,10.3,10.1]}}`
+```json
+{"status":"success","data":{"chart_type":"imr","chart":{"points":[10.1,10.2,10.0,10.3,10.1],"center":10.14,"ucl":10.56,"lcl":9.72},"summary":{"stable":true}}}
+```
+
 **Notes:**
-- `descriptive` returns `total` (sum of all values), `mean`, `std`, `n`, `median`, `min`, `max`, `range`, `q1`, `q3`, `iqr`, `ci_95_lower`, `ci_95_upper`, `skewness`, `kurtosis`
-- `anova` (one_way) returns `f_statistic`, `p_value`, `significant`, `eta_squared`, `omega_squared`, `df_between`, `df_within`, `ss_between`, `ss_within`, `ms_between`, `ms_within`
 - All numeric values are rounded to 6 decimal places (configurable via `DEFAULT_PRECISION` in `utils/output.py`)
 - `NaN` and `Inf` values in input are automatically filtered
+- Check `status` before reading `data`. On error, `suggestion` tells you how to fix it.
 
 ### Error
 ```json
@@ -615,6 +691,17 @@ All commands return a standard JSON envelope:
 | `INTERNAL_ERROR` | Unexpected error (includes exception type) |
 
 Every response includes `status`, so check it before reading `data`. On error, `suggestion` tells you how to fix it.
+
+**Error recovery workflows:**
+
+| Error | Recovery |
+|-------|----------|
+| `VALIDATION_ERROR` (insufficient data) | Try `clean` to remove NaN, or `explore` to check data size |
+| `VALIDATION_ERROR` (missing required param) | Call `discover {"command_name": "xxx"}` to see required params |
+| `FILE_NOT_FOUND` | Call `explore {"file": "path"}` to verify file exists and path is correct |
+| `MISSING_DEPENDENCY` | Run `pip install -r requirements.txt`, then retry |
+| `MEMORY_ERROR` | Use `file` input instead of `values`, or reduce data size |
+| `INVALID_INPUT` | Validate JSON format, check for trailing commas or unquoted keys |
 
 ---
 

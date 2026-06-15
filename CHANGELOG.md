@@ -2,6 +2,37 @@
 
 All notable changes to stats-cli-py will be documented in this file.
 
+## [1.2.1] - 2026-06-15
+
+### Fixed
+
+- Added missing `fpdf2>=2.8` to pyproject.toml dependencies
+- Fixed build-backend from legacy to `setuptools.build_meta`
+- Updated version to 1.2.1 across all config files
+- Fixed fpdf2 deprecation warnings in report.py (`ln=True` → `new_x=XPos.LMARGIN, new_y=YPos.NEXT`)
+- Fixed Matplotlib deprecation in charts.py (`labels` → `tick_labels`)
+- Fixed silent exception swallowing in main.py chart generation (now logs via `logging.debug`)
+- Fixed silent exception swallowing in transform.py Johnson fallback (now logs exception)
+
+### Improved (SKILL.md - AI Agent Best Practices)
+
+- Added Intent-to-Command quick lookup table at top of SKILL.md (19 commands mapped)
+- Added `discover` command recommendation for AI agents at document top
+- Added negative triggers to YAML description (NOT for: streaming, text, image, non-numeric)
+- Added top 5 command output examples (descriptive, normality, ttest, capability, control_chart)
+- Added error recovery workflow table (6 error types with recovery steps)
+- Added `auto_check` failure semantics documentation
+- Added `run` command sandbox restrictions documentation
+- Added Box-Cox cross-links in comparison decision tree (non-normal → consider transform first)
+- Replaced all placeholder `[...]` with runnable example data (27 occurrences)
+- Excluded TODO.md and CLAUDE.md from distributable zip
+
+### Improved (discover.py - Structured Parameters)
+
+- Added structured `params` field to all 33 commands in discover registry
+- Each parameter now includes: `name`, `required` (boolean), `type`, `desc`
+- AI agents can query `discover {"command_name": "xxx"}` to get required/optional distinction
+
 ## [1.0.0] - 2026-06-09
 
 ### Added

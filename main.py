@@ -5,6 +5,7 @@ Accepts JSON input, routes to statistical modules, returns JSON output.
 """
 
 import json
+import logging
 import sys
 
 from utils.output import error, success, to_json
@@ -342,8 +343,8 @@ def _generate_chart(command, result, params):
         elif command == "doe":
             # DOE charts (Pareto of factor effects) not yet implemented
             return None
-    except Exception:
-        pass
+    except Exception as e:
+        logging.debug("Chart generation failed for %s: %s", command, e)
     return None
 
 

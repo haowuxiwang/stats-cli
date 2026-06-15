@@ -1,10 +1,10 @@
 [build-system]
 requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "stats-cli-py"
-version = "1.0.0"
+version = "1.2.1"
 description = "Pure Python statistical analysis tool for manufacturing and quality engineering"
 requires-python = ">=3.9"
 license = "MIT"
@@ -16,6 +16,7 @@ dependencies = [
     "openpyxl>=3.0",
     "scikit-learn>=1.0",
     "matplotlib>=3.5",
+    "fpdf2>=2.8",
 ]
 
 [project.optional-dependencies]

@@ -19,7 +19,7 @@ python -c "
 import zipfile, os
 
 EXCLUDE_DIRS = {'__pycache__', '.pytest_cache', '.ruff_cache', '.git', 'test-output', '.claude', 'excel', 'tests'}
-EXCLUDE_FILES = {'test_real_data.py', 'stats-cli-py-skill.zip'}
+EXCLUDE_FILES = {'test_real_data.py', 'stats-cli-py-skill.zip', 'requirements-test.txt', 'build-skill.sh', 'install-skill.sh', '.coverage', 'TODO.md', 'CLAUDE.md'}
 EXCLUDE_EXTS = {'.pyc'}
 
 with zipfile.ZipFile('stats-cli-py-skill.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
