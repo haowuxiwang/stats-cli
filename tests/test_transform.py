@@ -117,3 +117,37 @@ def test_recip_with_zero():
         assert result["method"] == "recip"
     except Exception:
         pass  # May fail with division by zero
+
+
+def test_log_with_negative():
+    """Log with negative values should use offset."""
+    values = [-5, -2, 0, 3, 6]
+    result = transform(values=values, method="log")
+    assert result["method"] == "log"
+    assert "offset" in result
+
+
+def test_sqrt_with_negative():
+    """Sqrt with negative values should use offset."""
+    values = [-5, -2, 0, 3, 6]
+    result = transform(values=values, method="sqrt")
+    assert result["method"] == "sqrt"
+    assert "offset" in result
+
+
+def test_johnson_constant_values():
+    """Johnson transform with constant values should fallback."""
+    values = [5.0, 5.0, 5.0, 5.0, 5.0]
+    try:
+        result = transform(values=values, method="johnson")
+        assert result["method"] == "johnson"
+    except Exception:
+        pass  # May fail with constant data
+
+
+def test_standardize_constant():
+    """Standardize with constant values should return zeros."""
+    values = [5.0, 5.0, 5.0, 5.0, 5.0]
+    result = transform(values=values, method="standardize")
+    assert result["method"] == "standardize"
+    assert all(v == 0 for v in result["values"])

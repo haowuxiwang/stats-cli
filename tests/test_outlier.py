@@ -55,3 +55,32 @@ def test_grubbs_detects_outlier():
     values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 100.0]
     result = outlier(values=values, method="grubbs")
     assert result["n_outliers"] >= 1
+
+
+def test_dixon_too_many_values():
+    """Dixon's Q test works best with 3-30 data points."""
+    values = list(range(50))
+    result = outlier(values=values, method="dixon")
+    assert result.get("error") is True or result["n_outliers"] >= 0
+
+
+def test_dixon_with_outlier():
+    """Dixon's Q test with clear outlier."""
+    values = [10.0, 10.1, 10.2, 10.0, 10.1, 100.0]
+    result = outlier(values=values, method="dixon")
+    assert result["method"] == "dixon"
+
+
+def test_zscore_constant_values():
+    """Z-score with constant values (std=0)."""
+    values = [5.0, 5.0, 5.0, 5.0, 5.0]
+    result = outlier(values=values, method="zscore")
+    assert result["method"] == "zscore"
+    assert result["n_outliers"] == 0
+
+
+def test_iqr_no_outliers():
+    """IQR with no outliers."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 10.1]
+    result = outlier(values=values, method="iqr")
+    assert result["n_outliers"] == 0

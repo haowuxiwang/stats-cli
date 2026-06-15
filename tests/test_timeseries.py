@@ -48,3 +48,27 @@ def test_forecast(ts_data):
 def test_unknown_type():
     with pytest.raises(ValueError, match="Unknown analysis_type"):
         timeseries(analysis_type="invalid", values=[1, 2, 3])
+
+
+def test_no_values():
+    """Timeseries without values should raise error."""
+    with pytest.raises(ValueError, match="values"):
+        timeseries(analysis_type="exp_smoothing")
+
+
+def test_arima_default_order(ts_data):
+    """ARIMA with default order."""
+    result = timeseries(analysis_type="arima", values=ts_data)
+    assert result["analysis_type"] == "arima"
+
+
+def test_acf_default_max_lag(ts_data):
+    """ACF with default max_lag."""
+    result = timeseries(analysis_type="acf", values=ts_data)
+    assert result["analysis_type"] == "acf"
+
+
+def test_exp_smoothing_no_frequency(ts_data):
+    """Exponential smoothing without frequency."""
+    result = timeseries(analysis_type="exp_smoothing", values=ts_data)
+    assert result["analysis_type"] == "exp_smoothing"

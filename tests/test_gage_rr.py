@@ -144,3 +144,28 @@ def test_stability_no_time():
     assert result["analysis_type"] == "stability"
     assert result["trend_slope"] is None
     assert result["trend_p_value"] is None
+
+
+def test_crossed_no_interaction():
+    """Crossed Gage R&R with one replicate (no interaction)."""
+    np.random.seed(42)
+    # 5 parts, 2 operators, 1 replicate each = 10 measurements
+    parts = list(range(1, 6)) * 2
+    operators = ["O1"] * 5 + ["O2"] * 5
+    measurements = np.random.normal(100, 2, 10).tolist()
+    result = gage_rr(analysis_type="crossed", measurements=measurements,
+                     parts=parts, operators=operators)
+    assert result["analysis_type"] == "crossed"
+    assert "variance_components" in result
+
+
+def test_crossed_with_tolerance():
+    """Crossed Gage R&R with tolerance parameter."""
+    np.random.seed(42)
+    parts = list(range(1, 11)) * 6
+    operators = (["O1"] * 10 + ["O2"] * 10 + ["O3"] * 10) * 2
+    measurements = np.random.normal(100, 2, 60).tolist()
+    result = gage_rr(analysis_type="crossed", measurements=measurements,
+                     parts=parts, operators=operators, tolerance=10.0)
+    assert result["analysis_type"] == "crossed"
+    assert "pct_tolerance" in result or "study_variation" in result

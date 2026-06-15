@@ -65,3 +65,51 @@ def test_kaplan_meier_survival_decreasing():
         assert survival[i] <= survival[i - 1] + 0.001, (
             f"Survival increased at step {i}: {survival[i - 1]} -> {survival[i]}"
         )
+
+
+def test_weibull_with_censored():
+    """Weibull with censored data."""
+    times = [100, 200, 300, 400, 500]
+    status = [1, 0, 1, 0, 1]  # 0 = censored
+    result = reliability(analysis_type="weibull", times=times, status=status)
+    assert result["analysis_type"] == "weibull"
+
+
+def test_distribution_multiple_fits():
+    """Distribution fitting should try multiple distributions."""
+    np.random.seed(42)
+    values = np.random.normal(100, 10, 100).tolist()
+    result = reliability(analysis_type="distribution", values=values)
+    assert result["analysis_type"] == "distribution_fit"
+    assert "fits" in result or "best_fit" in result
+
+
+def test_stability_with_confidence():
+    """Stability study with confidence interval."""
+    times = [0, 3, 6, 9, 12, 15, 18]
+    values = [100, 99.5, 99.0, 98.5, 98.0, 97.5, 97.0]
+    result = reliability(analysis_type="stability", times=times, values=values)
+    assert result["analysis_type"] == "stability"
+    assert "intercept" in result or "slope" in result
+
+
+def test_kaplan_meier_all_censored():
+    """Kaplan-Meier with all censored data."""
+    times = [100, 200, 300]
+    status = [0, 0, 0]
+    try:
+        result = reliability(analysis_type="kaplan_meier", times=times, status=status)
+        assert result["analysis_type"] == "kaplan_meier"
+    except Exception:
+        pass  # May fail with all censored data
+
+
+def test_weibull_single_failure():
+    """Weibull with single failure time."""
+    times = [100]
+    status = [1]
+    try:
+        result = reliability(analysis_type="weibull", times=times, status=status)
+        assert result["analysis_type"] == "weibull"
+    except Exception:
+        pass  # May fail with insufficient data

@@ -85,3 +85,27 @@ def test_kruskal_wallis_many_groups():
     groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
     result = nonparametric(test_type="kruskal_wallis", groups=groups)
     assert result["test_type"] == "kruskal_wallis"
+
+
+def test_wilcoxon_unequal_lengths():
+    """Wilcoxon with unequal lengths should raise error."""
+    x = [1, 2, 3]
+    y = [1, 2, 3, 4]
+    with pytest.raises(ValueError, match="paired"):
+        nonparametric(test_type="wilcoxon", x=x, y=y)
+
+
+def test_chi_square_contingency():
+    """Chi-square with 2D contingency table."""
+    observed = [[50, 30, 20], [40, 40, 20]]
+    result = nonparametric(test_type="chi_square", observed=observed)
+    assert result["test_type"] == "chi_square"
+    assert "chi2_statistic" in result
+
+
+def test_chi_square_goodness_of_fit():
+    """Chi-square goodness of fit with expected."""
+    observed = [50, 30, 20]
+    expected = [40, 30, 30]
+    result = nonparametric(test_type="chi_square", observed=observed, expected=expected)
+    assert result["test_type"] == "chi_square"

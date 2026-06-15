@@ -76,3 +76,33 @@ def test_unknown_type():
 def test_exact_test_bad_shape():
     with pytest.raises(ValueError, match="2x2"):
         advanced(analysis_type="exact_test", observed=[[1, 2, 3], [4, 5, 6]])
+
+
+def test_mcnemar_bad_shape():
+    """McNemar requires 2x2 table."""
+    with pytest.raises(ValueError, match="2x2"):
+        advanced(analysis_type="mcnemar", observed=[[1, 2, 3], [4, 5, 6]])
+
+
+def test_mcnemar_chi_squared():
+    """McNemar with many discordant pairs uses chi-squared."""
+    observed = [[10, 50], [60, 20]]
+    result = advanced(analysis_type="mcnemar", observed=observed)
+    assert result["analysis_type"] == "mcnemar"
+    assert result["discordant_pairs"] == 110
+    assert result["chi2"] is not None
+
+
+def test_cochran_q_bad_shape():
+    """Cochran's Q requires 2D matrix."""
+    with pytest.raises(ValueError, match="2D"):
+        advanced(analysis_type="cochran_q", data=[1, 2, 3])
+
+
+def test_cochran_q_zero_denominator():
+    """Cochran's Q with zero denominator."""
+    # All zeros or all ones
+    data = [[0, 0, 0], [0, 0, 0]]
+    result = advanced(analysis_type="cochran_q", data=data)
+    assert result["q_statistic"] == 0.0
+    assert result["p_value"] == 1.0
