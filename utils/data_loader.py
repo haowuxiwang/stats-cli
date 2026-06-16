@@ -37,18 +37,84 @@ def detect_delimiter(file_path, encoding="utf-8"):
     return best if counts[best] > 0 else ","
 
 
-def load_data(values=None, file=None, column=None, sheet=None, header=0):
+def read_dataframe(file, columns=None, sheet=None, header=0, max_rows=1_000_000):
+    """Read a file into a pandas DataFrame with proper encoding detection.
+
+    Public API for modules that need full DataFrame access (multivariate, regression).
+    Handles file existence check, encoding detection, sheet selection, and column validation.
+
+    Args:
+        file: Path to data file (Excel, CSV, TSV)
+        columns: Optional list of column names to select
+        sheet: Sheet name/index for Excel files
+        header: Row number for header (0-indexed)
+        max_rows: Maximum rows to load (default 1,000,000). Raises ValueError if exceeded.
+
+    Returns:
+        pandas DataFrame
+
+    Raises:
+        FileNotFoundError: If file does not exist
+        ValueError: If file format is unsupported, columns not found, or row limit exceeded
+    """
+    import pandas as pd
+
+    path = Path(file)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file}")
+
+    suffix = path.suffix.lower()
+
+    if suffix in (".xlsx", ".xls"):
+        xl = pd.ExcelFile(path)
+        if sheet is not None:
+            if isinstance(sheet, int):
+                if sheet < 0 or sheet >= len(xl.sheet_names):
+                    raise ValueError(f"Sheet index {sheet} out of range. Available: {len(xl.sheet_names)} sheets")
+                sheet_name = xl.sheet_names[sheet]
+            else:
+                sheet_name = str(sheet)
+                if sheet_name not in xl.sheet_names:
+                    raise ValueError(f"Sheet '{sheet_name}' not found. Available: {xl.sheet_names}")
+        else:
+            sheet_name = xl.sheet_names[0]
+        df = pd.read_excel(path, sheet_name=sheet_name, header=header)
+    elif suffix in (".csv", ".tsv"):
+        encoding = detect_encoding(str(path))
+        delimiter = detect_delimiter(str(path), encoding)
+        df = pd.read_csv(path, delimiter=delimiter, encoding=encoding, header=header)
+    else:
+        raise ValueError(f"read_dataframe requires Excel or CSV/TSV file, got: {suffix}")
+
+    if columns:
+        missing = [c for c in columns if c not in df.columns]
+        if missing:
+            raise ValueError(f"Columns not found: {missing}. Available: {list(df.columns)}")
+        df = df[columns]
+
+    if len(df) > max_rows:
+        raise ValueError(
+            f"File has {len(df)} rows, exceeding max_rows limit of {max_rows}. "
+            "Use a smaller file or increase max_rows parameter."
+        )
+
+    return df
+
+
+def load_data(values=None, file=None, column=None, columns=None, sheet=None, header=0):
     """Load data from various sources.
 
     Args:
         values: Direct list of numeric values
         file: Path to data file (Excel, CSV, JSON, text)
-        column: Column name or index to extract
+        column: Column name or index to extract (single column)
+        columns: List of two column names for dual-column loading (returns {"x": [...], "y": [...]})
         sheet: Sheet name/index for Excel files
         header: Row number for header (0-indexed, None = no header)
 
     Returns:
-        Dict with 'values' key (list of floats) and optional '_cleaning_report'
+        Dict with 'values' key (list of floats) and optional '_cleaning_report',
+        or Dict with 'x' and 'y' keys when columns is provided
     """
     if values is not None:
         cleaned, report = clean_values(values, min_count=1)
@@ -58,6 +124,8 @@ def load_data(values=None, file=None, column=None, sheet=None, header=0):
         return result
 
     if file is not None:
+        if columns is not None:
+            return _load_two_columns(file, columns, sheet, header)
         return _load_file(file, column, sheet, header)
 
     raise ValueError("Either 'values' or 'file' must be provided")
@@ -74,12 +142,72 @@ def _load_file(file_path, column=None, sheet=None, header=0):
 
     if suffix in (".xlsx", ".xls"):
         return _load_excel(path, column, sheet, header)
-    elif suffix == ".csv":
+    elif suffix in (".csv", ".tsv"):
         return _load_csv(path, column, header)
     elif suffix == ".json":
         return _load_json(path)
     else:
         return _load_text(path)
+
+
+def _load_two_columns(file_path, columns, sheet=None, header=0):
+    """Load two columns from a tabular file for correlation/regression.
+
+    Args:
+        file_path: Path to data file
+        columns: List of two column names [x_column, y_column]
+        sheet: Sheet name/index for Excel files
+        header: Row number for header
+
+    Returns:
+        Dict with 'x' and 'y' keys (lists of floats)
+    """
+    if not isinstance(columns, (list, tuple)) or len(columns) != 2:
+        raise ValueError("columns must be a list of two column names [x_column, y_column]")
+
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    suffix = path.suffix.lower()
+
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError("pandas is required for multi-column file loading")
+
+    if suffix in (".xlsx", ".xls"):
+        xl = pd.ExcelFile(path)
+        if sheet is not None:
+            sheet_name = xl.sheet_names[sheet] if isinstance(sheet, int) else str(sheet)
+            df = pd.read_excel(path, sheet_name=sheet_name, header=header)
+        else:
+            df = pd.read_excel(path, sheet_name=0, header=header)
+    elif suffix in (".csv", ".tsv"):
+        encoding = detect_encoding(str(path))
+        delimiter = detect_delimiter(str(path), encoding)
+        df = pd.read_csv(path, delimiter=delimiter, encoding=encoding, header=header)
+    else:
+        raise ValueError(f"Two-column loading requires Excel or CSV/TSV file, got: {suffix}")
+
+    x_col, y_col = columns
+    if x_col not in df.columns:
+        raise ValueError(f"Column '{x_col}' not found. Available: {list(df.columns)}")
+    if y_col not in df.columns:
+        raise ValueError(f"Column '{y_col}' not found. Available: {list(df.columns)}")
+
+    x_vals = pd.to_numeric(df[x_col], errors="coerce").dropna().tolist()
+    y_vals = pd.to_numeric(df[y_col], errors="coerce").dropna().tolist()
+
+    # Align by minimum length after dropping NaN independently
+    min_len = min(len(x_vals), len(y_vals))
+    x_vals = x_vals[:min_len]
+    y_vals = y_vals[:min_len]
+
+    if min_len < 2:
+        raise ValueError(f"After cleaning, only {min_len} valid paired values remain (need at least 2)")
+
+    return {"x": x_vals, "y": y_vals}
 
 
 def _load_excel(path, column=None, sheet=None, header=0):
@@ -259,7 +387,8 @@ def _extract_csv_column(reader, column, content, delimiter):
 
 def _load_json(path):
     """Load data from JSON file."""
-    with open(path) as f:
+    encoding = detect_encoding(str(path))
+    with open(path, encoding=encoding) as f:
         data = json.load(f)
 
     if isinstance(data, dict) and "values" in data:
@@ -272,7 +401,8 @@ def _load_json(path):
 
 def _load_text(path):
     """Load data from plain text (one value per line)."""
-    with open(path) as f:
+    encoding = detect_encoding(str(path))
+    with open(path, encoding=encoding) as f:
         content = f.read().strip()
 
     raw = []

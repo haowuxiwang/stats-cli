@@ -124,6 +124,42 @@ def export_excel(report_data, output_path="report.xlsx", **kwargs):
     }
 
 
+def _register_cjk_font(pdf):
+    """Try to register a CJK font for Chinese/Japanese/Korean text.
+    Returns font name to use, or 'Helvetica' if no CJK font found.
+    """
+    import platform
+    from pathlib import Path
+
+    font_paths = []
+    system = platform.system()
+    if system == "Windows":
+        font_paths = [
+            ("simhei", "C:/Windows/Fonts/simhei.ttf"),
+            ("msyh", "C:/Windows/Fonts/msyh.ttc"),
+        ]
+    elif system == "Darwin":
+        font_paths = [
+            ("heiti", "/System/Library/Fonts/STHeiti Medium.ttc"),
+            ("arialuni", "/Library/Fonts/Arial Unicode.ttf"),
+        ]
+    else:
+        font_paths = [
+            ("wqy", "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+            ("noto", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        ]
+
+    for name, path in font_paths:
+        if Path(path).exists():
+            try:
+                pdf.add_font(name, "", path)
+                pdf.add_font(name, "B", path)
+                return name
+            except Exception:
+                continue
+    return "Helvetica"
+
+
 def export_pdf(report_data, output_path="report.pdf", **kwargs):
     """Export report to PDF format.
 
@@ -143,21 +179,24 @@ def export_pdf(report_data, output_path="report.pdf", **kwargs):
     pdf = FPDF()
     pdf.add_page()
 
+    # Register CJK font for Chinese/Japanese/Korean text support
+    font = _register_cjk_font(pdf)
+
     # Title
-    pdf.set_font("Helvetica", "B", 16)
+    pdf.set_font(font, "B", 16)
     pdf.cell(0, 10, "Statistical Analysis Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
     pdf.ln(5)
 
     # Timestamp
-    pdf.set_font("Helvetica", "", 10)
+    pdf.set_font(font, "", 10)
     pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(10)
 
     # Summary section
     if "summary" in report_data:
-        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_font(font, "B", 14)
         pdf.cell(0, 10, "Summary", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font(font, "", 11)
 
         summary = report_data["summary"]
         for key, value in summary.items():
@@ -167,9 +206,9 @@ def export_pdf(report_data, output_path="report.pdf", **kwargs):
 
     # Descriptive statistics
     if "analyses" in report_data and "descriptive" in report_data["analyses"]:
-        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_font(font, "B", 14)
         pdf.cell(0, 10, "Descriptive Statistics", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font(font, "", 11)
 
         desc = report_data["analyses"]["descriptive"]
         for key in ["n", "mean", "std", "rsd_percent", "min", "max", "range", "q1", "q3", "iqr"]:
@@ -179,9 +218,9 @@ def export_pdf(report_data, output_path="report.pdf", **kwargs):
 
     # Normality test
     if "analyses" in report_data and "normality" in report_data["analyses"]:
-        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_font(font, "B", 14)
         pdf.cell(0, 10, "Normality Test", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font(font, "", 11)
 
         norm = report_data["analyses"]["normality"]
         pdf.cell(0, 8, f"Is Normal: {norm.get('is_normal', 'N/A')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -192,9 +231,9 @@ def export_pdf(report_data, output_path="report.pdf", **kwargs):
 
     # Capability (if present)
     if "analyses" in report_data and "capability" in report_data["analyses"]:
-        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_font(font, "B", 14)
         pdf.cell(0, 10, "Process Capability", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font(font, "", 11)
 
         cap = report_data["analyses"]["capability"]
         for key in ["cp", "cpk", "pp", "ppk", "rating"]:
@@ -204,9 +243,9 @@ def export_pdf(report_data, output_path="report.pdf", **kwargs):
 
     # Outlier detection
     if "analyses" in report_data and "outlier" in report_data["analyses"]:
-        pdf.set_font("Helvetica", "B", 14)
+        pdf.set_font(font, "B", 14)
         pdf.cell(0, 10, "Outlier Detection", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.set_font("Helvetica", "", 11)
+        pdf.set_font(font, "", 11)
 
         outlier = report_data["analyses"]["outlier"]
         pdf.cell(0, 8, f"Number of outliers: {outlier.get('n_outliers', 'N/A')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)

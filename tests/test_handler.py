@@ -37,13 +37,13 @@ def test_handler_missing_command():
 def test_handler_unknown_command():
     result = handler({"command": "nonexistent"})
     assert result["status"] == "error"
-    assert result["error_type"] == "VALIDATION_ERROR"
+    assert result["error_type"] == "PARAM_ERROR"
 
 
 def test_handler_validation_error():
     result = handler({"command": "capability", "params": {"values": [1, 2, 3]}})
     assert result["status"] == "error"
-    assert result["error_type"] == "VALIDATION_ERROR"
+    assert result["error_type"] == "PARAM_ERROR"
 
 
 def test_handler_discover():
@@ -104,7 +104,7 @@ JSON_SERIALIZABLE_CASES = [
 def test_json_serializable(case):
     """Every command's output must be JSON-serializable (no numpy.bool_ leak)."""
     result = handler(case)
-    assert result["status"] == "success", f"{case['command']}: {result.get('message', '')}"
+    assert result["status"] in ("success", "warning"), f"{case['command']}: {result.get('message', '')}"
     serialized = json.dumps(result)
     assert isinstance(serialized, str)
 
@@ -178,7 +178,7 @@ def test_handler_type_error_keyword():
         "params": {"values": [1, 2, 3], "nonexistent_param": 42},
     })
     assert result["status"] == "error"
-    assert result["error_type"] == "VALIDATION_ERROR"
+    assert result["error_type"] == "PARAM_ERROR"
 
 
 def test_handler_missing_dependency():
@@ -249,7 +249,7 @@ class TestMainCLI:
         assert r.returncode == 0
         out = json.loads(r.stdout)
         assert out["status"] == "error"
-        assert out["error_type"] == "INVALID_JSON"
+        assert out["error_type"] == "INVALID_INPUT"
 
     def test_error_output(self):
         """main() should output valid JSON on error."""
@@ -310,7 +310,7 @@ class TestMainDirect:
         captured = capsys.readouterr()
         out = json.loads(captured.out)
         assert out["status"] == "error"
-        assert out["error_type"] == "INVALID_JSON"
+        assert out["error_type"] == "INVALID_INPUT"
 
     def test_main_generic_error(self, monkeypatch, capsys):
         """main() handles generic exceptions."""
@@ -321,3 +321,56 @@ class TestMainDirect:
         captured = capsys.readouterr()
         out = json.loads(captured.out)
         assert out["status"] == "error"
+
+
+class TestHandlerExceptionPaths:
+    """Tests for exception paths in handler()."""
+
+    def test_handler_import_error(self, monkeypatch):
+        """ImportError returns MISSING_DEPENDENCY."""
+        import main as main_module
+
+        def mock_route(cmd, params):
+            raise ImportError("No module named 'fake_module'")
+
+        monkeypatch.setattr(main_module, "_route", mock_route)
+        result = main_module.handler({"command": "test", "params": {}})
+        assert result["status"] == "error"
+        assert result["error_type"] == "MISSING_DEPENDENCY"
+
+    def test_handler_memory_error(self, monkeypatch):
+        """MemoryError returns MEMORY_ERROR."""
+        import main as main_module
+
+        def mock_route(cmd, params):
+            raise MemoryError()
+
+        monkeypatch.setattr(main_module, "_route", mock_route)
+        result = main_module.handler({"command": "test", "params": {}})
+        assert result["status"] == "error"
+        assert result["error_type"] == "MEMORY_ERROR"
+
+
+class TestClassifyValueError:
+    """Tests for _classify_value_error()."""
+
+    def test_classify_value_error_data(self):
+        """Data errors classified as DATA_ERROR."""
+        from main import _classify_value_error
+        assert _classify_value_error("Need at least 2 values") == "DATA_ERROR"
+        assert _classify_value_error("No numeric columns found") == "DATA_ERROR"
+        assert _classify_value_error("Column 'x' not found") == "DATA_ERROR"
+        assert _classify_value_error("Sheet index out of range") == "DATA_ERROR"
+
+    def test_classify_value_error_computation(self):
+        """Computation errors classified as COMPUTATION_ERROR."""
+        from main import _classify_value_error
+        assert _classify_value_error("Cannot calculate: zero variance") == "COMPUTATION_ERROR"
+        assert _classify_value_error("Result is undefined") == "COMPUTATION_ERROR"
+        assert _classify_value_error("Singular matrix encountered") == "COMPUTATION_ERROR"
+
+    def test_classify_value_error_param(self):
+        """Param errors classified as PARAM_ERROR."""
+        from main import _classify_value_error
+        assert _classify_value_error("Unknown method: foo") == "PARAM_ERROR"
+        assert _classify_value_error("Invalid argument") == "PARAM_ERROR"

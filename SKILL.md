@@ -656,7 +656,7 @@ All commands return a standard JSON envelope:
 
 **capability** — `{"command":"capability","params":{"values":[10.1,10.2,10.0,10.3],"usl":11.0,"lsl":9.0}}`
 ```json
-{"status":"success","data":{"cp":2.72,"cpk":2.57,"pp":2.72,"ppk":2.57,"rating":"Excellent","performance":{"ppm_above":0,"ppm_below":0}}}
+{"status":"success","data":{"cp":2.72,"cpk":2.57,"pp":2.72,"ppk":2.57,"rating":"Excellent","performance":{"ppm_upper":0,"ppm_lower":0}}}
 ```
 
 **control_chart** — `{"command":"control_chart","params":{"chart_type":"imr","values":[10.1,10.2,10.0,10.3,10.1]}}`
@@ -673,7 +673,7 @@ All commands return a standard JSON envelope:
 ```json
 {
   "status": "error",
-  "error_type": "VALIDATION_ERROR",
+  "error_type": "PARAM_ERROR",
   "message": "At least 3 values are required for normality test",
   "suggestion": "Provide more data points or use descriptive command instead"
 }
@@ -684,7 +684,9 @@ All commands return a standard JSON envelope:
 |------------|---------|
 | `INVALID_INPUT` | JSON parse failure or malformed request |
 | `MISSING_COMMAND` | No `command` field in input |
-| `VALIDATION_ERROR` | Invalid parameters (missing required fields, wrong types, insufficient data) |
+| `PARAM_ERROR` | Invalid parameters (missing required fields, wrong types, out-of-range values) |
+| `DATA_ERROR` | Insufficient data, bad format, or non-numeric values |
+| `COMPUTATION_ERROR` | Mathematical limitation (e.g. division by zero, singular matrix) |
 | `FILE_NOT_FOUND` | Specified file does not exist |
 | `MISSING_DEPENDENCY` | Python package not installed |
 | `MEMORY_ERROR` | Out of memory, reduce data size |
@@ -696,8 +698,8 @@ Every response includes `status`, so check it before reading `data`. On error, `
 
 | Error | Recovery |
 |-------|----------|
-| `VALIDATION_ERROR` (insufficient data) | Try `clean` to remove NaN, or `explore` to check data size |
-| `VALIDATION_ERROR` (missing required param) | Call `discover {"command_name": "xxx"}` to see required params |
+| `DATA_ERROR` (insufficient data) | Try `clean` to remove NaN, or `explore` to check data size |
+| `PARAM_ERROR` (missing required param) | Call `discover {"command_name": "xxx"}` to see required params |
 | `FILE_NOT_FOUND` | Call `explore {"file": "path"}` to verify file exists and path is correct |
 | `MISSING_DEPENDENCY` | Run `pip install -r requirements.txt`, then retry |
 | `MEMORY_ERROR` | Use `file` input instead of `values`, or reduce data size |

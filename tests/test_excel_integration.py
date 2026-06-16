@@ -26,11 +26,11 @@ def all_fixtures():
 
 
 def succeed(result):
-    """Check that handler returned success or a known acceptable error."""
-    if result["status"] == "success":
+    """Check that handler returned success/warning or a known acceptable error."""
+    if result["status"] in ("success", "warning"):
         return True
     # Acceptable errors: validation errors, missing data, etc.
-    acceptable = {"VALIDATION_ERROR", "MISSING_DEPENDENCY", "FILE_NOT_FOUND"}
+    acceptable = {"VALIDATION_ERROR", "PARAM_ERROR", "DATA_ERROR", "COMPUTATION_ERROR", "MISSING_DEPENDENCY", "FILE_NOT_FOUND"}
     return result.get("error_type") in acceptable
 
 
@@ -443,7 +443,7 @@ class TestEdgeCases:
             "file": xlsx("048_mixed_all_text.xlsx")
         }})
         assert result["status"] == "error"
-        assert result["error_type"] == "VALIDATION_ERROR"
+        assert result["error_type"] == "DATA_ERROR"
 
     def test_mixed_messy_column(self):
         """Messy mixed-type column should handle gracefully."""

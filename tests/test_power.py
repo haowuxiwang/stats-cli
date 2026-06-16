@@ -45,7 +45,7 @@ def test_effect_size_zero():
     result = power(analysis_type="t_test", effect_size=0, n=30)
     assert result["effect_size"] == 0
     assert result["power"] == 0.05
-    assert "warning" in result
+    assert "_warning" in result
 
 
 def test_t_test_power_with_n():

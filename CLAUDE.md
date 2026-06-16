@@ -28,15 +28,15 @@ pytest tests/test_specific.py::test_fn  # single test
 
 **Entry point:** `main.py` — `handler(input_data)` parses JSON, routes via `_route(command, params)`, wraps output in standard envelope.
 
-**Command router:** `_route()` in `main.py` uses lazy imports (imports inside each `if/elif` branch) to avoid loading heavy scientific libraries unnecessarily. Each command maps 1:1 to a module function in `stats_engine/`.
+**Command router:** `_route()` in `main.py` uses `COMMAND_REGISTRY` dict mapping command names to `(module_path, function_name)` tuples, with `importlib.import_module()` for lazy loading to avoid loading heavy scientific libraries unnecessarily. Each command maps 1:1 to a module function in `stats_engine/`.
 
 **Standard output envelope** (defined in `utils/output.py`):
-- Success: `{"status": "success", "version": "1.0.0", "timestamp": "...", "data": {...}}`
+- Success: `{"status": "success", "version": "1.2.1", "timestamp": "...", "data": {...}}`
 - Error: `{"status": "error", "error_type": "...", "message": "...", "suggestion": "..."}`
 
 **Data flow:** Input provides either `values` (direct array) or `file` (path). `utils/data_loader.py` handles file loading (Excel/CSV/JSON/text) with auto encoding detection (utf-8-sig, utf-8, latin-1, gbk, gb2312) and CSV delimiter detection. `utils/data_cleaner.py` strips NaN/Inf/non-numeric values. `utils/validators.py` validates inputs (values, spec limits, groups, alpha, subgroup sizes).
 
-**Statistical modules** (`stats_engine/`): Each module is self-contained with a single public function that accepts `**params` and returns a dict. All computation uses `scipy.stats`, `numpy`, and `statsmodels` — no custom statistical implementations. All numeric output is rounded to 4 decimal places. Every analysis returns an `interpretation` string.
+**Statistical modules** (`stats_engine/`): Each module is self-contained with a single public function that accepts `**params` and returns a dict. All computation uses `scipy.stats`, `numpy`, and `statsmodels` — no custom statistical implementations. All numeric output is rounded to 6 decimal places (configurable via `DEFAULT_PRECISION` in `utils/output.py`). Every analysis returns an `interpretation` string.
 
 **Command discovery:** `stats_engine/discover.py` registers all commands with metadata (description, category, input/output fields, examples). The `discover` command exposes this for AI-agent introspection.
 

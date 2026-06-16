@@ -307,7 +307,7 @@ All commands return JSON with a standard envelope:
 ```json
 {
   "status": "error",
-  "error_type": "VALIDATION_ERROR",
+  "error_type": "PARAM_ERROR",
   "message": "At least 3 values are required",
   "suggestion": "Provide more data points"
 }
@@ -336,7 +336,7 @@ CSV files are auto-detected in this order:
 
 ## Testing
 
-587 tests covering all commands and edge cases.
+1033 tests covering all commands and edge cases.
 
 ```bash
 # Run all tests
@@ -407,9 +407,42 @@ stats-cli-py/
 │   ├── validators.py       # Input validation
 │   ├── data_loader.py      # File loading (Excel/CSV/JSON)
 │   └── data_cleaner.py     # NaN/Inf cleaning
-├── tests/                  # Pytest test suite (587 tests)
+├── tests/                  # Pytest test suite (1033 tests)
 ├── .github/workflows/      # CI pipeline
 └── .gitignore
+```
+
+---
+
+## Using with AI Agents
+
+stats-cli is designed to be called as a skill by AI agents. Use the `discover` command to explore available commands, then call specific analyses with JSON input.
+
+### Discover Available Commands
+```json
+{"command": "discover"}
+```
+
+### Call a Specific Analysis
+```json
+{"command": "descriptive", "params": {"file": "data.xlsx", "column": "temperature"}}
+```
+
+### From Python (subprocess)
+```python
+import subprocess, json
+
+input_data = {
+    "command": "capability",
+    "params": {"values": [10.1, 10.2, 10.0, 10.3], "usl": 11.0, "lsl": 9.0}
+}
+result = json.loads(
+    subprocess.run(
+        ["python", "main.py"],
+        input=json.dumps(input_data),
+        capture_output=True, text=True
+    ).stdout
+)
 ```
 
 ---

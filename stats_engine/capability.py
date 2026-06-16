@@ -6,8 +6,17 @@ from scipy import stats as sp_stats
 from utils.output import r
 from utils.validators import to_array
 
+# d2 constants for subgroup sizes 2..10 (same as control_chart.py)
+_D2 = {2: 1.128, 3: 1.693, 4: 2.059, 5: 2.326, 6: 2.534, 7: 2.704, 8: 2.847, 9: 2.970, 10: 3.078}
+# c4 constants for S-bar method
+_C4 = {
+    2: 0.7979, 3: 0.8862, 4: 0.9213, 5: 0.9400, 6: 0.9515,
+    7: 0.9594, 8: 0.9650, 9: 0.9693, 10: 0.9727,
+}
 
-def capability(values, usl=None, lsl=None, target=None, capability_type="normal"):
+
+def capability(values, usl=None, lsl=None, target=None, capability_type="normal",
+               sigma_method="mr", subgroup_size=None):
     """Calculate process capability indices.
 
     Args:
@@ -16,6 +25,11 @@ def capability(values, usl=None, lsl=None, target=None, capability_type="normal"
         lsl: Lower specification limit
         target: Target value (default: midpoint of specs)
         capability_type: 'normal' or 'boxcox'
+        sigma_method: Method for within-subgroup std estimation:
+            'mr' (default) - Moving Range (individual data)
+            'rbar' - Subgroup R-bar (requires subgroup_size)
+            'sbar' - Subgroup S-bar (requires subgroup_size)
+        subgroup_size: Subgroup size for rbar/sbar methods (2-10)
 
     Returns:
         Dict with capability results
@@ -33,13 +47,35 @@ def capability(values, usl=None, lsl=None, target=None, capability_type="normal"
     if std_overall == 0:
         raise ValueError("Cannot calculate capability: all values are identical (zero variance)")
 
-    # Within-subgroup std using moving range
-    if n >= 2:
+    # Within-subgroup std estimation
+    if sigma_method == "mr":
+        # Moving Range method (default, for individual data)
         mr = np.abs(np.diff(arr))
         mr_bar = float(np.mean(mr))
-        std_within = mr_bar / 1.128
+        std_within = mr_bar / _D2[2]
+        sigma_desc = "Moving Range (d2=1.128)"
+    elif sigma_method == "rbar":
+        if subgroup_size is None or subgroup_size < 2 or subgroup_size > 10:
+            raise ValueError("subgroup_size must be 2-10 for rbar method")
+        # R-bar method: reshape into subgroups, compute mean range
+        n_complete = (n // subgroup_size) * subgroup_size
+        subgroups = arr[:n_complete].reshape(-1, subgroup_size)
+        ranges = np.ptp(subgroups, axis=1)
+        r_bar = float(np.mean(ranges))
+        std_within = r_bar / _D2[subgroup_size]
+        sigma_desc = f"R-bar (d2={_D2[subgroup_size]}, subgroup_size={subgroup_size})"
+    elif sigma_method == "sbar":
+        if subgroup_size is None or subgroup_size < 2 or subgroup_size > 10:
+            raise ValueError("subgroup_size must be 2-10 for sbar method")
+        n_complete = (n // subgroup_size) * subgroup_size
+        subgroups = arr[:n_complete].reshape(-1, subgroup_size)
+        s_vals = np.std(subgroups, axis=1, ddof=1)
+        s_bar = float(np.mean(s_vals))
+        c4 = _C4[subgroup_size]
+        std_within = s_bar / c4
+        sigma_desc = f"S-bar (c4={c4}, subgroup_size={subgroup_size})"
     else:
-        std_within = std_overall
+        raise ValueError(f"Unknown sigma_method: {sigma_method}. Use 'mr', 'rbar', or 'sbar'")
 
     # Default target
     if target is None:
@@ -52,6 +88,8 @@ def capability(values, usl=None, lsl=None, target=None, capability_type="normal"
         "mean": r(mean_val),
         "std_within": r(std_within),
         "std_overall": r(std_overall),
+        "sigma_method": sigma_method,
+        "sigma_method_desc": sigma_desc,
         "usl": usl,
         "lsl": lsl,
         "target": target,
@@ -186,6 +224,9 @@ def capability(values, usl=None, lsl=None, target=None, capability_type="normal"
         parts.append(f"Expected yield = {result['performance']['yield_pct']}%")
     result["interpretation"] = ". ".join(parts)
 
+    if n < 25:
+        result["_warning"] = f"n={n}: capability analysis requires n>=25 for reliable results"
+
     return result
 
 
@@ -221,7 +262,7 @@ def _boxcox_capability(arr, usl, lsl):
         "lambda": r(optimal_lambda, 2),
         "offset": offset,
         "mean_transformed": r(mean_t, 6),
-        "sd_transformed": r(sd_t, 6),
+        "std_transformed": r(sd_t, 6),
     }
 
     if usl_t is not None and lsl_t is not None:

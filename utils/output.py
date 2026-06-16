@@ -12,6 +12,29 @@ VERSION = "1.2.1"
 # hardcoding round(..., N). Change this single value to adjust all output.
 DEFAULT_PRECISION = 6
 
+# Precision constants for specific field types
+PRECISION = {
+    "default": 6,
+    "percent": 2,
+    "statistic": 4,   # F, t, chi2 statistics
+    "p_value": 4,
+    "effect_size": 3,
+    "kappa": 3,
+    "ppm": 2,
+}
+
+# Standardized error types
+class ErrorType:
+    INVALID_INPUT = "INVALID_INPUT"
+    MISSING_COMMAND = "MISSING_COMMAND"
+    PARAM_ERROR = "PARAM_ERROR"
+    DATA_ERROR = "DATA_ERROR"
+    FILE_NOT_FOUND = "FILE_NOT_FOUND"
+    MISSING_DEPENDENCY = "MISSING_DEPENDENCY"
+    MEMORY_ERROR = "MEMORY_ERROR"
+    COMPUTATION_ERROR = "COMPUTATION_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
 
 def r(val, precision=None):
     """Round a numeric value to the configured precision.
@@ -40,6 +63,20 @@ def success(data):
     }
 
 
+def warning(data, message, suggestion=None):
+    """Wrap result with status: warning — data is valid but degraded."""
+    result = {
+        "status": "warning",
+        "version": VERSION,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "warning": message,
+        "data": data,
+    }
+    if suggestion:
+        result["suggestion"] = suggestion
+    return result
+
+
 def error(message, error_type="UNKNOWN_ERROR", suggestion=None):
     """Wrap error in standard envelope."""
     result = {
@@ -51,6 +88,39 @@ def error(message, error_type="UNKNOWN_ERROR", suggestion=None):
     }
     if suggestion:
         result["suggestion"] = suggestion
+    return result
+
+
+def p_value_context(result, p_value, alpha=0.05, n=None):
+    """Add credibility context fields to a result dict containing p_value.
+
+    Mutates and returns result. Adds:
+    - p_boundary: True if p is near alpha (within 20% margin)
+    - p_boundary_warning: human-readable warning string
+    - small_sample_warning: if n < 10
+    - _warning: triggers status:warning envelope in main.py handler
+
+    Args:
+        result: Dict to augment
+        p_value: The computed p-value
+        alpha: Significance level (default 0.05)
+        n: Sample size (optional, triggers small-sample warning)
+    """
+    warnings = []
+    if p_value is not None and alpha * 0.8 < p_value < alpha * 1.2:
+        result["p_boundary"] = True
+        result["p_boundary_warning"] = (
+            f"p={r(p_value)} is near alpha={alpha}; "
+            "result is borderline — interpret with caution"
+        )
+        warnings.append(result["p_boundary_warning"])
+    if n is not None and n < 10:
+        result["small_sample_warning"] = (
+            f"n={n}: statistical power is very low, results may be unreliable"
+        )
+        warnings.append(result["small_sample_warning"])
+    if warnings:
+        result["_warning"] = "; ".join(warnings)
     return result
 
 

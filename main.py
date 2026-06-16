@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 
-from utils.output import error, success, to_json
+from utils.output import ErrorType, error, success, warning, to_json
 
 
 def handler(input_data):
@@ -25,7 +25,7 @@ def handler(input_data):
         try:
             input_data = json.loads(input_data)
         except json.JSONDecodeError as e:
-            return error(f"Invalid JSON input / 无效的JSON输入: {e}", "INVALID_INPUT")
+            return error(f"Invalid JSON input / 无效的JSON输入: {e}", ErrorType.INVALID_INPUT)
 
     command = input_data.get("command")
     params = input_data.get("params", {})
@@ -35,7 +35,7 @@ def handler(input_data):
     if not command:
         return error(
             "Missing 'command' field / 缺少 'command' 字段. Use 'discover' to list available commands.",
-            "MISSING_COMMAND",
+            ErrorType.MISSING_COMMAND,
             suggestion="使用 'discover' 命令查看所有可用命令",
         )
 
@@ -50,28 +50,60 @@ def handler(input_data):
                 result["_values"] = params["values"]
             result["chart_base64"] = _generate_chart(command, result, params)
             result.pop("_values", None)  # Clean up temp field
+        # Check for warning marker from module
+        warning_msg = result.pop("_warning", None)
+        suggestion = result.pop("_warning_suggestion", None)
+        if warning_msg:
+            return warning(result, warning_msg, suggestion)
         return success(result)
     except ValueError as e:
-        return error(str(e), "VALIDATION_ERROR")
+        return error(str(e), _classify_value_error(str(e)))
     except FileNotFoundError as e:
-        return error(str(e), "FILE_NOT_FOUND")
+        return error(str(e), ErrorType.FILE_NOT_FOUND)
     except ImportError as e:
         return error(
             str(e),
-            "MISSING_DEPENDENCY",
+            ErrorType.MISSING_DEPENDENCY,
             suggestion="pip install -r requirements.txt / 缺少依赖，请运行 pip install -r requirements.txt",
         )
     except MemoryError:
         return error(
             "Out of memory / 内存不足. Try reducing data size or use file-based input.",
-            "MEMORY_ERROR",
+            ErrorType.MEMORY_ERROR,
         )
     except TypeError as e:
         if "unexpected keyword argument" in str(e):
-            return error(str(e), "VALIDATION_ERROR")
-        return error(f"{type(e).__name__}: {e}", "INTERNAL_ERROR")
+            return error(str(e), ErrorType.PARAM_ERROR)
+        return error(f"{type(e).__name__}: {e}", ErrorType.INTERNAL_ERROR)
     except Exception as e:
-        return error(f"{type(e).__name__}: {e}", "INTERNAL_ERROR")
+        return error(f"{type(e).__name__}: {e}", ErrorType.INTERNAL_ERROR)
+
+
+def _classify_value_error(msg):
+    """Classify ValueError message into granular error type.
+
+    - PARAM_ERROR: parameter missing, invalid type, unknown command
+    - DATA_ERROR: insufficient data, no numeric columns, format issues
+    - COMPUTATION_ERROR: mathematical limits (zero variance, undefined)
+    """
+    msg_lower = msg.lower()
+    # Data-related errors
+    data_keywords = [
+        "need at least", "no numeric", "no valid", "not found in file",
+        "not found.", "after removing", "after cleaning", "insufficient",
+        "no data", "empty", "column", "sheet",
+    ]
+    if any(kw in msg_lower for kw in data_keywords):
+        return ErrorType.DATA_ERROR
+    # Computation-related errors
+    comp_keywords = [
+        "cannot", "undefined", "zero variance", "identical",
+        "convergence", "singular", "infinity",
+    ]
+    if any(kw in msg_lower for kw in comp_keywords):
+        return ErrorType.COMPUTATION_ERROR
+    # Default to parameter error
+    return ErrorType.PARAM_ERROR
 
 
 # Command registry: command_name -> (module_path, function_name)
@@ -111,7 +143,10 @@ COMMAND_REGISTRY = {
 }
 
 # Commands that don't need file-based data loading
-NO_DATA_COMMANDS = {"discover", "explore", "power", "regression", "multivariate", "run"}
+NO_DATA_COMMANDS = {"discover", "explore", "power", "multivariate", "run"}
+
+# Commands that need two-column file loading (x and y)
+TWO_COLUMN_COMMANDS = {"correlation", "regression"}
 
 
 def _route(command, params):
@@ -128,8 +163,25 @@ def _route(command, params):
     if command not in COMMAND_REGISTRY:
         raise ValueError(f"Unknown command: {command}. Use 'discover' to list available commands.")
 
-    # Load data from file if needed
-    if command not in NO_DATA_COMMANDS and "file" in params and "values" not in params:
+    # Two-column file loading for correlation/regression
+    if command in TWO_COLUMN_COMMANDS and "file" in params and "x" not in params:
+        x_col = params.get("x_column")
+        y_col = params.get("y_column")
+        if x_col and y_col:
+            from utils.data_loader import load_data
+            header = params.pop("header", 0)
+            params.pop("x_column")
+            params.pop("y_column")
+            data = load_data(
+                file=params.pop("file"), columns=[x_col, y_col],
+                sheet=params.pop("sheet", None), header=header,
+            )
+            params["x"] = data["x"]
+            params["y"] = data["y"]
+        # else: file stays in params for regression's internal handling (multiple/stepwise)
+
+    # Single-column file loading for other commands
+    elif command not in NO_DATA_COMMANDS and "file" in params and "values" not in params:
         from utils.data_loader import load_data
         header = params.pop("header", 0)
         data = load_data(
@@ -187,7 +239,7 @@ def _run_script(params):
         "list": list, "map": map, "max": max, "min": min, "pow": pow,
         "print": print, "range": range, "repr": repr, "reversed": reversed,
         "round": round, "set": set, "slice": slice, "sorted": sorted,
-        "str": str, "sum": sum, "tuple": tuple, "type": type, "zip": zip,
+        "str": str, "sum": sum, "tuple": tuple, "zip": zip,
     }
     namespace = {"data": data, "result": None, "__builtins__": safe_builtins}
     exec(script, namespace)
@@ -216,13 +268,13 @@ def main():
         else:
             input_data = json.loads(sys.stdin.read())
     except FileNotFoundError:
-        print(to_json(error(f"File not found: {sys.argv[1]}", "FILE_NOT_FOUND")))
+        print(to_json(error(f"File not found: {sys.argv[1]}", ErrorType.FILE_NOT_FOUND)))
         return
     except json.JSONDecodeError as e:
-        print(to_json(error(f"Invalid JSON input: {e}", "INVALID_JSON")))
+        print(to_json(error(f"Invalid JSON input: {e}", ErrorType.INVALID_INPUT)))
         return
     except Exception as e:
-        print(to_json(error(f"Failed to read input: {e}", "INPUT_ERROR")))
+        print(to_json(error(f"Failed to read input: {e}", ErrorType.INVALID_INPUT)))
         return
 
     result = handler(input_data)

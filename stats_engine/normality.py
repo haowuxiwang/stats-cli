@@ -21,6 +21,9 @@ def normality(values):
 
     result = {"n": n}
 
+    if n < 10:
+        result["_warning"] = f"n={n}: normality test has low statistical power with small samples"
+
     # Shapiro-Wilk test (best for n <= 5000)
     if n >= 3:
         if n > 5000:

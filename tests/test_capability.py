@@ -88,3 +88,72 @@ def test_cpk_one_sided_upper():
     result = capability(values=values, usl=15.0)
     assert result["cpk"] is not None
     assert result["cpk"] > 0
+
+
+def test_capability_rbar():
+    """Capability with R-bar sigma method."""
+    values = [10.0, 10.1, 10.2, 10.0, 10.1, 10.2, 10.0, 10.1, 10.2, 10.0]
+    result = capability(values=values, usl=11.0, lsl=9.0, sigma_method="rbar", subgroup_size=2)
+    assert result["sigma_method"] == "rbar"
+    assert "R-bar" in result["sigma_method_desc"]
+    assert result["std_within"] > 0
+
+
+def test_capability_sbar():
+    """Capability with S-bar sigma method."""
+    values = [10.0, 10.1, 10.2, 10.0, 10.1, 10.2, 10.0, 10.1, 10.2, 10.0]
+    result = capability(values=values, usl=11.0, lsl=9.0, sigma_method="sbar", subgroup_size=5)
+    assert result["sigma_method"] == "sbar"
+    assert "S-bar" in result["sigma_method_desc"]
+    assert result["std_within"] > 0
+
+
+def test_capability_rbar_invalid_subgroup():
+    """R-bar with invalid subgroup_size raises ValueError."""
+    with pytest.raises(ValueError, match="subgroup_size"):
+        capability(values=[1, 2, 3, 4, 5], usl=10, lsl=0, sigma_method="rbar", subgroup_size=1)
+
+
+def test_capability_boxcox_non_positive():
+    """Capability with Box-Cox transformation on data with non-positive values."""
+    from stats_engine.capability import capability
+    values = [10.1, 10.2, 10.0, 10.3, 10.1, 10.2, 10.0, 10.3, 10.1, 10.2,
+              10.0, 10.3, 10.1, 10.2, 10.0, 10.3, 10.1, 10.2, 10.0, 10.3,
+              10.1, 10.2, 10.0, 10.3, 10.1]
+    result = capability(values=values, usl=11.0, lsl=9.0, capability_type="boxcox")
+    assert "boxcox" in result
+    assert "lambda" in result["boxcox"]
+    assert "std_transformed" in result["boxcox"]
+
+
+def test_capability_boxcox_with_offset():
+    """Box-Cox with non-positive values triggers offset branch."""
+    from stats_engine.capability import capability
+    # Values include zero/negative to trigger offset path (line 239)
+    values = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+              9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+              19, 20, 21, 22, 23]
+    result = capability(values=values, usl=25, lsl=-5, capability_type="boxcox")
+    assert "boxcox" in result
+    assert result["boxcox"]["offset"] > 0
+
+
+def test_capability_unknown_sigma_method():
+    """Unknown sigma method raises ValueError."""
+    from stats_engine.capability import capability
+    with pytest.raises(ValueError, match="Unknown sigma_method"):
+        capability(values=[1, 2, 3, 4, 5], usl=10, lsl=0, sigma_method="invalid")
+
+
+def test_capability_rbar_subgroup_too_large():
+    """R-bar with subgroup_size > 10 raises ValueError."""
+    from stats_engine.capability import capability
+    with pytest.raises(ValueError, match="subgroup_size"):
+        capability(values=[1, 2, 3, 4, 5], usl=10, lsl=0, sigma_method="rbar", subgroup_size=11)
+
+
+def test_capability_sbar_subgroup_none():
+    """S-bar without subgroup_size raises ValueError."""
+    from stats_engine.capability import capability
+    with pytest.raises(ValueError, match="subgroup_size"):
+        capability(values=[1, 2, 3, 4, 5], usl=10, lsl=0, sigma_method="sbar")

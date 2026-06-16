@@ -84,3 +84,41 @@ def test_iqr_no_outliers():
     values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 10.1]
     result = outlier(values=values, method="iqr")
     assert result["n_outliers"] == 0
+
+
+def test_mad_no_outliers():
+    """MAD with clean data should detect no outliers."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 10.1]
+    result = outlier(values=values, method="mad")
+    assert result["method"] == "mad"
+    assert result["n_outliers"] == 0
+    assert "median" in result
+    assert "mad" in result
+    assert "threshold" in result
+
+
+def test_mad_with_outlier():
+    """MAD should detect extreme outlier."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 100.0]
+    result = outlier(values=values, method="mad")
+    assert result["n_outliers"] >= 1
+    assert 100.0 in result["outliers"]
+
+
+def test_mad_constant_values():
+    """MAD with constant values should return no outliers."""
+    values = [5.0, 5.0, 5.0, 5.0, 5.0]
+    result = outlier(values=values, method="mad")
+    assert result["n_outliers"] == 0
+    assert result["mad"] == 0
+
+
+def test_iqr_custom_factor():
+    """IQR with custom factor should produce different fences."""
+    values = [10.0, 10.1, 9.9, 10.2, 9.8, 10.0, 10.1, 9.9, 10.0, 50.0]
+    result_15 = outlier(values=values, method="iqr", iqr_factor=1.5)
+    result_30 = outlier(values=values, method="iqr", iqr_factor=3.0)
+    # With stricter factor (3.0), fewer or same outliers
+    assert result_30["n_outliers"] <= result_15["n_outliers"]
+    assert result_15["iqr_factor"] == 1.5
+    assert result_30["iqr_factor"] == 3.0

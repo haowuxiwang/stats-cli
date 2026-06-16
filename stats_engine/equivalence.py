@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 from utils.validators import to_array
 
 
@@ -59,7 +59,7 @@ def _tost(x, y, delta, alpha):
     ci_lower = diff - t_crit * se
     ci_upper = diff + t_crit * se
 
-    return {
+    result = {
         "test_type": "tost",
         "n1": n1,
         "n2": n2,
@@ -79,6 +79,7 @@ def _tost(x, y, delta, alpha):
             else f"Equivalence NOT demonstrated (diff={r(diff)}, p={r(p_tost)})"
         ),
     }
+    return p_value_context(result, p_tost, alpha, min(n1, n2))
 
 
 def _one_sample_tost(arr, mu, delta, alpha):
@@ -104,7 +105,7 @@ def _one_sample_tost(arr, mu, delta, alpha):
     ci_lower = diff - t_crit * se
     ci_upper = diff + t_crit * se
 
-    return {
+    result = {
         "test_type": "one_sample_tost",
         "n": n,
         "mean": r(mean_val),
@@ -123,3 +124,4 @@ def _one_sample_tost(arr, mu, delta, alpha):
             else f"Equivalence NOT demonstrated (diff={r(diff)}, p={r(p_tost)})"
         ),
     }
+    return p_value_context(result, p_tost, alpha, n)

@@ -1,11 +1,21 @@
 """Data exploration - inspect file structure and basic stats."""
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
 
 from utils.output import r
+
+# Patterns for detecting specification limit columns
+_SPEC_PATTERNS = {
+    "usl": re.compile(r"(?i)^(usl|upper.?spec|规格上限|上规格限|上限值)$"),
+    "lsl": re.compile(r"(?i)^(lsl|lower.?spec|规格下限|下规格限|下限值)$"),
+    "target": re.compile(r"(?i)^(target|目标值|规格中心|nominal|标称值)$"),
+}
+# Tolerance patterns in column names like "10±0.5" or "tolerance%"
+_TOL_PATTERN = re.compile(r"^(.+?)[\s]*[±+\-]\s*([\d.]+)%?$")
 
 
 def explore(file, sheet=None, rows=5, header=0):
@@ -139,6 +149,56 @@ def _explore_text(path, rows):
     return result
 
 
+def _detect_spec_columns(df, numeric_cols):
+    """Detect columns that likely contain specification limits.
+
+    Matches column names against known patterns: USL, LSL, Target, etc.
+    Also detects tolerance notation like "10±0.5".
+
+    Returns:
+        Dict with detected spec info, or empty dict if nothing found.
+    """
+    import pandas as pd
+
+    detected = {}
+    source_columns = {}
+
+    for col in df.columns:
+        col_str = str(col).strip()
+        for spec_type, pattern in _SPEC_PATTERNS.items():
+            if pattern.match(col_str):
+                # Extract the first non-null numeric value from this column
+                series = pd.to_numeric(df[col], errors="coerce").dropna()
+                if len(series) > 0:
+                    val = float(series.iloc[0])
+                    detected[spec_type] = val
+                    source_columns[spec_type] = col_str
+                break
+
+        # Check for tolerance notation in column name
+        tol_match = _TOL_PATTERN.match(col_str)
+        if tol_match and "usl" not in detected and "lsl" not in detected:
+            base_val_str = tol_match.group(1)
+            tol_str = tol_match.group(2)
+            try:
+                base_val = float(base_val_str)
+                tol = float(tol_str)
+                if "%" in col_str:
+                    tol = base_val * tol / 100
+                detected["usl"] = r(base_val + tol)
+                detected["lsl"] = r(base_val - tol)
+                detected["target"] = r(base_val)
+                source_columns["usl"] = f"{col_str} (inferred)"
+                source_columns["lsl"] = f"{col_str} (inferred)"
+                source_columns["target"] = f"{col_str} (inferred)"
+            except (ValueError, TypeError):
+                pass
+
+    if detected:
+        detected["source_columns"] = source_columns
+    return detected
+
+
 def _describe_dataframe(df, rows, file_path):
     """Describe a pandas DataFrame with smart type inference."""
     import pandas as pd
@@ -176,7 +236,7 @@ def _describe_dataframe(df, rows, file_path):
                 col_info["max"] = r(clean.max())
         columns.append(col_info)
 
-    return {
+    result = {
         "file": file_path,
         "n_rows": len(df),
         "n_columns": len(df.columns),
@@ -185,3 +245,10 @@ def _describe_dataframe(df, rows, file_path):
         "columns": columns,
         "sample_data": df.head(rows).to_dict(orient="records"),
     }
+
+    # Detect specification limit columns
+    detected = _detect_spec_columns(df, numeric_cols)
+    if detected:
+        result["detected_specs"] = detected
+
+    return result

@@ -40,6 +40,7 @@ def descriptive(values):
             "kurtosis": None,
             "insufficient_for_stats": True,
             "interpretation": f"n=1, value={r(val)}. Insufficient data for variability statistics.",
+            "_warning": "n=1: only mean is defined, std/skewness/kurtosis unavailable",
         }
     mean_val = float(np.mean(arr))
     median_val = float(np.median(arr))
@@ -57,14 +58,15 @@ def descriptive(values):
     ci_upper = mean_val + t_crit * se
 
     # Skewness and kurtosis (undefined when std~0, i.e. all values nearly identical)
-    if std_val < 1e-12:
+    near_constant = std_val < 1e-12
+    if near_constant:
         skew = 0.0
         kurt = 0.0
     else:
         skew = float(sp_stats.skew(arr))
         kurt = float(sp_stats.kurtosis(arr))
 
-    return {
+    result = {
         "n": n,
         "total": r(float(np.sum(arr))),
         "mean": r(mean_val),
@@ -83,3 +85,6 @@ def descriptive(values):
         "kurtosis": r(kurt),
         "interpretation": f"n={n}, mean={r(mean_val)}, std={r(std_val)}, RSD={r(rsd, 2)}%",
     }
+    if near_constant:
+        result["_warning"] = "Data is effectively constant (std < 1e-12); skewness/kurtosis set to 0"
+    return result

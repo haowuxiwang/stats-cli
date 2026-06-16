@@ -113,3 +113,44 @@ def test_weibull_single_failure():
         assert result["analysis_type"] == "weibull"
     except Exception:
         pass  # May fail with insufficient data
+
+
+def test_distribution_fit_all_fail():
+    """Distribution fit when all distributions fail."""
+    from stats_engine.reliability import reliability
+    # Use very small dataset that may cause fitting issues
+    result = reliability(analysis_type="distribution", values=[1, 1, 1, 1, 1])
+    # Should still return a result, possibly with errors in individual fits
+    assert "distributions" in result or "error" in result
+
+
+def test_shelf_life_boundary():
+    """Shelf life calculation with edge case data."""
+    from stats_engine.reliability import reliability
+    result = reliability(analysis_type="stability",
+                         values=[10.0, 10.1, 10.0, 10.1, 10.0],
+                         times=[0, 1, 2, 3, 4])
+    assert "shelf_life" in result or "parameters" in result
+
+
+def test_shelf_life_with_usl():
+    """Shelf life with upper spec limit."""
+    from stats_engine.reliability import reliability
+    result = reliability(analysis_type="stability",
+                         times=[0, 3, 6, 9, 12],
+                         values=[100, 101, 102, 103, 104],
+                         usl=110)
+    assert result["analysis_type"] == "stability"
+    assert "shelf_life" in result
+
+
+def test_shelf_life_with_lsl():
+    """Shelf life with lower spec limit triggers shelf life calculation."""
+    from stats_engine.reliability import reliability
+    result = reliability(analysis_type="stability",
+                         times=[0, 3, 6, 9, 12],
+                         values=[100, 99.5, 99.0, 98.5, 98.0],
+                         lsl=95)
+    assert result["analysis_type"] == "stability"
+    assert "shelf_life" in result
+    assert result["shelf_life"] is not None

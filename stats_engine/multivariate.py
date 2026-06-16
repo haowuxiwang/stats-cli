@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from utils.output import r
+from utils.output import DEFAULT_PRECISION, r
 
 
 def multivariate(analysis_type, **kwargs):
@@ -34,8 +34,9 @@ def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
         raise ImportError("pandas required for PCA")
 
     if file and columns:
-        df = pd.read_excel(file) if file.endswith((".xlsx", ".xls")) else pd.read_csv(file)
-        X = df[columns].dropna().values
+        from utils.data_loader import read_dataframe
+        df = read_dataframe(file, columns=columns)
+        X = df.dropna().values
     elif values is not None:
         X = np.array(values, dtype=float)
     else:
@@ -93,8 +94,9 @@ def _cluster(values=None, file=None, columns=None, method="kmeans", n_clusters=3
         raise ImportError("pandas required for cluster analysis")
 
     if file and columns:
-        df = pd.read_excel(file) if file.endswith((".xlsx", ".xls")) else pd.read_csv(file)
-        X = df[columns].dropna().values
+        from utils.data_loader import read_dataframe
+        df = read_dataframe(file, columns=columns)
+        X = df.dropna().values
     elif values is not None:
         X = np.array(values, dtype=float)
     else:
@@ -169,8 +171,9 @@ def _discriminant(values=None, file=None, columns=None, group_column=None, **kwa
         raise ImportError("scikit-learn required for discriminant analysis")
 
     if file and columns and group_column:
-        df = pd.read_excel(file) if file.endswith((".xlsx", ".xls")) else pd.read_csv(file)
-        X = df[columns].dropna().values
+        from utils.data_loader import read_dataframe
+        df = read_dataframe(file, columns=columns)
+        X = df.dropna().values
         y = df[group_column].dropna().values
     else:
         raise ValueError("Provide 'file', 'columns', and 'group_column'")
@@ -196,9 +199,10 @@ def _correlation_matrix(values=None, file=None, columns=None, method="pearson", 
         raise ImportError("pandas required for correlation matrix")
 
     if file:
-        df = pd.read_excel(file) if file.endswith((".xlsx", ".xls")) else pd.read_csv(file)
+        from utils.data_loader import read_dataframe
+        df = read_dataframe(file, columns=columns)
         if columns:
-            df = df[columns]
+            pass  # columns already selected by read_dataframe
         df = df.select_dtypes(include=["number"]).dropna()
     elif values is not None:
         df = pd.DataFrame(values)
@@ -219,5 +223,5 @@ def _correlation_matrix(values=None, file=None, columns=None, method="pearson", 
         "method": method,
         "n_variables": len(corr.columns),
         "variables": list(corr.columns),
-        "matrix": corr.round(6).to_dict(),
+        "matrix": corr.round(DEFAULT_PRECISION).to_dict(),
     }

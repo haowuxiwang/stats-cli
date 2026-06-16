@@ -35,7 +35,7 @@ def power(analysis_type, effect_size=None, alpha=0.05, power=None, n=None, power
             "alpha": alpha,
             "power": alpha,
             "n": n,
-            "warning": "effect_size=0 means no effect; power equals alpha level",
+            "_warning": "effect_size=0 means no effect; power equals alpha level",
         }
 
     if analysis_type == "t_test":

@@ -86,7 +86,7 @@ def _simple_linear(x, y, alpha):
             "significant": None,
             "residual_std": None,
             "equation": f"y = {r(slope)} * x + {r(intercept)}",
-            "warning": "n=2: perfect fit but inferential statistics are undefined",
+            "_warning": "n=2: perfect fit but inferential statistics are undefined",
         }
     r_sq = r_value**2
 
@@ -175,31 +175,13 @@ def _polynomial(x, y, degree, alpha):
 def _multiple_regression(file, x_columns, y_column, reg_type, alpha):
     """Multiple or stepwise regression using statsmodels."""
     try:
-        import pandas as pd
         import statsmodels.api as sm
     except ImportError:
         raise ImportError("statsmodels is required for multiple regression")
 
-    from utils.data_loader import _load_file
+    from utils.data_loader import read_dataframe
 
-    data = _load_file(file)
-    df = pd.DataFrame(data) if isinstance(data, dict) else data
-
-    # If data has 'values' key, try to reconstruct
-    if isinstance(data, dict) and "values" in data:
-        # Load the raw file
-        path = file
-        from pathlib import Path
-
-        import pandas as pd
-
-        suffix = Path(path).suffix.lower()
-        if suffix in (".xlsx", ".xls"):
-            df = pd.read_excel(path)
-        elif suffix == ".csv":
-            df = pd.read_csv(path)
-        else:
-            raise ValueError("Multiple regression requires Excel or CSV file")
+    df = read_dataframe(file)
 
     y = df[y_column]
     X = df[x_columns]
@@ -360,5 +342,5 @@ def _nonlinear(x, y, model, alpha):
         "equation": equation,
     }
     if convergence_warning:
-        result["warning"] = "OptimizeWarning: curve_fit may not have converged"
+        result["_warning"] = "OptimizeWarning: curve_fit may not have converged"
     return result

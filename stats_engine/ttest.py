@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import PRECISION, p_value_context, r
 from utils.validators import to_array
 
 
@@ -51,23 +51,28 @@ def _one_sample_ttest(arr, mu, alpha):
     ci_lower = mean_val - t_crit * se
     ci_upper = mean_val + t_crit * se
 
-    return {
+    # Cohen's d for one-sample
+    cohens_d = (mean_val - mu) / std_val if std_val > 0 else 0.0
+
+    result = {
         "test_type": "one_sample",
         "n": n,
         "mean": r(mean_val),
         "std": r(std_val),
         "hypothesized_mean": mu,
         "t_statistic": r(t_stat),
-        "p_value": r(p_value),
+        "p_value": r(p_value, PRECISION["p_value"]),
         "significant": bool(p_value < alpha),
         "alpha": alpha,
+        "cohens_d": r(cohens_d, PRECISION["effect_size"]),
         "ci_95": [r(ci_lower), r(ci_upper)],
         "interpretation": (
-            f"Mean is significantly different from {mu} (p={r(p_value)})"
+            f"Mean is significantly different from {mu} (p={r(p_value, PRECISION['p_value'])})"
             if p_value < alpha
-            else f"No significant difference from {mu} (p={r(p_value)})"
+            else f"No significant difference from {mu} (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    return p_value_context(result, p_value, alpha, n)
 
 
 def _two_sample_ttest(arr1, arr2, alpha):
@@ -79,7 +84,11 @@ def _two_sample_ttest(arr1, arr2, alpha):
     # Welch's t-test (unequal variances)
     t_stat, p_value = sp_stats.ttest_ind(arr1, arr2, equal_var=False)
 
-    return {
+    # Cohen's d (pooled std)
+    pooled_std = np.sqrt(((n1 - 1) * std1**2 + (n2 - 1) * std2**2) / (n1 + n2 - 2))
+    cohens_d = (mean1 - mean2) / pooled_std if pooled_std > 0 else 0.0
+
+    result = {
         "test_type": "two_sample",
         "n1": n1,
         "n2": n2,
@@ -89,15 +98,17 @@ def _two_sample_ttest(arr1, arr2, alpha):
         "std2": r(std2),
         "mean_difference": r(mean1 - mean2),
         "t_statistic": r(t_stat),
-        "p_value": r(p_value),
+        "p_value": r(p_value, PRECISION["p_value"]),
         "significant": bool(p_value < alpha),
         "alpha": alpha,
+        "cohens_d": r(cohens_d, PRECISION["effect_size"]),
         "interpretation": (
-            f"Significant difference between groups (p={r(p_value)})"
+            f"Significant difference between groups (p={r(p_value, PRECISION['p_value'])})"
             if p_value < alpha
-            else f"No significant difference between groups (p={r(p_value)})"
+            else f"No significant difference between groups (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    return p_value_context(result, p_value, alpha, min(n1, n2))
 
 
 def _paired_ttest(arr1, arr2, alpha):
@@ -117,7 +128,10 @@ def _paired_ttest(arr1, arr2, alpha):
     ci_lower = mean_diff - t_crit * se
     ci_upper = mean_diff + t_crit * se
 
-    return {
+    # Cohen's d for paired
+    cohens_d = mean_diff / std_diff if std_diff > 0 else 0.0
+
+    result = {
         "test_type": "paired",
         "n": n,
         "mean1": r(np.mean(arr1)),
@@ -125,13 +139,15 @@ def _paired_ttest(arr1, arr2, alpha):
         "mean_difference": r(mean_diff),
         "std_difference": r(std_diff),
         "t_statistic": r(t_stat),
-        "p_value": r(p_value),
+        "p_value": r(p_value, PRECISION["p_value"]),
         "significant": bool(p_value < alpha),
         "alpha": alpha,
+        "cohens_d": r(cohens_d, PRECISION["effect_size"]),
         "ci_95": [r(ci_lower), r(ci_upper)],
         "interpretation": (
-            f"Significant difference between paired samples (p={r(p_value)})"
+            f"Significant difference between paired samples (p={r(p_value, PRECISION['p_value'])})"
             if p_value < alpha
-            else f"No significant difference between paired samples (p={r(p_value)})"
+            else f"No significant difference between paired samples (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    return p_value_context(result, p_value, alpha, n)

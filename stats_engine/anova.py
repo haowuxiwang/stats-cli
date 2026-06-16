@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 
 
 def anova(groups, anova_type="one_way", alpha=0.05, data=None):
@@ -76,7 +76,7 @@ def _one_way_anova(groups, alpha):
             }
         )
 
-    return {
+    result = {
         "anova_type": "one_way",
         "n_groups": k,
         "n_total": n_total,
@@ -99,6 +99,7 @@ def _one_way_anova(groups, alpha):
             else f"No significant difference between groups (F={r(f_stat, 2)}, p={r(p_value)})"
         ),
     }
+    return p_value_context(result, p_value, alpha, n_total)
 
 
 def _two_way_anova(groups, alpha, data=None):

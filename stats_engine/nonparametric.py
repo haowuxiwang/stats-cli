@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 from utils.validators import to_array
 
 
@@ -47,7 +47,7 @@ def _mann_whitney(x, y, alpha):
     u_stat = float(stat)
     effect_size = 1 - (2 * u_stat) / (n1 * n2)
 
-    return {
+    result = {
         "test_type": "mann_whitney",
         "n1": n1,
         "n2": n2,
@@ -62,6 +62,7 @@ def _mann_whitney(x, y, alpha):
             else f"No significant difference (U={r(u_stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, n1 + n2)
 
 
 def _kruskal_wallis(groups, alpha):
@@ -75,7 +76,7 @@ def _kruskal_wallis(groups, alpha):
     # Effect size (epsilon-squared)
     epsilon_sq = (stat - k + 1) / (n - k) if n > k else 0
 
-    return {
+    result = {
         "test_type": "kruskal_wallis",
         "n_groups": k,
         "n_total": n,
@@ -90,6 +91,7 @@ def _kruskal_wallis(groups, alpha):
             else f"No significant difference (H={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, n)
 
 
 def _wilcoxon(x, y, alpha):
@@ -99,7 +101,7 @@ def _wilcoxon(x, y, alpha):
 
     stat, p = sp_stats.wilcoxon(x, y)
 
-    return {
+    result = {
         "test_type": "wilcoxon",
         "n": len(x),
         "w_statistic": r(stat),
@@ -112,6 +114,7 @@ def _wilcoxon(x, y, alpha):
             else f"No significant difference (W={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, len(x))
 
 
 def _chi_square(observed, expected, alpha):
@@ -151,7 +154,7 @@ def _chi_square(observed, expected, alpha):
     # Cramér's V
     v = np.sqrt(stat / n) if n > 0 else 0
 
-    return {
+    result = {
         "test_type": "chi_square",
         "n": int(n),
         "k": k,
@@ -169,6 +172,7 @@ def _chi_square(observed, expected, alpha):
             else f"No significant difference from expected (chi2={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, int(n))
 
 
 def _friedman(groups, alpha):
@@ -179,7 +183,7 @@ def _friedman(groups, alpha):
     k = len(arrays)
     n = len(arrays[0])
 
-    return {
+    result = {
         "test_type": "friedman",
         "n_groups": k,
         "n_observations": n,
@@ -193,3 +197,4 @@ def _friedman(groups, alpha):
             else f"No significant difference (chi2={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, n)

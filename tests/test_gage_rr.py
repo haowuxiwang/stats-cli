@@ -119,7 +119,7 @@ def test_stability():
     assert result["analysis_type"] == "stability"
     assert result["n"] == 30
     assert "mean" in result
-    assert "sd" in result
+    assert "std" in result
     assert "ucl" in result
     assert "lcl" in result
     assert "out_of_control" in result

@@ -946,7 +946,7 @@ class TestHandlerIntegration:
             "command": "correlation",
             "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "method": "pearson"}
         })
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
         assert result["data"]["correlation"] > 0.99
 
     def test_chart_request_descriptive(self):

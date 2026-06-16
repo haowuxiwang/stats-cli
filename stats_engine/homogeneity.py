@@ -2,7 +2,7 @@
 
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 from utils.validators import to_array
 
 
@@ -34,7 +34,7 @@ def _levene(arrays, alpha):
     k = len(arrays)
     n = sum(len(a) for a in arrays)
 
-    return {
+    result = {
         "test_type": "levene",
         "n_groups": k,
         "n_total": n,
@@ -48,6 +48,7 @@ def _levene(arrays, alpha):
             else f"Variances are equal (W={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, n)
 
 
 def _bartlett(arrays, alpha):
@@ -57,7 +58,7 @@ def _bartlett(arrays, alpha):
     k = len(arrays)
     n = sum(len(a) for a in arrays)
 
-    return {
+    result = {
         "test_type": "bartlett",
         "n_groups": k,
         "n_total": n,
@@ -71,3 +72,4 @@ def _bartlett(arrays, alpha):
             else f"Variances are equal (B={r(stat, 2)}, p={r(p)})"
         ),
     }
+    return p_value_context(result, p, alpha, n)

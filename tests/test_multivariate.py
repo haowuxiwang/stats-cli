@@ -155,3 +155,26 @@ def test_discriminant_with_data():
             assert result["analysis_type"] == "discriminant"
         except Exception:
             pass  # May fail if file doesn't have group column
+
+
+def test_discriminant_no_group_column():
+    """Discriminant without group_column raises ValueError."""
+    from stats_engine.multivariate import multivariate
+    import tempfile, os
+    csv_content = "x1,x2\n1,2\n3,4\n5,6\n"
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(csv_content)
+        tmpfile = f.name
+    try:
+        with pytest.raises(ValueError):
+            multivariate(analysis_type="discriminant", file=tmpfile, columns=["x1", "x2"])
+    finally:
+        os.unlink(tmpfile)
+
+
+def test_correlation_matrix_empty_columns():
+    """Correlation matrix with empty columns uses default variable names."""
+    from stats_engine.multivariate import multivariate
+    result = multivariate(analysis_type="correlation_matrix", columns=[], values=[[1, 2], [3, 4]])
+    assert result["analysis_type"] == "correlation_matrix"
+    assert "matrix" in result

@@ -33,26 +33,34 @@ def control_chart(chart_type, values, subgroup_size=5, sample_size=None, target=
     if n < 2:
         raise ValueError("Need at least 2 data points")
 
+    _warning_msg = None
+    if n < 5:
+        _warning_msg = f"n={n}: control chart conclusions are unreliable with fewer than 5 data points"
+
     if chart_type == "xbar":
-        return _xbar_chart(values, subgroup_size)
+        result = _xbar_chart(values, subgroup_size)
     elif chart_type == "r":
-        return _r_chart(values, subgroup_size)
+        result = _r_chart(values, subgroup_size)
     elif chart_type == "imr":
-        return _imr_chart(values)
+        result = _imr_chart(values)
     elif chart_type == "p":
-        return _p_chart(values, sample_size or subgroup_size)
+        result = _p_chart(values, sample_size or subgroup_size)
     elif chart_type == "np":
-        return _np_chart(values, sample_size or subgroup_size)
+        result = _np_chart(values, sample_size or subgroup_size)
     elif chart_type == "c":
-        return _c_chart(values)
+        result = _c_chart(values)
     elif chart_type == "u":
-        return _u_chart(values, sample_size or subgroup_size)
+        result = _u_chart(values, sample_size or subgroup_size)
     elif chart_type == "ewma":
-        return _ewma_chart(values, target, lambda_ if lambda_ is not None else 0.2)
+        result = _ewma_chart(values, target, lambda_ if lambda_ is not None else 0.2)
     elif chart_type == "cusum":
-        return _cusum_chart(values, target, k if k is not None else 0.5, h if h is not None else 5)
+        result = _cusum_chart(values, target, k if k is not None else 0.5, h if h is not None else 5)
     else:
         raise ValueError(f"Unknown chart type: {chart_type}")
+
+    if _warning_msg:
+        result["_warning"] = _warning_msg
+    return result
 
 
 def _detect_rules(x, center, ucl, lcl, sigma):

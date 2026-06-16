@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 
 
 def advanced(analysis_type, **kwargs):
@@ -101,7 +101,7 @@ def _exact_test(observed, alpha=0.05, **kwargs):
     col_totals = table.sum(axis=0).tolist()
     n_total = int(table.sum())
 
-    return {
+    result = {
         "analysis_type": "exact_test",
         "test": "Fisher's exact test",
         "observed": table.tolist(),
@@ -118,6 +118,7 @@ def _exact_test(observed, alpha=0.05, **kwargs):
             else f"No significant association (OR={r(odds_ratio)}, p={r(p_value)})"
         ),
     }
+    return p_value_context(result, p_value, alpha, n_total)
 
 
 def _mcnemar(observed, alpha=0.05, **kwargs):
@@ -149,7 +150,7 @@ def _mcnemar(observed, alpha=0.05, **kwargs):
         chi2 = (abs(b - c) - 1) ** 2 / n_discordant
         p_value = float(1 - sp_stats.chi2.cdf(chi2, 1))
 
-    return {
+    result = {
         "analysis_type": "mcnemar",
         "observed": table.tolist(),
         "discordant_pairs": n_discordant,
@@ -165,6 +166,8 @@ def _mcnemar(observed, alpha=0.05, **kwargs):
             else f"No significant change in paired proportions (p={r(p_value)})"
         ),
     }
+    n_total = int(table.sum())
+    return p_value_context(result, p_value, alpha, n_total)
 
 
 def _cochran_q(data, alpha=0.05, **kwargs):
@@ -202,7 +205,7 @@ def _cochran_q(data, alpha=0.05, **kwargs):
         q_stat = float(numerator / denominator)
         p_value = float(1 - sp_stats.chi2.cdf(q_stat, k - 1))
 
-    return {
+    result = {
         "analysis_type": "cochran_q",
         "n_treatments": k,
         "n_subjects": n,
@@ -220,3 +223,4 @@ def _cochran_q(data, alpha=0.05, **kwargs):
             else f"No significant difference between treatments (Q={r(q_stat)}, p={r(p_value)})"
         ),
     }
+    return p_value_context(result, p_value, alpha, n * k)

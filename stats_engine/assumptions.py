@@ -232,7 +232,7 @@ def _generate_recommendations(assumptions, test_type, values, values2=None, grou
 
     elif test_type == "capability":
         if normality.get("passed") is False:
-            recommendations["warning"] = "Process capability assumes normality. Consider data transformation first."
+            recommendations["_warning"] = "Process capability assumes normality. Consider data transformation first."
             recommendations["transform_options"] = ["boxcox", "log", "sqrt"]
 
     return recommendations

@@ -138,3 +138,53 @@ class TestExploreOptions:
     def test_default_rows(self, csv_file):
         result = explore(file=csv_file)
         assert len(result["sample_data"]) == 5
+
+
+def test_explore_spec_detection():
+    """Explore detects USL/LSL columns."""
+    import tempfile, os
+    # Create a CSV with spec limit columns
+    csv_content = "value,USL,LSL\n10,12,8\n11,12,8\n10.5,12,8\n"
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(csv_content)
+        tmpfile = f.name
+    try:
+        from stats_engine.explore import explore
+        result = explore(file=tmpfile)
+        assert "detected_specs" in result
+        assert "usl" in result["detected_specs"]
+        assert result["detected_specs"]["usl"] == 12
+        assert result["detected_specs"]["lsl"] == 8
+    finally:
+        os.unlink(tmpfile)
+
+
+def test_explore_no_spec_columns():
+    """Explore with no spec columns returns no detected_specs."""
+    import tempfile, os
+    csv_content = "x,y\n1,2\n3,4\n"
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(csv_content)
+        tmpfile = f.name
+    try:
+        from stats_engine.explore import explore
+        result = explore(file=tmpfile)
+        assert "detected_specs" not in result
+    finally:
+        os.unlink(tmpfile)
+
+
+def test_explore_spec_target_column():
+    """Explore detects Target column."""
+    import tempfile, os
+    csv_content = "value,Target\n10,10\n11,10\n"
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+        f.write(csv_content)
+        tmpfile = f.name
+    try:
+        from stats_engine.explore import explore
+        result = explore(file=tmpfile)
+        assert "detected_specs" in result
+        assert "target" in result["detected_specs"]
+    finally:
+        os.unlink(tmpfile)

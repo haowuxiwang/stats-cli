@@ -3,14 +3,14 @@
 import numpy as np
 from scipy import stats as sp_stats
 
-from utils.output import r
+from utils.output import p_value_context, r
 
 
-def correlation(x, y, method="pearson"):
+def correlation(x, y, method="pearson", alpha=0.05):
     """Calculate correlation between two variables.
 
     Args:
-        x: First variable values
+        x: First variable values (loaded from file via main.py routing when file+x_column+y_column provided)
         y: Second variable values
         method: 'pearson', 'spearman', or 'kendall'
 
@@ -44,6 +44,7 @@ def correlation(x, y, method="pearson"):
             "strength": "undefined",
             "direction": "none",
             "interpretation": "Correlation is undefined when one or both inputs are constant",
+            "_warning": "One or both variables have zero variance; correlation is undefined",
         }
 
     if method == "pearson":
@@ -72,14 +73,16 @@ def correlation(x, y, method="pearson"):
 
     direction = "positive" if corr > 0 else "negative"
 
-    return {
+    result = {
         "method": method,
         "n": n,
         "correlation": r(corr),
         "r_squared": r(r_sq),
         "p_value": r(p),
-        "significant": bool(p < 0.05),
+        "significant": bool(p < alpha),
+        "alpha": alpha,
         "strength": strength,
         "direction": direction,
         "interpretation": f"{strength.capitalize()} {direction} correlation (r={r(corr)}, p={r(p)})",
     }
+    return p_value_context(result, p, alpha, n)
