@@ -76,7 +76,7 @@ def main():
     pdf.set_font("Helvetica", "", 11)
     pdf.cell(0, 8, "Version: 1.2.1", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
     pdf.cell(0, 8, "Date: 2026-06-15", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
-    pdf.cell(0, 8, "Commands: 33 | Tests: 1033 | Coverage: 95%", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+    pdf.cell(0, 8, "Commands: 33 | Tests: 1038 | Coverage: 95%", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
 
     # === TOC ===
     pdf.add_page()

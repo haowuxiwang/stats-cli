@@ -85,7 +85,7 @@ def main():
     pdf.set_font("simhei", "", 11)
     pdf.cell(0, 8, "版本: 1.2.1", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
     pdf.cell(0, 8, "日期: 2026-06-15", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
-    pdf.cell(0, 8, "命令: 33 | 测试: 1033 | 覆盖率: 95%", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+    pdf.cell(0, 8, "命令: 33 | 测试: 1038 | 覆盖率: 95%", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
 
     # === 目录 ===
     pdf.add_page()

@@ -4,7 +4,7 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 
 **Version**: 1.2.1
 **Commands**: 33
-**Test Coverage**: 92%
+**Test Coverage**: 95%
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 ---
@@ -336,7 +336,7 @@ CSV files are auto-detected in this order:
 
 ## Testing
 
-1033 tests covering all commands and edge cases.
+1038 tests covering all commands and edge cases.
 
 ```bash
 # Run all tests
@@ -407,7 +407,7 @@ stats-cli-py/
 │   ├── validators.py       # Input validation
 │   ├── data_loader.py      # File loading (Excel/CSV/JSON)
 │   └── data_cleaner.py     # NaN/Inf cleaning
-├── tests/                  # Pytest test suite (1033 tests)
+├── tests/                  # Pytest test suite (1038 tests)
 ├── .github/workflows/      # CI pipeline
 └── .gitignore
 ```
