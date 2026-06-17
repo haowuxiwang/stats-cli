@@ -173,8 +173,10 @@ def _discriminant(values=None, file=None, columns=None, group_column=None, **kwa
     if file and columns and group_column:
         from utils.data_loader import read_dataframe
 
-        df = read_dataframe(file, columns=columns)
-        X = df.dropna().values
+        # Include group_column in the columns list to load it
+        all_columns = list(dict.fromkeys(columns + [group_column]))  # deduplicate preserving order
+        df = read_dataframe(file, columns=all_columns)
+        X = df[columns].dropna().values
         y = df[group_column].dropna().values
     else:
         raise ValueError("Provide 'file', 'columns', and 'group_column'")

@@ -9,6 +9,18 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 
 **For AI Agents:** Not sure which command to use? Call `discover` first — it returns all available commands with their parameters and examples. Use `discover {"command_name": "xxx"}` to get required/optional parameter details before constructing your request.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start-dont-know-what-analysis-to-use)
+- [智能引导流程](#智能引导流程用户模糊请求时)
+- [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
+- [Scenario-Based Workflows](#scenario-based-workflows)
+- [All Commands](#all-commands-33-commands)
+- [Output Format](#output-format)
+- [File Support](#file-support)
+- [Dependencies](#dependencies)
+
 ## Installation
 
 ```bash
@@ -29,6 +41,39 @@ python main.py input.json
 # From Python code
 from main import handler
 result = handler({"command": "descriptive", "params": {"values": [1, 2, 3]}})
+```
+
+### Common Python Patterns
+
+```python
+# Pattern 1: Batch analysis multiple files
+import glob
+from main import handler
+
+for file in glob.glob("data/*.xlsx"):
+    result = handler({"command": "descriptive", "params": {"file": file, "column": "weight"}})
+    if result["status"] == "success":
+        print(f"{file}: mean={result['data']['mean']:.2f}")
+
+# Pattern 2: Export report to Excel
+report = handler({"command": "report", "params": {"values": data, "usl": 11.0, "lsl": 9.0}})
+handler({"command": "export_excel", "params": {"report_data": report["data"], "output_path": "report.xlsx"}})
+
+# Pattern 3: Decision workflow with assumption checking
+check = handler({"command": "check_assumptions", "params": {"values": data, "test_type": "ttest"}})
+if check["data"]["overall_assumptions_met"]:
+    result = handler({"command": "ttest", "params": {"values": group1, "values2": group2}})
+else:
+    result = handler({"command": "nonparametric", "params": {"test_type": "mann_whitney", "x": group1, "y": group2}})
+
+# Pattern 4: CLI wrapper with error handling
+import sys, json
+input_data = json.loads(sys.stdin.read())
+result = handler(input_data)
+if result["status"] == "error":
+    print(f"Error: {result['message']}", file=sys.stderr)
+    sys.exit(1)
+print(json.dumps(result, indent=2))
 ```
 
 ### Chart Generation
@@ -416,6 +461,34 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 {"command": "discover", "params": {"category": "spc"}}
 ```
 
+**Key Output Fields (explore):**
+- `sheets`: List of all sheet names in Excel file — use this to let user choose which sheet
+- `hint`: Present when multiple sheets exist — show this to user
+- `numeric_columns`: Auto-detected numeric columns — use for analysis
+- `detected_specs`: Auto-detected USL/LSL/Target from column names
+
+**Output Example (explore):**
+```json
+{
+  "status": "success",
+  "data": {
+    "file": "data.xlsx",
+    "n_rows": 100,
+    "n_columns": 5,
+    "numeric_columns": ["weight", "hardness"],
+    "text_columns": ["batch"],
+    "columns": [
+      {"name": "weight", "dtype": "float64", "non_null": 100, "null": 0, "mean": 10.25, "min": 9.8, "max": 10.7}
+    ],
+    "sample_data": [{"weight": 10.2, "hardness": 45.3, "batch": "A"}],
+    "sheet": "Sheet1",
+    "n_sheets": 2,
+    "sheets": ["Sheet1", "Summary"],
+    "hint": "This workbook has 2 sheets. Use 'sheet' parameter to explore other sheets: ['Sheet1', 'Summary']"
+  }
+}
+```
+
 ### Basic Statistics
 ```python
 {"command": "descriptive", "params": {"values": [10.2, 10.5, 10.3]}}
@@ -604,6 +677,55 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 - `regression`: descriptive → correlation → regression
 - `multivariate`: PCA → cluster analysis
 
+**Output Example (recommend):**
+```json
+{
+  "status": "success",
+  "data": {
+    "goal": "compare means of two groups",
+    "recommendations": [
+      {"test": "two_sample_ttest", "reason": "Two independent groups, use two-sample t-test"},
+      {"test": "mann_whitney", "reason": "Non-parametric alternative to two-sample t-test"}
+    ],
+    "top_recommendation": {"test": "two_sample_ttest", "reason": "Two independent groups, use two-sample t-test"}
+  }
+}
+```
+
+**Output Example (check_assumptions):**
+```json
+{
+  "status": "success",
+  "data": {
+    "test_type": "ttest",
+    "assumptions": {
+      "normality": {"test": "shapiro_wilk", "passed": true, "p_value": 0.85, "interpretation": "Data appears normal"},
+      "sample_size": {"n": 10, "minimum": 2, "recommended": 30, "passed": true, "adequate": false}
+    },
+    "recommendations": {"primary": "ttest", "variant": "one_sample", "reason": "Assumptions met"},
+    "overall_assumptions_met": true
+  }
+}
+```
+
+**Output Example (workflow_template):**
+```json
+{
+  "status": "success",
+  "data": {
+    "template": "manufacturing",
+    "steps_results": [
+      {"command": "clean", "status": "success", "data": {"method": "drop", "n_removed": 0}},
+      {"command": "descriptive", "status": "success", "data": {"mean": 10.3, "std": 0.14}},
+      {"command": "normality", "status": "success", "data": {"is_normal": true}},
+      {"command": "capability", "status": "success", "data": {"cp": 2.5, "cpk": 2.3}},
+      {"command": "report", "status": "success", "data": {"summary": "..."}}
+    ],
+    "overall_status": "success"
+  }
+}
+```
+
 ### Report Export (报告导出)
 
 ```python
@@ -615,6 +737,18 @@ handler({"command": "export_excel", "params": {"report_data": report_data["data"
 
 # Export to PDF
 handler({"command": "export_pdf", "params": {"report_data": report_data["data"], "output_path": "report.pdf"}})
+```
+
+**Output Example (export_excel / export_pdf):**
+```json
+{
+  "status": "success",
+  "data": {
+    "output_path": "report.xlsx",
+    "sheets": ["Summary", "Descriptive", "Normality", "Capability"],
+    "message": "Report exported to report.xlsx"
+  }
+}
 ```
 
 ---

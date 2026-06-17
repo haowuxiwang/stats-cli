@@ -37,6 +37,9 @@ def clean(values, method="drop", **kwargs):
     elif method == "winsorize":
         from scipy.stats import mstats
 
+        valid = arr[~np.isnan(arr)]
+        if len(valid) == 0:
+            raise ValueError("All values are NaN or empty, cannot winsorize")
         limits = kwargs.get("limits", (0.05, 0.05))
         cleaned = mstats.winsorize(arr, limits=limits)
     elif method == "clip":

@@ -44,15 +44,15 @@ def handler(input_data):
     try:
         result = _route(command, params)
         # Generate chart if requested
-        if want_chart:
+        if want_chart and isinstance(result, dict):
             # Inject raw values for chart generation
             if "values" in params and "_values" not in result:
                 result["_values"] = params["values"]
             result["chart_base64"] = _generate_chart(command, result, params)
             result.pop("_values", None)  # Clean up temp field
         # Check for warning marker from module
-        warning_msg = result.pop("_warning", None)
-        suggestion = result.pop("_warning_suggestion", None)
+        warning_msg = result.pop("_warning", None) if isinstance(result, dict) else None
+        suggestion = result.pop("_warning_suggestion", None) if isinstance(result, dict) else None
         if warning_msg:
             return warning(result, warning_msg, suggestion)
         return success(result)
@@ -409,7 +409,11 @@ def main():
         return
 
     result = handler(input_data)
-    print(to_json(result))
+    try:
+        print(to_json(result))
+    except (BrokenPipeError, OSError):
+        # Pipe closed (e.g., piped to head/tail), exit silently
+        pass
 
 
 if __name__ == "__main__":
