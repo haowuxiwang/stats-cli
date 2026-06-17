@@ -57,11 +57,7 @@ def _one_way_anova(groups, alpha):
     df_within = n_total - k
     ms_between = ss_between / df_between if df_between > 0 else 0
     ms_within = ss_within / df_within if df_within > 0 else 0
-    omega_sq = (
-        (ss_between - df_between * ms_within) / (ss_total + ms_within)
-        if (ss_total + ms_within) > 0
-        else 0
-    )
+    omega_sq = (ss_between - df_between * ms_within) / (ss_total + ms_within) if (ss_total + ms_within) > 0 else 0
     omega_sq = max(0, omega_sq)
 
     # Group statistics

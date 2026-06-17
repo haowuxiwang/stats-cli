@@ -55,7 +55,7 @@ def test_unknown_type():
 
 def test_mann_whitney_with_nan():
     """Mann-Whitney should handle NaN values."""
-    x = [1, 2, float('nan'), 4, 5]
+    x = [1, 2, float("nan"), 4, 5]
     y = [6, 7, 8, 9, 10]
     result = nonparametric(test_type="mann_whitney", x=x, y=y)
     assert result["test_type"] == "mann_whitney"
@@ -63,8 +63,8 @@ def test_mann_whitney_with_nan():
 
 def test_wilcoxon_with_nan():
     """Wilcoxon should handle NaN values by filtering pairs."""
-    x = [1, 2, float('nan'), 4, 5]
-    y = [6, 7, 8, float('nan'), 10]
+    x = [1, 2, float("nan"), 4, 5]
+    y = [6, 7, 8, float("nan"), 10]
     try:
         result = nonparametric(test_type="wilcoxon", x=x, y=y)
         assert result["test_type"] == "wilcoxon"

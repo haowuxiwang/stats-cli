@@ -48,7 +48,7 @@ def test_unequal_lengths():
     y = [1, 2, 3, 4]
     try:
         correlation(x=x, y=y)
-        assert False, "Should have raised"
+        raise AssertionError("Should have raised")
     except ValueError:
         pass
 
@@ -59,7 +59,7 @@ def test_insufficient_data():
     y = [float("nan"), float("nan")]
     try:
         correlation(x=x, y=y)
-        assert False, "Should have raised"
+        raise AssertionError("Should have raised")
     except ValueError:
         pass
 
@@ -70,7 +70,7 @@ def test_unknown_method():
     y = [2, 4, 6, 8, 10]
     try:
         correlation(x=x, y=y, method="invalid")
-        assert False, "Should have raised"
+        raise AssertionError("Should have raised")
     except ValueError:
         pass
 

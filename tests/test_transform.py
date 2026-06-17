@@ -60,13 +60,13 @@ def test_unknown_method():
 
 
 def test_log_with_nan():
-    values = [1, 2, float('nan'), 4, 5]
+    values = [1, 2, float("nan"), 4, 5]
     result = transform(values=values, method="log")
     assert result["method"] == "log"
 
 
 def test_sqrt_with_inf():
-    values = [1, 4, 9, float('inf'), 25]
+    values = [1, 4, 9, float("inf"), 25]
     result = transform(values=values, method="sqrt")
     assert result["method"] == "sqrt"
 

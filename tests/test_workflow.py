@@ -11,6 +11,7 @@ from stats_engine.workflow import pipeline, workflow
 # Assumption Checking Tests
 # ============================================================================
 
+
 class TestAssumptionChecking:
     """Test statistical assumption checking."""
 
@@ -106,10 +107,12 @@ class TestAssumptionChecking:
         np.random.seed(42)
         values = np.random.normal(100, 10, 50).tolist()
 
-        result = handler({
-            "command": "check_assumptions",
-            "params": {"values": values, "test_type": "ttest"},
-        })
+        result = handler(
+            {
+                "command": "check_assumptions",
+                "params": {"values": values, "test_type": "ttest"},
+            }
+        )
 
         assert result["status"] == "success"
         assert "assumptions" in result["data"]
@@ -119,115 +122,130 @@ class TestAssumptionChecking:
 # Method Recommendation Tests
 # ============================================================================
 
+
 class TestMethodRecommendation:
     """Test statistical method recommendation."""
 
     def test_recommend_two_group_compare(self):
         """Recommend test for comparing two groups."""
-        result = recommend_test({
-            "goal": "compare means of two groups",
-            "n_groups": 2,
-        })
+        result = recommend_test(
+            {
+                "goal": "compare means of two groups",
+                "n_groups": 2,
+            }
+        )
 
         assert "recommendations" in result
         assert len(result["recommendations"]) > 0
-        assert result["top_recommendation"]["test"] in [
-            "two_sample_ttest", "mann_whitney"
-        ]
+        assert result["top_recommendation"]["test"] in ["two_sample_ttest", "mann_whitney"]
 
     def test_recommend_paired_comparison(self):
         """Recommend test for paired data."""
-        result = recommend_test({
-            "goal": "compare means",
-            "n_groups": 2,
-            "paired": True,
-        })
+        result = recommend_test(
+            {
+                "goal": "compare means",
+                "n_groups": 2,
+                "paired": True,
+            }
+        )
 
-        assert result["top_recommendation"]["test"] in [
-            "paired_ttest", "wilcoxon"
-        ]
+        assert result["top_recommendation"]["test"] in ["paired_ttest", "wilcoxon"]
 
     def test_recommend_anova(self):
         """Recommend ANOVA for multiple groups."""
-        result = recommend_test({
-            "goal": "compare means",
-            "n_groups": 4,
-        })
+        result = recommend_test(
+            {
+                "goal": "compare means",
+                "n_groups": 4,
+            }
+        )
 
-        assert result["top_recommendation"]["test"] in [
-            "one_way_anova", "kruskal_wallis"
-        ]
+        assert result["top_recommendation"]["test"] in ["one_way_anova", "kruskal_wallis"]
 
     def test_recommend_correlation(self):
         """Recommend correlation test."""
-        result = recommend_test({
-            "goal": "measure relationship between variables",
-        })
+        result = recommend_test(
+            {
+                "goal": "measure relationship between variables",
+            }
+        )
 
-        assert result["top_recommendation"]["test"] in [
-            "pearson_correlation", "spearman_correlation"
-        ]
+        assert result["top_recommendation"]["test"] in ["pearson_correlation", "spearman_correlation"]
 
     def test_recommend_regression(self):
         """Recommend regression for prediction."""
-        result = recommend_test({
-            "goal": "predict y from x",
-            "n_variables": 1,
-        })
+        result = recommend_test(
+            {
+                "goal": "predict y from x",
+                "n_variables": 1,
+            }
+        )
 
         assert result["top_recommendation"]["test"] == "simple_linear_regression"
 
     def test_recommend_handler(self):
         """Recommend through handler."""
-        result = handler({
-            "command": "recommend",
-            "params": {
-                "data_description": {
-                    "goal": "compare two groups",
-                    "n_groups": 2,
+        result = handler(
+            {
+                "command": "recommend",
+                "params": {
+                    "data_description": {
+                        "goal": "compare two groups",
+                        "n_groups": 2,
+                    },
                 },
-            },
-        })
+            }
+        )
 
         assert result["status"] == "success"
         assert "recommendations" in result["data"]
 
     def test_recommend_categorical(self):
         """Recommend for categorical outcome."""
-        result = recommend_test({
-            "goal": "compare groups",
-            "n_groups": 2,
-            "outcome_type": "categorical",
-        })
+        result = recommend_test(
+            {
+                "goal": "compare groups",
+                "n_groups": 2,
+                "outcome_type": "categorical",
+            }
+        )
         assert result["top_recommendation"]["test"] == "chi_square"
 
     def test_recommend_relationship(self):
         """Recommend for relationship analysis."""
-        result = recommend_test({
-            "goal": "measure relationship",
-        })
+        result = recommend_test(
+            {
+                "goal": "measure relationship",
+            }
+        )
         assert result["top_recommendation"]["test"] in ["pearson_correlation", "spearman_correlation"]
 
     def test_recommend_predict_multiple(self):
         """Recommend for multiple regression."""
-        result = recommend_test({
-            "goal": "predict outcome",
-            "n_variables": 3,
-        })
+        result = recommend_test(
+            {
+                "goal": "predict outcome",
+                "n_variables": 3,
+            }
+        )
         assert result["top_recommendation"]["test"] == "multiple_regression"
 
     def test_recommend_normality(self):
         """Recommend for normality check."""
-        result = recommend_test({
-            "goal": "check normal distribution",
-        })
+        result = recommend_test(
+            {
+                "goal": "check normal distribution",
+            }
+        )
         assert result["top_recommendation"]["test"] == "shapiro_wilk"
 
     def test_recommend_unknown_goal(self):
         """Unknown goal should return empty recommendations."""
-        result = recommend_test({
-            "goal": "something completely different",
-        })
+        result = recommend_test(
+            {
+                "goal": "something completely different",
+            }
+        )
         assert len(result["recommendations"]) == 0
         assert result["top_recommendation"] is None
 
@@ -289,6 +307,7 @@ class TestAssumptionRecommendations:
 # Workflow Engine Tests
 # ============================================================================
 
+
 class TestWorkflowEngine:
     """Test multi-step workflow execution."""
 
@@ -337,11 +356,14 @@ class TestWorkflowEngine:
         result = workflow(
             steps=[
                 {"command": "descriptive", "params": {"values": values1}},
-                {"command": "ttest", "params": {
-                    "test_type": "two_sample",
-                    "values": values1,
-                    "values2": values2,
-                }},
+                {
+                    "command": "ttest",
+                    "params": {
+                        "test_type": "two_sample",
+                        "values": values1,
+                        "values2": values2,
+                    },
+                },
             ],
             auto_check=True,
         )
@@ -354,17 +376,19 @@ class TestWorkflowEngine:
         np.random.seed(42)
         values = np.random.normal(100, 10, 30).tolist()
 
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "descriptive"},
-                    {"command": "normality"},
-                ],
-                "values": values,
-                "auto_check": True,
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "descriptive"},
+                        {"command": "normality"},
+                    ],
+                    "values": values,
+                    "auto_check": True,
+                },
+            }
+        )
 
         assert result["status"] == "success"
         assert "steps_results" in result["data"]
@@ -373,6 +397,7 @@ class TestWorkflowEngine:
 # ============================================================================
 # Pipeline Tests
 # ============================================================================
+
 
 class TestPipeline:
     """Test simple pipeline execution."""
@@ -401,6 +426,7 @@ class TestPipeline:
 # Integration Tests
 # ============================================================================
 
+
 class TestWorkflowIntegration:
     """End-to-end workflow integration tests."""
 
@@ -423,10 +449,7 @@ class TestWorkflowIntegration:
         assert all(r["status"] == "success" for r in result["steps_results"])
 
         # Check that capability result is present
-        cap_result = next(
-            r for r in result["steps_results"]
-            if r["command"] == "capability"
-        )
+        cap_result = next(r for r in result["steps_results"] if r["command"] == "capability")
         assert "cp" in cap_result["result"]
         assert "cpk" in cap_result["result"]
 
@@ -441,11 +464,14 @@ class TestWorkflowIntegration:
                 {"command": "descriptive", "params": {"values": group1}},
                 {"command": "descriptive", "params": {"values": group2}},
                 {"command": "normality", "params": {"values": group1}},
-                {"command": "ttest", "params": {
-                    "test_type": "two_sample",
-                    "values": group1,
-                    "values2": group2,
-                }},
+                {
+                    "command": "ttest",
+                    "params": {
+                        "test_type": "two_sample",
+                        "values": group1,
+                        "values2": group2,
+                    },
+                },
             ],
             auto_check=True,
         )
@@ -479,6 +505,7 @@ class TestWorkflowTemplates:
     def test_manufacturing_template(self):
         """Manufacturing template: clean -> descriptive -> normality -> capability."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values = np.random.normal(10.0, 0.5, 30).tolist()
         result = workflow_template("manufacturing", values, usl=11.0, lsl=9.0)
@@ -488,6 +515,7 @@ class TestWorkflowTemplates:
     def test_comparison_template(self):
         """Comparison template with two groups."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values1 = np.random.normal(100, 10, 20).tolist()
         values2 = np.random.normal(110, 10, 20).tolist()
@@ -497,6 +525,7 @@ class TestWorkflowTemplates:
     def test_capability_template(self):
         """Capability template: clean -> descriptive -> normality -> capability."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values = np.random.normal(10.0, 0.5, 30).tolist()
         result = workflow_template("capability", values, usl=11.0, lsl=9.0)
@@ -505,6 +534,7 @@ class TestWorkflowTemplates:
     def test_exploration_template(self):
         """Exploration template: clean -> descriptive -> normality -> outlier."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values = np.random.normal(50, 5, 30).tolist()
         result = workflow_template("exploration", values)
@@ -513,6 +543,7 @@ class TestWorkflowTemplates:
     def test_unknown_template(self):
         """Unknown template should raise error."""
         from stats_engine.workflow import workflow_template
+
         with pytest.raises(ValueError, match="Unknown template"):
             workflow_template("nonexistent", [1, 2, 3])
 
@@ -520,21 +551,19 @@ class TestWorkflowTemplates:
         """Manufacturing template through handler."""
         np.random.seed(42)
         values = np.random.normal(10.0, 0.5, 30).tolist()
-        result = handler({
-            "command": "workflow_template",
-            "params": {
-                "template_name": "manufacturing",
-                "values": values,
-                "usl": 11.0,
-                "lsl": 9.0
+        result = handler(
+            {
+                "command": "workflow_template",
+                "params": {"template_name": "manufacturing", "values": values, "usl": 11.0, "lsl": 9.0},
             }
-        })
+        )
         assert result["status"] == "success"
         assert "steps_results" in result["data"]
 
     def test_reliability_template(self):
         """Reliability template: descriptive -> weibull."""
         from stats_engine.workflow import workflow_template
+
         times = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
         status = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
         result = workflow_template("reliability", values=times, status=status)
@@ -543,6 +572,7 @@ class TestWorkflowTemplates:
     def test_doe_template(self):
         """DOE template: full factorial design."""
         from stats_engine.workflow import workflow_template
+
         factors = [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}]
         result = workflow_template("doe", factors=factors)
         assert result["n_steps"] >= 1
@@ -550,14 +580,16 @@ class TestWorkflowTemplates:
     def test_timeseries_template(self):
         """Timeseries template: descriptive -> exp_smoothing."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
-        values = (np.sin(np.linspace(0, 4*np.pi, 50)) + np.random.normal(0, 0.1, 50)).tolist()
+        values = (np.sin(np.linspace(0, 4 * np.pi, 50)) + np.random.normal(0, 0.1, 50)).tolist()
         result = workflow_template("timeseries", values=values, frequency=12, n_forecast=5)
         assert result["n_steps"] >= 2
 
     def test_regression_template(self):
         """Regression template: correlation -> regression."""
         from stats_engine.workflow import workflow_template
+
         x = list(range(20))
         y = [2 * xi + 1 + np.random.normal(0, 1) for xi in x]
         result = workflow_template("regression", values=y, x=x, y=y)
@@ -566,6 +598,7 @@ class TestWorkflowTemplates:
     def test_multivariate_template(self):
         """Multivariate template: pca -> cluster."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values = np.random.rand(30, 3).tolist()
         result = workflow_template("multivariate", values=values, n_clusters=2)
@@ -630,6 +663,7 @@ class TestWorkflowEdgeCases:
     def test_comparison_template_3_groups(self):
         """Comparison template with 3+ groups should use ANOVA."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         groups = [
             np.random.normal(100, 10, 20).tolist(),
@@ -642,6 +676,7 @@ class TestWorkflowEdgeCases:
     def test_capability_template_with_target(self):
         """Capability template with target parameter."""
         from stats_engine.workflow import workflow_template
+
         np.random.seed(42)
         values = np.random.normal(10.0, 0.5, 30).tolist()
         result = workflow_template("capability", values, usl=11.0, lsl=9.0, target=10.0)
@@ -650,6 +685,7 @@ class TestWorkflowEdgeCases:
     def test_doe_template_with_responses(self):
         """DOE template with response data."""
         from stats_engine.workflow import workflow_template
+
         factors = [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}]
         responses = [10.2, 10.5, 11.3, 11.5]
         result = workflow_template("doe", factors=factors, responses=responses)
@@ -661,11 +697,14 @@ class TestWorkflowEdgeCases:
         values2 = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
         result = workflow(
             steps=[
-                {"command": "ttest", "params": {
-                    "test_type": "two_sample",
-                    "values": values1,
-                    "values2": values2,
-                }},
+                {
+                    "command": "ttest",
+                    "params": {
+                        "test_type": "two_sample",
+                        "values": values1,
+                        "values2": values2,
+                    },
+                },
             ],
             auto_check=True,
         )
@@ -676,10 +715,13 @@ class TestWorkflowEdgeCases:
         values = [0.1, 0.2, 0.3, 0.4, 0.5, 100, 200, 300, 400, 500]
         result = workflow(
             steps=[
-                {"command": "anova", "params": {
-                    "anova_type": "one_way",
-                    "groups": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
-                }},
+                {
+                    "command": "anova",
+                    "params": {
+                        "anova_type": "one_way",
+                        "groups": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                    },
+                },
             ],
             values=values,
             auto_check=True,

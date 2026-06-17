@@ -35,6 +35,7 @@ def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
 
     if file and columns:
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(file, columns=columns)
         X = df.dropna().values
     elif values is not None:
@@ -79,9 +80,7 @@ def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
         "eigenvalues": [r(v) for v in eigenvalues],
         "variance_explained": [r(v) for v in var_explained],
         "cumulative_variance": [r(v) for v in cum_var],
-        "loadings": {
-            col_names[i]: [r(loadings[i, j]) for j in range(n_components)] for i in range(len(col_names))
-        },
+        "loadings": {col_names[i]: [r(loadings[i, j]) for j in range(n_components)] for i in range(len(col_names))},
         "interpretation": f"First {n_components} components explain {r(cum_var[n_components - 1] * 100, 1)}% of variance",
     }
 
@@ -95,6 +94,7 @@ def _cluster(values=None, file=None, columns=None, method="kmeans", n_clusters=3
 
     if file and columns:
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(file, columns=columns)
         X = df.dropna().values
     elif values is not None:
@@ -172,6 +172,7 @@ def _discriminant(values=None, file=None, columns=None, group_column=None, **kwa
 
     if file and columns and group_column:
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(file, columns=columns)
         X = df.dropna().values
         y = df[group_column].dropna().values
@@ -200,6 +201,7 @@ def _correlation_matrix(values=None, file=None, columns=None, method="pearson", 
 
     if file:
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(file, columns=columns)
         if columns:
             pass  # columns already selected by read_dataframe

@@ -32,7 +32,7 @@ def explore(file, sheet=None, rows=5, header=0):
     """
     path = Path(file)
     if not path.exists():
-        return {"error": True, "message": f"File not found: {file}"}
+        raise FileNotFoundError(f"File not found: {file}")
 
     suffix = path.suffix.lower()
 
@@ -56,12 +56,12 @@ def _explore_excel(path, sheet, rows, header=0):
     if sheet is not None:
         if isinstance(sheet, int):
             if sheet < 0 or sheet >= len(sheet_names):
-                return {"error": True, "message": f"Sheet index {sheet} out of range. Available: {len(sheet_names)} sheets"}
+                raise ValueError(f"Sheet index {sheet} out of range. Available: {len(sheet_names)} sheets")
             sheet_name = sheet_names[sheet]
         else:
             sheet_name = str(sheet)
             if sheet_name not in sheet_names:
-                return {"error": True, "message": f"Sheet '{sheet_name}' not found. Available: {sheet_names}"}
+                raise ValueError(f"Sheet '{sheet_name}' not found. Available: {sheet_names}")
         df = pd.read_excel(path, sheet_name=sheet_name, header=header)
     else:
         sheet_name = sheet_names[0]
@@ -72,7 +72,9 @@ def _explore_excel(path, sheet, rows, header=0):
     result["n_sheets"] = len(sheet_names)
     result["sheets"] = sheet_names
     if len(sheet_names) > 1 and sheet is None:
-        result["hint"] = f"This workbook has {len(sheet_names)} sheets. Use 'sheet' parameter to explore other sheets: {sheet_names}"
+        result["hint"] = (
+            f"This workbook has {len(sheet_names)} sheets. Use 'sheet' parameter to explore other sheets: {sheet_names}"
+        )
     return result
 
 

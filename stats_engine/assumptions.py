@@ -55,9 +55,7 @@ def check_assumptions(values, test_type="ttest", values2=None, groups=None):
         result["assumptions"]["homogeneity"] = homogeneity_result
 
     # Generate recommendations based on assumption checks
-    result["recommendations"] = _generate_recommendations(
-        result["assumptions"], test_type, values, values2, groups
-    )
+    result["recommendations"] = _generate_recommendations(result["assumptions"], test_type, values, values2, groups)
 
     # Overall assessment
     all_passed = all(
@@ -88,7 +86,7 @@ def _check_normality(values):
         passed = bool(p_value > 0.05)
     else:
         # For large samples, use Anderson-Darling
-        result = sp_stats.anderson(values, dist='norm')
+        result = sp_stats.anderson(values, dist="norm")
         # Use 5% significance level (index 2)
         passed = bool(result.statistic < result.critical_values[2])
         p_value = None
@@ -138,9 +136,12 @@ def _check_sample_size(values, test_type):
         "recommended": rec_n,
         "passed": passed,
         "adequate": adequate,
-        "message": f"n={n}" + (
-            f" (minimum {min_n} not met)" if not passed
-            else f" (minimum {min_n} met, recommended {rec_n})" if not adequate
+        "message": f"n={n}"
+        + (
+            f" (minimum {min_n} not met)"
+            if not passed
+            else f" (minimum {min_n} met, recommended {rec_n})"
+            if not adequate
             else f" (recommended {rec_n} met)"
         ),
     }
@@ -189,7 +190,9 @@ def _generate_recommendations(assumptions, test_type, values, values2=None, grou
                 recommendations["primary"] = "mann_whitney"
                 recommendations["reason"] = "Data is not normal, use non-parametric Mann-Whitney U test"
                 recommendations["alternative"] = "ttest"
-                recommendations["alternative_reason"] = "If you must use parametric, Welch t-test is robust to non-normality"
+                recommendations["alternative_reason"] = (
+                    "If you must use parametric, Welch t-test is robust to non-normality"
+                )
             elif homogeneity.get("passed") is False:
                 recommendations["primary"] = "ttest"
                 recommendations["variant"] = "welch"
@@ -258,73 +261,99 @@ def recommend_test(data_description):
     # Compare means
     if "compare" in goal.lower() or "difference" in goal.lower():
         if outcome_type == "categorical":
-            recommendations.append({
-                "test": "chi_square",
-                "reason": "Categorical outcome, use chi-square test of independence",
-            })
+            recommendations.append(
+                {
+                    "test": "chi_square",
+                    "reason": "Categorical outcome, use chi-square test of independence",
+                }
+            )
         elif n_groups == 2:
             if paired:
-                recommendations.append({
-                    "test": "paired_ttest",
-                    "reason": "Two paired groups, use paired t-test",
-                })
-                recommendations.append({
-                    "test": "wilcoxon",
-                    "reason": "Non-parametric alternative to paired t-test",
-                })
+                recommendations.append(
+                    {
+                        "test": "paired_ttest",
+                        "reason": "Two paired groups, use paired t-test",
+                    }
+                )
+                recommendations.append(
+                    {
+                        "test": "wilcoxon",
+                        "reason": "Non-parametric alternative to paired t-test",
+                    }
+                )
             else:
-                recommendations.append({
-                    "test": "two_sample_ttest",
-                    "reason": "Two independent groups, use two-sample t-test",
-                })
-                recommendations.append({
-                    "test": "mann_whitney",
-                    "reason": "Non-parametric alternative to two-sample t-test",
-                })
+                recommendations.append(
+                    {
+                        "test": "two_sample_ttest",
+                        "reason": "Two independent groups, use two-sample t-test",
+                    }
+                )
+                recommendations.append(
+                    {
+                        "test": "mann_whitney",
+                        "reason": "Non-parametric alternative to two-sample t-test",
+                    }
+                )
         elif n_groups >= 3:
-            recommendations.append({
-                "test": "one_way_anova",
-                "reason": f"{n_groups} groups, use one-way ANOVA",
-            })
-            recommendations.append({
-                "test": "kruskal_wallis",
-                "reason": "Non-parametric alternative to ANOVA",
-            })
+            recommendations.append(
+                {
+                    "test": "one_way_anova",
+                    "reason": f"{n_groups} groups, use one-way ANOVA",
+                }
+            )
+            recommendations.append(
+                {
+                    "test": "kruskal_wallis",
+                    "reason": "Non-parametric alternative to ANOVA",
+                }
+            )
 
     # Relationship/correlation
     elif "relationship" in goal.lower() or "correlation" in goal.lower():
-        recommendations.append({
-            "test": "pearson_correlation",
-            "reason": "Measure linear relationship between two continuous variables",
-        })
-        recommendations.append({
-            "test": "spearman_correlation",
-            "reason": "Measure monotonic relationship (non-parametric)",
-        })
+        recommendations.append(
+            {
+                "test": "pearson_correlation",
+                "reason": "Measure linear relationship between two continuous variables",
+            }
+        )
+        recommendations.append(
+            {
+                "test": "spearman_correlation",
+                "reason": "Measure monotonic relationship (non-parametric)",
+            }
+        )
 
     # Prediction
     elif "predict" in goal.lower() or "regression" in goal.lower():
         if n_variables == 1:
-            recommendations.append({
-                "test": "simple_linear_regression",
-                "reason": "One predictor, use simple linear regression",
-            })
+            recommendations.append(
+                {
+                    "test": "simple_linear_regression",
+                    "reason": "One predictor, use simple linear regression",
+                }
+            )
         else:
-            recommendations.append({
-                "test": "multiple_regression",
-                "reason": f"{n_variables} predictors, use multiple regression",
-            })
+            recommendations.append(
+                {
+                    "test": "multiple_regression",
+                    "reason": f"{n_variables} predictors, use multiple regression",
+                }
+            )
 
     # Normality check
     elif "normal" in goal.lower() or "distribution" in goal.lower():
-        recommendations.append({
-            "test": "shapiro_wilk",
-            "reason": "Test if data follows normal distribution",
-        })
-        recommendations.append({
-            "test": "anderson_darling",
-            "reason": "More powerful normality test for larger samples",
-        })
+        recommendations.append(
+            {
+                "test": "shapiro_wilk",
+                "reason": "Test if data follows normal distribution",
+            }
+        )
+        recommendations.append(
+            {
+                "test": "anderson_darling",
+                "reason": "More powerful normality test for larger samples",
+            }
+        )
 
     return {
         "goal": goal,

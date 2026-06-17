@@ -3,7 +3,6 @@
 Uses well-known statistical test cases from textbooks and scientific literature.
 """
 
-
 import numpy as np
 import pytest
 
@@ -18,16 +17,64 @@ from stats_engine.ttest import ttest
 # Classic Textbook Datasets
 # ============================================================================
 
+
 class TestClassicDatasets:
     """Well-known textbook datasets with certified results."""
 
     def test_fisher_iris_setosa(self):
         """Fisher's Iris: Setosa sepal length descriptive stats."""
-        setosa = [5.1, 4.9, 4.7, 4.6, 5.0, 5.4, 4.6, 5.0, 4.4, 4.9,
-                  5.4, 4.8, 4.8, 4.3, 5.8, 5.7, 5.4, 5.1, 5.7, 5.1,
-                  5.4, 5.1, 4.6, 5.1, 4.8, 5.0, 5.0, 5.2, 5.2, 4.7,
-                  4.8, 5.4, 5.2, 5.5, 4.9, 5.0, 5.5, 4.9, 4.4, 5.1,
-                  5.0, 4.5, 4.4, 5.0, 5.1, 4.8, 5.1, 4.6, 5.3, 5.0]
+        setosa = [
+            5.1,
+            4.9,
+            4.7,
+            4.6,
+            5.0,
+            5.4,
+            4.6,
+            5.0,
+            4.4,
+            4.9,
+            5.4,
+            4.8,
+            4.8,
+            4.3,
+            5.8,
+            5.7,
+            5.4,
+            5.1,
+            5.7,
+            5.1,
+            5.4,
+            5.1,
+            4.6,
+            5.1,
+            4.8,
+            5.0,
+            5.0,
+            5.2,
+            5.2,
+            4.7,
+            4.8,
+            5.4,
+            5.2,
+            5.5,
+            4.9,
+            5.0,
+            5.5,
+            4.9,
+            4.4,
+            5.1,
+            5.0,
+            4.5,
+            4.4,
+            5.0,
+            5.1,
+            4.8,
+            5.1,
+            4.6,
+            5.3,
+            5.0,
+        ]
         result = descriptive(values=setosa)
         assert abs(result["mean"] - 5.006) < 0.001
         assert abs(result["std"] - 0.3525) < 0.001
@@ -49,10 +96,50 @@ class TestClassicDatasets:
 
     def test_galton_height(self):
         """Galton's height data: parent-child regression."""
-        parent = [70.5, 68.5, 65.5, 64.5, 64.0, 67.5, 69.5, 64.0, 63.0, 68.0,
-                  66.5, 64.5, 67.0, 69.0, 68.0, 66.0, 67.0, 66.0, 65.0, 64.0]
-        child = [69.5, 68.5, 67.5, 64.5, 63.0, 67.0, 69.0, 63.0, 62.5, 67.5,
-                 65.0, 63.5, 66.5, 68.5, 67.0, 65.0, 66.0, 65.5, 64.0, 63.0]
+        parent = [
+            70.5,
+            68.5,
+            65.5,
+            64.5,
+            64.0,
+            67.5,
+            69.5,
+            64.0,
+            63.0,
+            68.0,
+            66.5,
+            64.5,
+            67.0,
+            69.0,
+            68.0,
+            66.0,
+            67.0,
+            66.0,
+            65.0,
+            64.0,
+        ]
+        child = [
+            69.5,
+            68.5,
+            67.5,
+            64.5,
+            63.0,
+            67.0,
+            69.0,
+            63.0,
+            62.5,
+            67.5,
+            65.0,
+            63.5,
+            66.5,
+            68.5,
+            67.0,
+            65.0,
+            66.0,
+            65.5,
+            64.0,
+            63.0,
+        ]
 
         result = regression(x=parent, y=child, reg_type="linear")
         # Regression should show positive relationship
@@ -61,10 +148,8 @@ class TestClassicDatasets:
 
     def test_darwin_maize(self):
         """Darwin's maize data: paired comparison."""
-        cross = [23.5, 12.0, 21.0, 22.0, 19.125, 21.5, 22.125, 20.375,
-                 18.25, 21.625, 23.25, 21.0]
-        self_fert = [17.375, 20.375, 20.0, 20.0, 19.25, 18.625, 18.625, 15.25,
-                     16.5, 18.0, 16.25, 18.0]
+        cross = [23.5, 12.0, 21.0, 22.0, 19.125, 21.5, 22.125, 20.375, 18.25, 21.625, 23.25, 21.0]
+        self_fert = [17.375, 20.375, 20.0, 20.0, 19.25, 18.625, 18.625, 15.25, 16.5, 18.0, 16.25, 18.0]
 
         result = ttest(test_type="paired", values=cross, values2=self_fert)
         # Darwin's data is borderline significant
@@ -73,6 +158,7 @@ class TestClassicDatasets:
     def test_r_fisher_exact(self):
         """R's fisher.test example: 2x2 table."""
         from stats_engine.advanced import advanced
+
         result = advanced(analysis_type="exact_test", observed=[[1, 9], [11, 3]])
         assert "p_value" in result
         assert result["p_value"] < 0.05
@@ -89,29 +175,27 @@ class TestClassicDatasets:
     def test_mann_whitney(self):
         """Mann-Whitney U test: non-parametric comparison."""
         from stats_engine.nonparametric import nonparametric
-        result = nonparametric(test_type="mann_whitney",
-                               x=[1, 2, 3, 4, 5],
-                               y=[10, 20, 30, 40, 50])
+
+        result = nonparametric(test_type="mann_whitney", x=[1, 2, 3, 4, 5], y=[10, 20, 30, 40, 50])
         assert bool(result["significant"]) is True
 
     def test_kruskal_wallis(self):
         """Kruskal-Wallis test: non-parametric ANOVA."""
         from stats_engine.nonparametric import nonparametric
-        result = nonparametric(test_type="kruskal_wallis",
-                               groups=[[1, 2, 3], [10, 20, 30], [100, 200, 300]])
+
+        result = nonparametric(test_type="kruskal_wallis", groups=[[1, 2, 3], [10, 20, 30], [100, 200, 300]])
         assert bool(result["significant"]) is True
 
     def test_levene_test(self):
         """Levene's test: homogeneity of variance."""
         from stats_engine.homogeneity import homogeneity
+
         # Equal variances
-        result = homogeneity(test_type="levene",
-                             groups=[[1, 2, 3, 4, 5], [1.1, 2.1, 3.1, 4.1, 5.1]])
+        result = homogeneity(test_type="levene", groups=[[1, 2, 3, 4, 5], [1.1, 2.1, 3.1, 4.1, 5.1]])
         assert result["p_value"] > 0.05
 
         # Unequal variances
-        result = homogeneity(test_type="levene",
-                             groups=[[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
+        result = homogeneity(test_type="levene", groups=[[1, 2, 3, 4, 5], [10, 20, 30, 40, 50]])
         assert result["p_value"] < 0.05
 
     def test_shapiro_wilk_normal(self):
@@ -137,23 +221,23 @@ class TestClassicDatasets:
     def test_wilcoxon_signed_rank(self):
         """Wilcoxon signed-rank test: paired non-parametric."""
         from stats_engine.nonparametric import nonparametric
-        result = nonparametric(test_type="wilcoxon",
-                               x=[1, 2, 3, 4, 5],
-                               y=[2, 3, 4, 5, 6])
+
+        result = nonparametric(test_type="wilcoxon", x=[1, 2, 3, 4, 5], y=[2, 3, 4, 5, 6])
         # Wilcoxon may not be significant with small samples
         assert "p_value" in result
 
     def test_friedman_test(self):
         """Friedman test: repeated measures non-parametric."""
         from stats_engine.nonparametric import nonparametric
-        result = nonparametric(test_type="friedman",
-                               groups=[[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+        result = nonparametric(test_type="friedman", groups=[[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         assert "p_value" in result
 
 
 # ============================================================================
 # Manufacturing Quality Benchmarks
 # ============================================================================
+
 
 class TestManufacturingBenchmarks:
     """Real-world manufacturing quality test cases."""
@@ -163,6 +247,7 @@ class TestManufacturingBenchmarks:
         np.random.seed(42)
         values = np.random.normal(10.0, 0.5, 100).tolist()
         from stats_engine.capability import capability
+
         result = capability(values=values, usl=12.0, lsl=8.0)
         assert result["cpk"] > 1.0
         assert result["cp"] > 1.0
@@ -172,12 +257,14 @@ class TestManufacturingBenchmarks:
         np.random.seed(42)
         values = np.random.normal(10.0, 2.0, 100).tolist()
         from stats_engine.capability import capability
+
         result = capability(values=values, usl=12.0, lsl=8.0)
         assert result["cpk"] < 1.0
 
     def test_control_chart_imr(self):
         """I-MR control chart: basic functionality."""
         from stats_engine.control_chart import control_chart
+
         np.random.seed(42)
         values = np.random.normal(10, 1, 50).tolist()
         result = control_chart(chart_type="imr", values=values)
@@ -188,20 +275,19 @@ class TestManufacturingBenchmarks:
     def test_gage_rr_crossed(self):
         """Gage R&R crossed: measurement system analysis."""
         from stats_engine.gage_rr import gage_rr
+
         np.random.seed(42)
         parts = list(range(1, 11)) * 6
         operators = (["O1"] * 10 + ["O2"] * 10 + ["O3"] * 10) * 2
         measurements = np.random.normal(100, 2, 60).tolist()
-        result = gage_rr(analysis_type="crossed",
-                         measurements=measurements,
-                         parts=parts,
-                         operators=operators)
+        result = gage_rr(analysis_type="crossed", measurements=measurements, parts=parts, operators=operators)
         assert "variance_components" in result
         assert "ndc" in result
 
     def test_weibull_analysis(self):
         """Weibull analysis: reliability estimation."""
         from stats_engine.reliability import reliability
+
         times = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
         status = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]  # 1=failed, 0=censored
         result = reliability(analysis_type="weibull", times=times, status=status)
@@ -213,16 +299,18 @@ class TestManufacturingBenchmarks:
     def test_doe_full_factorial(self):
         """Full factorial DOE: 2^3 design."""
         from stats_engine.doe import doe
-        result = doe(doe_type="full_factorial",
-                     factors=[{"name": "A", "levels": 2},
-                              {"name": "B", "levels": 2},
-                              {"name": "C", "levels": 2}])
+
+        result = doe(
+            doe_type="full_factorial",
+            factors=[{"name": "A", "levels": 2}, {"name": "B", "levels": 2}, {"name": "C", "levels": 2}],
+        )
         assert result["n_runs"] == 8
         assert len(result["design_matrix"]) == 8
 
     def test_power_analysis_sample_size(self):
         """Power analysis: required sample size."""
         from stats_engine.power import power
+
         result = power(analysis_type="t_test", effect_size=0.5, power=0.80)
         assert 30 <= result["sample_size"] <= 40
 
@@ -230,6 +318,7 @@ class TestManufacturingBenchmarks:
 # ============================================================================
 # Statistical Properties
 # ============================================================================
+
 
 class TestStatisticalProperties:
     """Mathematical properties that must always hold."""

@@ -24,8 +24,7 @@ def regression(x=None, y=None, reg_type="linear", degree=2, file=None, x_columns
         Dict with regression results
     """
     # Filter NaN/Inf from x and y together for array-based regression types
-    if reg_type in ("linear", "quadratic", "polynomial", "logistic",
-                     "exponential", "power", "logarithmic", "sigmoid"):
+    if reg_type in ("linear", "quadratic", "polynomial", "logistic", "exponential", "power", "logarithmic", "sigmoid"):
         x_arr = np.array(x, dtype=float)
         y_arr = np.array(y, dtype=float)
         mask = np.isfinite(x_arr) & np.isfinite(y_arr)
@@ -33,9 +32,7 @@ def regression(x=None, y=None, reg_type="linear", degree=2, file=None, x_columns
             x_arr = x_arr[mask]
             y_arr = y_arr[mask]
         if len(x_arr) < 2:
-            raise ValueError(
-                f"After removing NaN/Inf, only {len(x_arr)} valid data points remain (need at least 2)"
-            )
+            raise ValueError(f"After removing NaN/Inf, only {len(x_arr)} valid data points remain (need at least 2)")
     else:
         x_arr = np.array(x, dtype=float) if x is not None else None
         y_arr = np.array(y, dtype=float) if y is not None else None
@@ -142,9 +139,7 @@ def _polynomial(x, y, degree, alpha):
     if len(x) < 2:
         raise ValueError("At least 2 data points are required for polynomial regression")
     if len(x) <= degree:
-        raise ValueError(
-            f"Need at least {degree + 1} data points for degree-{degree} polynomial, got {len(x)}"
-        )
+        raise ValueError(f"Need at least {degree + 1} data points for degree-{degree} polynomial, got {len(x)}")
 
     n = len(x)
 
@@ -277,23 +272,31 @@ def _nonlinear(x, y, model, alpha):
     n = len(x)
 
     if model == "exponential":
+
         def func(x, a, b, c):
             return a * np.exp(b * x) + c
+
         p0 = [1.0, 0.1, float(np.min(y))]
         param_names = ["a", "b", "c"]
     elif model == "power":
+
         def func(x, a, b):
             return a * np.power(x, b)
+
         p0 = [1.0, 1.0]
         param_names = ["a", "b"]
     elif model == "logarithmic":
+
         def func(x, a, b):
             return a * np.log(x) + b
+
         p0 = [1.0, 0.0]
         param_names = ["a", "b"]
     elif model == "sigmoid":
+
         def func(x, a, b, c, d):
             return d + (a - d) / (1 + (x / c) ** b)
+
         y_min = float(np.min(y))
         y_max = float(np.max(y))
         x_mid = float(np.median(x))
@@ -312,7 +315,7 @@ def _nonlinear(x, y, model, alpha):
     residuals = y - y_pred
 
     # R-squared
-    ss_res = np.sum(residuals ** 2)
+    ss_res = np.sum(residuals**2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
     r_sq = 1 - ss_res / ss_tot if ss_tot > 0 else 0
     k = len(popt)

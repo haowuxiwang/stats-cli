@@ -149,8 +149,7 @@ def main():
     pdf.ln(3)
     pdf.section_title("第1层: 路由层 (main.py)")
     pdf.body_text(
-        "解析 JSON 输入，通过 _route() 函数路由命令（延迟导入），"
-        "处理异常，将输出包装在标准信封中。共 374 行代码。"
+        "解析 JSON 输入，通过 _route() 函数路由命令（延迟导入），处理异常，将输出包装在标准信封中。共 374 行代码。"
     )
     pdf.ln(3)
     pdf.section_title("第2层: 执行层 (stats_engine/*.py)")
@@ -180,25 +179,25 @@ def main():
     pdf.section_title("三种调用模式")
     pdf.code_block(
         "# 模式 1: stdin 管道\n"
-        "echo '{\"command\":\"descriptive\",\"params\":{\"values\":[1,2,3]}}' | python main.py\n\n"
+        'echo \'{"command":"descriptive","params":{"values":[1,2,3]}}\' | python main.py\n\n'
         "# 模式 2: 文件参数\n"
         "python main.py input.json\n\n"
         "# 模式 3: Python 直接调用\n"
         "from main import handler\n"
-        "result = handler({\"command\": \"descriptive\", \"params\": {\"values\": [1,2,3]}})"
+        'result = handler({"command": "descriptive", "params": {"values": [1,2,3]}})'
     )
     pdf.ln(3)
     pdf.section_title("标准输出信封")
     pdf.code_block(
-        "成功: {\"status\":\"success\", \"version\":\"1.2.1\", \"timestamp\":\"...\", \"data\":{...}}\n"
-        "失败: {\"status\":\"error\", \"error_type\":\"...\", \"message\":\"...\", \"suggestion\":\"...\"}"
+        '成功: {"status":"success", "version":"1.2.1", "timestamp":"...", "data":{...}}\n'
+        '失败: {"status":"error", "error_type":"...", "message":"...", "suggestion":"..."}'
     )
     pdf.ln(3)
     pdf.section_title("Agent 调用流程 (7 步)")
-    pdf.body_text("1. Agent 收到用户模糊请求 (\"帮我分析数据\")")
+    pdf.body_text('1. Agent 收到用户模糊请求 ("帮我分析数据")')
     pdf.body_text("2. Agent 调用 discover -> 获取 33 个命令摘要")
     pdf.body_text("3. Agent 根据 description/category 选择合适命令")
-    pdf.body_text("4. Agent 调用 discover {command_name:\"xxx\"} -> 获取参数 schema")
+    pdf.body_text('4. Agent 调用 discover {command_name:"xxx"} -> 获取参数 schema')
     pdf.body_text("5. Agent 用 example 作为模板构造 JSON 请求")
     pdf.body_text("6. Agent 调用目标命令 -> 获取结果")
     pdf.body_text("7. Agent 用 output_fields 解析结果，向用户解释")
@@ -216,7 +215,7 @@ def main():
     pdf.ln(3)
     pdf.section_title("第2层: discover 运行时动态发现 (2 级)")
     pdf.body_text("第1级: discover (无参数) -> 轻量摘要 (description + category)")
-    pdf.body_text("  -> 第2级: discover {command_name:\"xxx\"} -> 完整 schema (params + output_fields)")
+    pdf.body_text('  -> 第2级: discover {command_name:"xxx"} -> 完整 schema (params + output_fields)')
     pdf.ln(5)
     pdf.section_title("为什么需要两层?")
     pdf.body_text(
@@ -285,10 +284,7 @@ def main():
     # === 第7章: 自发现 ===
     pdf.add_page()
     pdf.chapter_title("7. 自发现机制 (discover 命令)")
-    pdf.body_text(
-        "discover 命令是运行时自描述机制，让 AI Agent 无需读取 SKILL.md "
-        "即可了解可用命令。"
-    )
+    pdf.body_text("discover 命令是运行时自描述机制，让 AI Agent 无需读取 SKILL.md 即可了解可用命令。")
     pdf.ln(3)
     pdf.section_title("三种查询模式")
     pdf.code_block(

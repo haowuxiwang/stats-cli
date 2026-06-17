@@ -1,6 +1,5 @@
 """Tests for stats_engine/descriptive.py."""
 
-
 from stats_engine.descriptive import descriptive
 
 

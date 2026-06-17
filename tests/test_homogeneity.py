@@ -29,10 +29,16 @@ def test_unknown_type():
 def test_levene_boundary_p_value():
     """Test p_value_context fields for near-boundary p-value."""
     from main import handler
-    result = handler({"command": "homogeneity", "params": {
-        "test_type": "levene",
-        "groups": [[10.0, 10.1, 10.2, 10.0, 10.1], [10.5, 10.6, 10.7, 10.5, 10.6]]
-    }})
+
+    result = handler(
+        {
+            "command": "homogeneity",
+            "params": {
+                "test_type": "levene",
+                "groups": [[10.0, 10.1, 10.2, 10.0, 10.1], [10.5, 10.6, 10.7, 10.5, 10.6]],
+            },
+        }
+    )
     assert result["status"] in ("success", "warning")
     # p_boundary or small_sample_warning may be present
     data = result["data"]
@@ -43,10 +49,8 @@ def test_levene_boundary_p_value():
 def test_levene_small_sample_warning():
     """Small sample should trigger warning."""
     from main import handler
-    result = handler({"command": "homogeneity", "params": {
-        "test_type": "levene",
-        "groups": [[1, 2, 3], [4, 5, 6]]
-    }})
+
+    result = handler({"command": "homogeneity", "params": {"test_type": "levene", "groups": [[1, 2, 3], [4, 5, 6]]}})
     assert result["status"] == "warning"
     assert "small_sample_warning" in result["data"]
 
@@ -54,6 +58,7 @@ def test_levene_small_sample_warning():
 def test_bartlett_returns_all_fields():
     """Bartlett test returns expected fields."""
     from stats_engine.homogeneity import homogeneity
+
     result = homogeneity(test_type="bartlett", groups=[[10, 11, 12], [20, 21, 22]])
     assert "test_type" in result
     assert "p_value" in result

@@ -17,8 +17,7 @@ def gage_data():
 
 def test_crossed(gage_data):
     measurements, parts, operators = gage_data
-    result = gage_rr(analysis_type="crossed", measurements=measurements,
-                     parts=parts, operators=operators)
+    result = gage_rr(analysis_type="crossed", measurements=measurements, parts=parts, operators=operators)
     assert result["analysis_type"] == "crossed"
     assert "variance_components" in result
     assert "contribution" in result
@@ -29,8 +28,7 @@ def test_crossed(gage_data):
 
 def test_nested(gage_data):
     measurements, parts, operators = gage_data
-    result = gage_rr(analysis_type="nested", measurements=measurements,
-                     parts=parts, operators=operators)
+    result = gage_rr(analysis_type="nested", measurements=measurements, parts=parts, operators=operators)
     assert result["analysis_type"] == "nested"
     assert "variance_components" in result
 
@@ -153,8 +151,7 @@ def test_crossed_no_interaction():
     parts = list(range(1, 6)) * 2
     operators = ["O1"] * 5 + ["O2"] * 5
     measurements = np.random.normal(100, 2, 10).tolist()
-    result = gage_rr(analysis_type="crossed", measurements=measurements,
-                     parts=parts, operators=operators)
+    result = gage_rr(analysis_type="crossed", measurements=measurements, parts=parts, operators=operators)
     assert result["analysis_type"] == "crossed"
     assert "variance_components" in result
 
@@ -165,7 +162,8 @@ def test_crossed_with_tolerance():
     parts = list(range(1, 11)) * 6
     operators = (["O1"] * 10 + ["O2"] * 10 + ["O3"] * 10) * 2
     measurements = np.random.normal(100, 2, 60).tolist()
-    result = gage_rr(analysis_type="crossed", measurements=measurements,
-                     parts=parts, operators=operators, tolerance=10.0)
+    result = gage_rr(
+        analysis_type="crossed", measurements=measurements, parts=parts, operators=operators, tolerance=10.0
+    )
     assert result["analysis_type"] == "crossed"
     assert "pct_tolerance" in result or "study_variation" in result

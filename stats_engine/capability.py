@@ -10,13 +10,21 @@ from utils.validators import to_array
 _D2 = {2: 1.128, 3: 1.693, 4: 2.059, 5: 2.326, 6: 2.534, 7: 2.704, 8: 2.847, 9: 2.970, 10: 3.078}
 # c4 constants for S-bar method
 _C4 = {
-    2: 0.7979, 3: 0.8862, 4: 0.9213, 5: 0.9400, 6: 0.9515,
-    7: 0.9594, 8: 0.9650, 9: 0.9693, 10: 0.9727,
+    2: 0.7979,
+    3: 0.8862,
+    4: 0.9213,
+    5: 0.9400,
+    6: 0.9515,
+    7: 0.9594,
+    8: 0.9650,
+    9: 0.9693,
+    10: 0.9727,
 }
 
 
-def capability(values, usl=None, lsl=None, target=None, capability_type="normal",
-               sigma_method="mr", subgroup_size=None):
+def capability(
+    values, usl=None, lsl=None, target=None, capability_type="normal", sigma_method="mr", subgroup_size=None
+):
     """Calculate process capability indices.
 
     Args:

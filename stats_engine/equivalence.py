@@ -22,8 +22,7 @@ def equivalence(test_type, values=None, values2=None, mu=None, delta=0.5, alpha=
         Dict with test results
     """
     if test_type == "tost":
-        return _tost(to_array(values, min_n=2, name="values"),
-                     to_array(values2, min_n=2, name="values2"), delta, alpha)
+        return _tost(to_array(values, min_n=2, name="values"), to_array(values2, min_n=2, name="values2"), delta, alpha)
     elif test_type == "one_sample_tost":
         return _one_sample_tost(to_array(values, min_n=2, name="values"), mu, delta, alpha)
     else:

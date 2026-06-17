@@ -74,12 +74,12 @@ def test_to_native_numpy_inf():
 
 
 def test_to_native_python_nan():
-    assert _to_native(float('nan')) is None
+    assert _to_native(float("nan")) is None
 
 
 def test_to_native_python_inf():
-    assert _to_native(float('inf')) is None
-    assert _to_native(float('-inf')) is None
+    assert _to_native(float("inf")) is None
+    assert _to_native(float("-inf")) is None
 
 
 def test_to_native_numpy_array():

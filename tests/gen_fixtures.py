@@ -48,11 +48,13 @@ for n in [5, 50, 500, 5000]:
 
 # 5-8: Three columns, different sizes
 for n in [10, 100, 1000, 5000]:
-    df = pd.DataFrame({
-        "x1": np.random.normal(50, 10, n),
-        "x2": np.random.normal(60, 12, n),
-        "x3": np.random.normal(55, 8, n),
-    })
+    df = pd.DataFrame(
+        {
+            "x1": np.random.normal(50, 10, n),
+            "x2": np.random.normal(60, 12, n),
+            "x3": np.random.normal(55, 8, n),
+        }
+    )
     save(df, next_name(f"threecol_{n}rows"))
 
 # 9-12: Many columns
@@ -63,10 +65,12 @@ for ncols in [5, 10, 20, 50]:
 
 # 13-16: Large dataset variants
 for n in [100, 500, 2000, 10000]:
-    df = pd.DataFrame({
-        "measurement": np.random.normal(10, 2, n),
-        "batch": np.random.choice(["A", "B", "C"], n),
-    })
+    df = pd.DataFrame(
+        {
+            "measurement": np.random.normal(10, 2, n),
+            "batch": np.random.choice(["A", "B", "C"], n),
+        }
+    )
     save(df, next_name(f"large_{n}rows"))
 
 # 17-20: Wide datasets
@@ -139,11 +143,13 @@ df = pd.DataFrame({"value": np.random.uniform(0.001, 0.01, 200)})
 save(df, next_name("dist_small_decimals"))
 
 # 35: Mixed scales
-df = pd.DataFrame({
-    "small": np.random.uniform(0.001, 0.01, 100),
-    "medium": np.random.uniform(10, 100, 100),
-    "large": np.random.uniform(10000, 100000, 100),
-})
+df = pd.DataFrame(
+    {
+        "small": np.random.uniform(0.001, 0.01, 100),
+        "medium": np.random.uniform(10, 100, 100),
+        "large": np.random.uniform(10000, 100000, 100),
+    }
+)
 save(df, next_name("dist_mixed_scales"))
 
 
@@ -189,10 +195,12 @@ df = pd.DataFrame({"value": vals})
 save(df, next_name("missing_last10"))
 
 # 42: Entire column NaN
-df = pd.DataFrame({
-    "good": np.random.normal(50, 10, 100),
-    "all_nan": np.nan,
-})
+df = pd.DataFrame(
+    {
+        "good": np.random.normal(50, 10, 100),
+        "all_nan": np.nan,
+    }
+)
 save(df, next_name("missing_entire_col"))
 
 # 43: Alternating NaN
@@ -202,11 +210,13 @@ df = pd.DataFrame({"value": vals})
 save(df, next_name("missing_alternating"))
 
 # 44: Multi-column with different missing patterns
-df = pd.DataFrame({
-    "a": np.random.normal(0, 1, 100),
-    "b": np.append(np.nan, np.random.normal(0, 1, 99)),
-    "c": np.append(np.random.normal(0, 1, 99), np.nan),
-})
+df = pd.DataFrame(
+    {
+        "a": np.random.normal(0, 1, 100),
+        "b": np.append(np.nan, np.random.normal(0, 1, 99)),
+        "c": np.append(np.random.normal(0, 1, 99), np.nan),
+    }
+)
 save(df, next_name("missing_multi_pattern"))
 
 # 45: Only one valid value in a column
@@ -221,56 +231,87 @@ save(df, next_name("missing_single_valid"))
 # ============================================================================
 
 # 46: Numeric + text column
-df = pd.DataFrame({
-    "numeric": np.random.normal(50, 10, 100),
-    "category": np.random.choice(["A", "B", "C"], 100),
-})
+df = pd.DataFrame(
+    {
+        "numeric": np.random.normal(50, 10, 100),
+        "category": np.random.choice(["A", "B", "C"], 100),
+    }
+)
 save(df, next_name("mixed_num_text"))
 
 # 47: Numeric + boolean
-df = pd.DataFrame({
-    "value": np.random.normal(50, 10, 100),
-    "flag": np.random.choice([True, False], 100),
-})
+df = pd.DataFrame(
+    {
+        "value": np.random.normal(50, 10, 100),
+        "flag": np.random.choice([True, False], 100),
+    }
+)
 save(df, next_name("mixed_num_bool"))
 
 # 48: All text (should fail gracefully)
-df = pd.DataFrame({
-    "name": [f"item_{i}" for i in range(50)],
-    "label": np.random.choice(["x", "y", "z"], 50),
-})
+df = pd.DataFrame(
+    {
+        "name": [f"item_{i}" for i in range(50)],
+        "label": np.random.choice(["x", "y", "z"], 50),
+    }
+)
 save(df, next_name("mixed_all_text"))
 
 # 49: Numeric stored as string
-df = pd.DataFrame({
-    "value": [str(round(x, 2)) for x in np.random.normal(50, 10, 100)],
-})
+df = pd.DataFrame(
+    {
+        "value": [str(round(x, 2)) for x in np.random.normal(50, 10, 100)],
+    }
+)
 save(df, next_name("mixed_num_as_string"))
 
 # 50: Mixed numeric and string in same column
 vals = list(np.random.normal(50, 10, 80))
-vals += ["N/A", "missing", "-", "", "null", "NA", "n/a", "#REF!", "inf", "-inf",
-         "1.5e10", "3.14", "0", "-999", "100.00", "abc", "12.5", "6.02e23",
-         "NaN", "Inf"]
+vals += [
+    "N/A",
+    "missing",
+    "-",
+    "",
+    "null",
+    "NA",
+    "n/a",
+    "#REF!",
+    "inf",
+    "-inf",
+    "1.5e10",
+    "3.14",
+    "0",
+    "-999",
+    "100.00",
+    "abc",
+    "12.5",
+    "6.02e23",
+    "NaN",
+    "Inf",
+]
 np.random.shuffle(vals)
 df = pd.DataFrame({"value": vals})
 save(df, next_name("mixed_messy_column"))
 
 # 51: Date column + numeric
 dates = pd.date_range("2024-01-01", periods=100, freq="D")
-df = pd.DataFrame({
-    "date": dates,
-    "measurement": np.random.normal(100, 15, 100),
-})
+df = pd.DataFrame(
+    {
+        "date": dates,
+        "measurement": np.random.normal(100, 15, 100),
+    }
+)
 save(df, next_name("mixed_date_numeric"))
 
 # 52: Multiple numeric + text
-df = pd.DataFrame({
-    "x1": np.random.normal(0, 1, 100),
-    "x2": np.random.normal(0, 1, 100),
-    "label": np.random.choice(["group1", "group2"], 100),
-    "y": np.random.normal(0, 1, 100),
-})
+df = pd.DataFrame(
+    {
+        "x1": np.random.normal(0, 1, 100),
+        "x2": np.random.normal(0, 1, 100),
+        "label": np.random.choice(["group1", "group2"], 100),
+        "y": np.random.normal(0, 1, 100),
+    }
+)
 save(df, next_name("mixed_multi_num_text"))
 
 # 53: Column with Inf values
@@ -281,18 +322,22 @@ df = pd.DataFrame({"value": vals})
 save(df, next_name("mixed_with_inf"))
 
 # 54: Column with very long strings
-df = pd.DataFrame({
-    "value": np.random.normal(50, 10, 50),
-    "description": ["A" * 1000] * 50,
-})
+df = pd.DataFrame(
+    {
+        "value": np.random.normal(50, 10, 50),
+        "description": ["A" * 1000] * 50,
+    }
+)
 save(df, next_name("mixed_long_strings"))
 
 # 55: Unicode column names
-df = pd.DataFrame({
-    "测量值": np.random.normal(50, 10, 100),
-    "温度": np.random.normal(25, 5, 100),
-    "压力": np.random.normal(101.3, 2, 100),
-})
+df = pd.DataFrame(
+    {
+        "测量值": np.random.normal(50, 10, 100),
+        "温度": np.random.normal(25, 5, 100),
+        "压力": np.random.normal(101.3, 2, 100),
+    }
+)
 save(df, next_name("mixed_unicode_cols"))
 
 
@@ -413,10 +458,12 @@ df = pd.DataFrame({"A": np.random.normal(0, 1, 50), "B": np.random.normal(0, 1, 
 save(df, next_name("header_single_letter"))
 
 # 77: Very long column names
-df = pd.DataFrame({
-    "this_is_a_very_long_column_name_that_goes_on_and_on_and_on": np.random.normal(0, 1, 50),
-    "another_extremely_long_column_name_for_testing_purposes": np.random.normal(0, 1, 50),
-})
+df = pd.DataFrame(
+    {
+        "this_is_a_very_long_column_name_that_goes_on_and_on_and_on": np.random.normal(0, 1, 50),
+        "another_extremely_long_column_name_for_testing_purposes": np.random.normal(0, 1, 50),
+    }
+)
 save(df, next_name("header_long_names"))
 
 # 78: Duplicate column names (pandas allows this)
@@ -429,11 +476,13 @@ df = pd.DataFrame({"": np.random.normal(0, 1, 50), " ": np.random.normal(0, 1, 5
 save(df, next_name("header_empty_names"))
 
 # 80: Header with special characters
-df = pd.DataFrame({
-    "col-1": np.random.normal(0, 1, 50),
-    "col.2": np.random.normal(0, 1, 50),
-    "col (3)": np.random.normal(0, 1, 50),
-})
+df = pd.DataFrame(
+    {
+        "col-1": np.random.normal(0, 1, 50),
+        "col.2": np.random.normal(0, 1, 50),
+        "col (3)": np.random.normal(0, 1, 50),
+    }
+)
 save(df, next_name("header_special_chars"))
 
 
@@ -454,21 +503,27 @@ df = pd.DataFrame({"x": x, "y": y})
 save(df, next_name("stat_quadratic"))
 
 # 83: No relationship (random)
-df = pd.DataFrame({
-    "x": np.random.normal(0, 1, 100),
-    "y": np.random.normal(0, 1, 100),
-})
+df = pd.DataFrame(
+    {
+        "x": np.random.normal(0, 1, 100),
+        "y": np.random.normal(0, 1, 100),
+    }
+)
 save(df, next_name("stat_no_relationship"))
 
 # 84: Three distinct groups
-df = pd.DataFrame({
-    "value": np.concatenate([
-        np.random.normal(10, 1, 30),
-        np.random.normal(20, 1, 30),
-        np.random.normal(30, 1, 30),
-    ]),
-    "group": ["A"] * 30 + ["B"] * 30 + ["C"] * 30,
-})
+df = pd.DataFrame(
+    {
+        "value": np.concatenate(
+            [
+                np.random.normal(10, 1, 30),
+                np.random.normal(20, 1, 30),
+                np.random.normal(30, 1, 30),
+            ]
+        ),
+        "group": ["A"] * 30 + ["B"] * 30 + ["C"] * 30,
+    }
+)
 save(df, next_name("stat_three_groups"))
 
 # 85: Time series (trend + seasonality)
@@ -537,23 +592,27 @@ df = pd.DataFrame({"proportion": np.random.beta(5, 10, 200)})
 save(df, next_name("stat_proportions"))
 
 # 95: Multi-factor DOE data
-df = pd.DataFrame({
-    "A": np.random.choice(["low", "high"], 100),
-    "B": np.random.choice(["low", "high"], 100),
-    "C": np.random.choice(["low", "high"], 100),
-    "response": np.random.normal(50, 10, 100),
-})
+df = pd.DataFrame(
+    {
+        "A": np.random.choice(["low", "high"], 100),
+        "B": np.random.choice(["low", "high"], 100),
+        "C": np.random.choice(["low", "high"], 100),
+        "response": np.random.normal(50, 10, 100),
+    }
+)
 save(df, next_name("stat_doe"))
 
 # 96: Gage R&R data
 parts = np.repeat(range(1, 11), 6)
 operators = np.tile(np.repeat(range(1, 4), 2), 10)
 measurements = 100 + np.random.normal(0, 1, 60) + np.repeat(np.random.normal(0, 2, 10), 6)
-df = pd.DataFrame({
-    "part": parts,
-    "operator": operators,
-    "measurement": measurements,
-})
+df = pd.DataFrame(
+    {
+        "part": parts,
+        "operator": operators,
+        "measurement": measurements,
+    }
+)
 save(df, next_name("stat_gage_rr"))
 
 # 97: Control chart data (in-control)
@@ -577,15 +636,17 @@ save(df, next_name("stat_multi_regression"))
 
 # 100: Comprehensive multi-column dataset
 n = 200
-df = pd.DataFrame({
-    "id": range(1, n + 1),
-    "measurement": np.random.normal(100, 15, n),
-    "temperature": np.random.normal(25, 5, n),
-    "pressure": np.random.normal(101.3, 2, n),
-    "batch": np.random.choice(["B1", "B2", "B3", "B4"], n),
-    "pass_fail": np.random.choice([0, 1], n, p=[0.1, 0.9]),
-    "timestamp": pd.date_range("2024-01-01", periods=n, freq="h"),
-})
+df = pd.DataFrame(
+    {
+        "id": range(1, n + 1),
+        "measurement": np.random.normal(100, 15, n),
+        "temperature": np.random.normal(25, 5, n),
+        "pressure": np.random.normal(101.3, 2, n),
+        "batch": np.random.choice(["B1", "B2", "B3", "B4"], n),
+        "pass_fail": np.random.choice([0, 1], n, p=[0.1, 0.9]),
+        "timestamp": pd.date_range("2024-01-01", periods=n, freq="h"),
+    }
+)
 save(df, next_name("stat_comprehensive"))
 
 

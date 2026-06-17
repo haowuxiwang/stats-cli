@@ -47,7 +47,7 @@ class SkillPDF(FPDF):
         self.set_font("Helvetica", style, 9)
         for i, (cell, w) in enumerate(zip(cells, widths)):
             self.set_fill_color(245, 245, 245) if i % 2 == 0 else self.set_fill_color(255, 255, 255)
-            self.cell(w, 7, str(cell)[:int(w/2)], border=1, fill=True)
+            self.cell(w, 7, str(cell)[: int(w / 2)], border=1, fill=True)
         self.ln()
 
 
@@ -67,7 +67,9 @@ def main():
     pdf.cell(0, 10, "AI Agent Skill Architecture Document", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
     pdf.ln(10)
     pdf.set_font("Helvetica", "", 12)
-    pdf.cell(0, 8, "How We Built It | Best Practices | AI Agent Integration", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+    pdf.cell(
+        0, 8, "How We Built It | Best Practices | AI Agent Integration", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C"
+    )
     pdf.ln(20)
     pdf.set_draw_color(41, 128, 185)
     pdf.line(60, pdf.get_y(), 150, pdf.get_y())
@@ -172,8 +174,8 @@ def main():
     pdf.chapter_title("3. How AI Agents Call It")
     pdf.section_title("Invocation Patterns")
     pdf.code_block(
-        '# Pattern 1: stdin pipe\n'
-        "echo '{\"command\":\"descriptive\",\"params\":{\"values\":[1,2,3]}}' | python main.py\n\n"
+        "# Pattern 1: stdin pipe\n"
+        'echo \'{"command":"descriptive","params":{"values":[1,2,3]}}\' | python main.py\n\n'
         "# Pattern 2: file argument\n"
         "python main.py input.json\n\n"
         "# Pattern 3: Python import\n"
@@ -188,10 +190,10 @@ def main():
     )
     pdf.ln(3)
     pdf.section_title("Agent Call Flow (7 Steps)")
-    pdf.body_text("1. Agent receives vague user request (\"analyze my data\")")
+    pdf.body_text('1. Agent receives vague user request ("analyze my data")')
     pdf.body_text("2. Agent calls discover -> gets 33 command summaries")
     pdf.body_text("3. Agent uses description/category to select command")
-    pdf.body_text("4. Agent calls discover {command_name:\"xxx\"} -> gets param schema")
+    pdf.body_text('4. Agent calls discover {command_name:"xxx"} -> gets param schema')
     pdf.body_text("5. Agent constructs JSON request using example as template")
     pdf.body_text("6. Agent invokes command -> gets result")
     pdf.body_text("7. Agent uses output_fields to parse and interpret result")
@@ -209,7 +211,7 @@ def main():
     pdf.ln(3)
     pdf.section_title("Layer 2: discover Runtime Dynamic Discovery (2 levels)")
     pdf.body_text("Level 1: discover (no params) -> lightweight summary (description + category)")
-    pdf.body_text("  -> Level 2: discover {command_name:\"xxx\"} -> full schema (params + output_fields)")
+    pdf.body_text('  -> Level 2: discover {command_name:"xxx"} -> full schema (params + output_fields)')
     pdf.ln(5)
     pdf.section_title("Why Two Layers?")
     pdf.body_text(

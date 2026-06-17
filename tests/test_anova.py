@@ -17,11 +17,14 @@ def test_one_way(three_groups):
 
 def test_two_way():
     import pandas as pd
-    df = pd.DataFrame({
-        "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-        "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
-        "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
-    })
+
+    df = pd.DataFrame(
+        {
+            "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+            "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
+            "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
+        }
+    )
     result = anova(anova_type="two_way", groups=None, data=df)
     assert result["anova_type"] == "two_way"
     assert "sources" in result
@@ -52,6 +55,7 @@ def test_one_way_not_significant():
 def test_one_way_unequal_groups():
     """Groups of different sizes should work correctly."""
     import numpy as np
+
     np.random.seed(99)
     g1 = np.random.normal(10, 1, 5).tolist()
     g2 = np.random.normal(10, 1, 10).tolist()
@@ -100,11 +104,14 @@ def test_one_way_identical_values():
 def test_two_way_interaction():
     """Two-way ANOVA should include interaction term in sources."""
     import pandas as pd
-    df = pd.DataFrame({
-        "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-        "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
-        "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
-    })
+
+    df = pd.DataFrame(
+        {
+            "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+            "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
+            "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
+        }
+    )
     result = anova(anova_type="two_way", groups=None, data=df)
     source_names = [s["source"] for s in result["sources"]]
     assert any(":" in name for name in source_names), "Interaction term not found"
@@ -113,11 +120,14 @@ def test_two_way_interaction():
 def test_two_way_r_squared():
     """r_squared should be in [0, 1]."""
     import pandas as pd
-    df = pd.DataFrame({
-        "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
-        "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
-        "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
-    })
+
+    df = pd.DataFrame(
+        {
+            "values": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+            "factor_a": ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"],
+            "factor_b": ["X", "X", "X", "Y", "Y", "Y", "X", "X", "X", "Y", "Y", "Y"],
+        }
+    )
     result = anova(anova_type="two_way", groups=None, data=df)
     assert 0 <= result["r_squared"] <= 1
 

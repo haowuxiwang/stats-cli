@@ -369,6 +369,7 @@ class TestLoadDataTwoColumns:
             pytest.skip("Excel fixture not available")
         # Read columns from fixture to get valid column names
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(fixture)
         cols = list(df.columns)[:2]
         result = load_data(file=fixture, columns=cols)
@@ -382,6 +383,7 @@ class TestLoadDataTwoColumns:
         if not os.path.exists(fixture):
             pytest.skip("Multi-sheet Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(fixture, sheet=0)
         cols = [str(c) for c in df.columns][:2]
         if len(cols) < 2:
@@ -422,6 +424,7 @@ class TestReadDataframeExcel:
         if not os.path.exists(fixture):
             pytest.skip("Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         df = read_dataframe(fixture)
         assert len(df) > 0
         assert len(df.columns) > 0
@@ -432,6 +435,7 @@ class TestReadDataframeExcel:
         if not os.path.exists(fixture):
             pytest.skip("Multi-sheet Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         df0 = read_dataframe(fixture, sheet=0)
         df1 = read_dataframe(fixture, sheet=1)
         assert len(df0) > 0
@@ -443,6 +447,7 @@ class TestReadDataframeExcel:
         if not os.path.exists(fixture):
             pytest.skip("Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         with pytest.raises(ValueError, match="Sheet index"):
             read_dataframe(fixture, sheet=999)
 
@@ -452,6 +457,7 @@ class TestReadDataframeExcel:
         if not os.path.exists(fixture):
             pytest.skip("Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         with pytest.raises(ValueError, match="Sheet.*not found"):
             read_dataframe(fixture, sheet="nonexistent_sheet")
 
@@ -461,6 +467,7 @@ class TestReadDataframeExcel:
         if not os.path.exists(fixture):
             pytest.skip("Excel fixture not available")
         from utils.data_loader import read_dataframe
+
         df_full = read_dataframe(fixture)
         cols = list(df_full.columns)[:2]
         df = read_dataframe(fixture, columns=cols)
@@ -469,6 +476,7 @@ class TestReadDataframeExcel:
     def test_read_dataframe_tsv(self, tmp_path):
         """Read TSV file."""
         from utils.data_loader import read_dataframe
+
         tsv_file = tmp_path / "test.tsv"
         tsv_file.write_text("a\tb\n1\t2\n3\t4\n")
         df = read_dataframe(str(tsv_file))
@@ -507,6 +515,7 @@ class TestDetectHelpers:
     def test_detect_encoding_csv_fixture(self):
         """detect_encoding returns a valid encoding for CSV fixtures."""
         import glob
+
         csv_files = glob.glob("tests/fixtures/*.csv") + glob.glob("tests/fixtures/**/*.csv")
         if not csv_files:
             pytest.skip("No CSV fixture available")
@@ -517,6 +526,7 @@ class TestDetectHelpers:
     def test_detect_delimiter_csv_fixture(self):
         """detect_delimiter returns a valid delimiter for CSV fixtures."""
         import glob
+
         csv_files = glob.glob("tests/fixtures/*.csv") + glob.glob("tests/fixtures/**/*.csv")
         if not csv_files:
             pytest.skip("No CSV fixture available")

@@ -77,12 +77,19 @@ def _regression_handler(result, params):
     x_vals = params.get("x", [])
     y_vals = params.get("y", [])
     if slope is not None and intercept is not None and x_vals and y_vals:
-        return residual_plot(x_vals, y_vals, slope=slope, intercept=intercept,
-                             title=f'Regression Diagnostics ({result.get("regression_type", "")})')
+        return residual_plot(
+            x_vals,
+            y_vals,
+            slope=slope,
+            intercept=intercept,
+            title=f"Regression Diagnostics ({result.get('regression_type', '')})",
+        )
     return scatter_with_regression(
-        x_vals, y_vals,
-        title=f'Regression ({result.get("regression_type", "")})',
-        slope=slope, intercept=intercept,
+        x_vals,
+        y_vals,
+        title=f"Regression ({result.get('regression_type', '')})",
+        slope=slope,
+        intercept=intercept,
         r_squared=result.get("r_squared"),
     )
 
@@ -98,7 +105,7 @@ def _timeseries_handler(result, params):
         )
     return time_series_plot(
         result.get("_values", []),
-        title=f'Time Series ({analysis_type})',
+        title=f"Time Series ({analysis_type})",
         fitted=result.get("fitted_values"),
         forecast=result.get("forecast"),
     )
@@ -108,10 +115,13 @@ def _ttest_handler(result, params):
     """T-test boxplot with p-value."""
     g1 = params.get("values", [])
     g2 = params.get("values2")
-    return ttest_plot(g1, group2=g2,
-                     p_value=result.get("p_value"),
-                     ci=result.get("ci_95"),
-                     title=f't-Test ({result.get("test_type", "")})')
+    return ttest_plot(
+        g1,
+        group2=g2,
+        p_value=result.get("p_value"),
+        ci=result.get("ci_95"),
+        title=f"t-Test ({result.get('test_type', '')})",
+    )
 
 
 def _boxplot_handler(result, params, title="Group Comparison"):
@@ -130,9 +140,13 @@ def _multiple_comparison_handler(result, params):
     ci_lowers = [c.get("ci_lower", 0) for c in comparisons if isinstance(c, dict)]
     ci_uppers = [c.get("ci_upper", 0) for c in comparisons if isinstance(c, dict)]
     sig_pairs = [(i, i) for i, c in enumerate(comparisons) if isinstance(c, dict) and c.get("significant")]
-    return means_comparison_plot(names, means, ci_lowers, ci_uppers,
-                                 significant_pairs=sig_pairs,
-                                 title="Multiple Comparison") if names else None
+    return (
+        means_comparison_plot(
+            names, means, ci_lowers, ci_uppers, significant_pairs=sig_pairs, title="Multiple Comparison"
+        )
+        if names
+        else None
+    )
 
 
 def _equivalence_handler(result, params):
@@ -150,9 +164,7 @@ def _power_handler(result, params):
     effect_size = params.get("effect_size")
     if effect_size:
         n_values = list(range(5, 201, 5))
-        return power_curve(effect_size, n_values,
-                           target_power=params.get("power", 0.8),
-                           title="Power Analysis")
+        return power_curve(effect_size, n_values, target_power=params.get("power", 0.8), title="Power Analysis")
     return None
 
 
@@ -202,8 +214,7 @@ def _reliability_handler(result, params):
     params_dict = result.get("parameters", {})
     shape = params_dict.get("shape") if isinstance(params_dict, dict) else None
     scale = params_dict.get("scale") if isinstance(params_dict, dict) else None
-    return weibull_plot(times, shape=shape, scale=scale,
-                       title=f'Weibull ({result.get("analysis_type", "")})')
+    return weibull_plot(times, shape=shape, scale=scale, title=f"Weibull ({result.get('analysis_type', '')})")
 
 
 def _gage_rr_handler(result, params):

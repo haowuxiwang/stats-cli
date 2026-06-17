@@ -45,47 +45,53 @@ def workflow(steps, data=None, values=None, auto_check=True, alpha=0.05):
         if auto_check and command in ("ttest", "anova", "correlation", "nonparametric", "equivalence"):
             assumption_result = _check_step_assumptions(command, params, alpha)
             if assumption_result:
-                assumptions_log.append({
-                    "step": i,
-                    "command": command,
-                    "assumptions": assumption_result,
-                })
+                assumptions_log.append(
+                    {
+                        "step": i,
+                        "command": command,
+                        "assumptions": assumption_result,
+                    }
+                )
 
                 # Generate warnings if assumptions violated
                 if not assumption_result.get("overall_assumptions_met", True):
-                    warnings.append({
-                        "step": i,
-                        "command": command,
-                        "message": "Assumptions may be violated. Check recommendations.",
-                        "recommendations": assumption_result.get("recommendations", {}),
-                    })
+                    warnings.append(
+                        {
+                            "step": i,
+                            "command": command,
+                            "message": "Assumptions may be violated. Check recommendations.",
+                            "recommendations": assumption_result.get("recommendations", {}),
+                        }
+                    )
 
                     # Auto-adjust parameters if needed
-                    params = _adjust_params_for_assumptions(
-                        command, params, assumption_result
-                    )
+                    params = _adjust_params_for_assumptions(command, params, assumption_result)
 
         # Execute the step
         try:
             result = handler({"command": command, "params": params})
-            results.append({
-                "step": i,
-                "command": command,
-                "status": result.get("status", "error"),
-                "result": result.get("data", {}),
-                "params_used": params,
-            })
+            results.append(
+                {
+                    "step": i,
+                    "command": command,
+                    "status": result.get("status", "error"),
+                    "result": result.get("data", {}),
+                    "params_used": params,
+                }
+            )
 
             # Update context with results for chaining
             _update_context(context, command, result.get("data", {}))
 
         except Exception as e:
-            results.append({
-                "step": i,
-                "command": command,
-                "status": "error",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "step": i,
+                    "command": command,
+                    "status": "error",
+                    "error": str(e),
+                }
+            )
 
     # Generate summary
     summary = _generate_summary(results, assumptions_log, warnings)
@@ -169,12 +175,9 @@ def _generate_summary(results, assumptions_log, warnings):
     # Summarize assumptions
     if assumptions_log:
         n_assumptions_met = sum(
-            1 for a in assumptions_log
-            if a.get("assumptions", {}).get("overall_assumptions_met", True)
+            1 for a in assumptions_log if a.get("assumptions", {}).get("overall_assumptions_met", True)
         )
-        summary_parts.append(
-            f"Assumptions: {n_assumptions_met}/{len(assumptions_log)} steps met all assumptions"
-        )
+        summary_parts.append(f"Assumptions: {n_assumptions_met}/{len(assumptions_log)} steps met all assumptions")
 
     # Summarize warnings
     if warnings:
@@ -271,10 +274,7 @@ def workflow_template(template_name, values=None, **kwargs):
     }
 
     if template_name not in templates:
-        raise ValueError(
-            f"Unknown template: {template_name}. "
-            f"Available: {list(templates.keys())}"
-        )
+        raise ValueError(f"Unknown template: {template_name}. Available: {list(templates.keys())}")
 
     return templates[template_name](values, **kwargs)
 
@@ -297,9 +297,7 @@ def _template_manufacturing(values, usl=None, lsl=None, target=None, **kwargs):
             cap_params["target"] = target
         steps.append({"command": "capability", "params": cap_params})
 
-    steps.append({"command": "report", "params": {
-        "usl": usl, "lsl": lsl, "target": target
-    }})
+    steps.append({"command": "report", "params": {"usl": usl, "lsl": lsl, "target": target}})
 
     return workflow(steps=steps, values=values, auto_check=True)
 
@@ -313,20 +311,12 @@ def _template_comparison(values, values2=None, groups=None, paired=False, **kwar
     ]
 
     if groups is not None and len(groups) >= 3:
-        steps.append({"command": "homogeneity", "params": {
-            "test_type": "levene", "groups": groups
-        }})
-        steps.append({"command": "anova", "params": {
-            "anova_type": "one_way", "groups": groups
-        }})
+        steps.append({"command": "homogeneity", "params": {"test_type": "levene", "groups": groups}})
+        steps.append({"command": "anova", "params": {"anova_type": "one_way", "groups": groups}})
     elif values2 is not None:
-        steps.append({"command": "homogeneity", "params": {
-            "test_type": "levene", "groups": [values, values2]
-        }})
+        steps.append({"command": "homogeneity", "params": {"test_type": "levene", "groups": [values, values2]}})
         test_type = "paired" if paired else "two_sample"
-        steps.append({"command": "ttest", "params": {
-            "test_type": test_type, "values": values, "values2": values2
-        }})
+        steps.append({"command": "ttest", "params": {"test_type": test_type, "values": values, "values2": values2}})
 
     return workflow(steps=steps, values=values, auto_check=True)
 
@@ -376,11 +366,14 @@ def _template_reliability(values, **kwargs):
 
     steps = [
         {"command": "descriptive", "params": {"values": times}},
-        {"command": "reliability", "params": {
-            "analysis_type": "weibull",
-            "times": times,
-            "status": status,
-        }},
+        {
+            "command": "reliability",
+            "params": {
+                "analysis_type": "weibull",
+                "times": times,
+                "status": status,
+            },
+        },
     ]
 
     return workflow(steps=steps, values=times, auto_check=False)
@@ -397,18 +390,26 @@ def _template_doe(values, **kwargs):
     responses = kwargs.get("responses")
 
     steps = [
-        {"command": "doe", "params": {
-            "doe_type": "full_factorial",
-            "factors": factors,
-        }},
+        {
+            "command": "doe",
+            "params": {
+                "doe_type": "full_factorial",
+                "factors": factors,
+            },
+        },
     ]
 
     if responses is not None:
-        steps.append({"command": "regression", "params": {
-            "x": list(range(len(responses))),
-            "y": responses,
-            "reg_type": "linear",
-        }})
+        steps.append(
+            {
+                "command": "regression",
+                "params": {
+                    "x": list(range(len(responses))),
+                    "y": responses,
+                    "reg_type": "linear",
+                },
+            }
+        )
 
     return workflow(steps=steps, values=responses or [], auto_check=False)
 
@@ -425,12 +426,15 @@ def _template_timeseries(values, **kwargs):
 
     steps = [
         {"command": "descriptive", "params": {"values": values}},
-        {"command": "timeseries", "params": {
-            "analysis_type": "exp_smoothing",
-            "values": values,
-            "frequency": frequency,
-            "n_forecast": n_forecast,
-        }},
+        {
+            "command": "timeseries",
+            "params": {
+                "analysis_type": "exp_smoothing",
+                "values": values,
+                "frequency": frequency,
+                "n_forecast": n_forecast,
+            },
+        },
     ]
 
     return workflow(steps=steps, values=values, auto_check=False)
@@ -450,11 +454,14 @@ def _template_regression(values, **kwargs):
     steps = [
         {"command": "descriptive", "params": {"values": y}},
         {"command": "correlation", "params": {"x": x, "y": y}},
-        {"command": "regression", "params": {
-            "x": x,
-            "y": y,
-            "reg_type": reg_type,
-        }},
+        {
+            "command": "regression",
+            "params": {
+                "x": x,
+                "y": y,
+                "reg_type": reg_type,
+            },
+        },
     ]
 
     return workflow(steps=steps, values=y, auto_check=False)
@@ -471,17 +478,23 @@ def _template_multivariate(values, **kwargs):
     n_clusters = kwargs.get("n_clusters", 3)
 
     steps = [
-        {"command": "multivariate", "params": {
-            "analysis_type": "pca",
-            "values": values,
-            "n_components": n_components,
-        }},
-        {"command": "multivariate", "params": {
-            "analysis_type": "cluster",
-            "values": values,
-            "n_clusters": n_clusters,
-            "method": "kmeans",
-        }},
+        {
+            "command": "multivariate",
+            "params": {
+                "analysis_type": "pca",
+                "values": values,
+                "n_components": n_components,
+            },
+        },
+        {
+            "command": "multivariate",
+            "params": {
+                "analysis_type": "cluster",
+                "values": values,
+                "n_clusters": n_clusters,
+                "method": "kmeans",
+            },
+        },
     ]
 
     return workflow(steps=steps, values=values, auto_check=False)

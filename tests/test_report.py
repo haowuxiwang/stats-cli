@@ -109,10 +109,7 @@ def test_export_excel_via_handler():
         tmp_path = tmp.name
 
     try:
-        result = handler({
-            "command": "export_excel",
-            "params": {"report_data": report_data, "output_path": tmp_path}
-        })
+        result = handler({"command": "export_excel", "params": {"report_data": report_data, "output_path": tmp_path}})
         assert result["status"] == "success"
         assert result["data"]["format"] == "excel"
     finally:
@@ -135,10 +132,7 @@ def test_export_pdf_via_handler():
         tmp_path = tmp.name
 
     try:
-        result = handler({
-            "command": "export_pdf",
-            "params": {"report_data": report_data, "output_path": tmp_path}
-        })
+        result = handler({"command": "export_pdf", "params": {"report_data": report_data, "output_path": tmp_path}})
         assert result["status"] == "success"
         assert result["data"]["format"] == "pdf"
     finally:

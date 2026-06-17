@@ -122,10 +122,7 @@ def main():
     # === 第1章: 这是什么 ===
     pdf.add_page()
     pdf.chapter(1, "这是什么?")
-    pdf.text(
-        "stats-cli-py 是一个「统计分析 Skill」——它可以被 AI 助手（AI Agent）调用，"
-        "帮你完成各种数据分析任务。"
-    )
+    pdf.text("stats-cli-py 是一个「统计分析 Skill」——它可以被 AI 助手（AI Agent）调用，帮你完成各种数据分析任务。")
     pdf.ln(2)
     pdf.subtitle("什么是 Skill?")
     pdf.text(
@@ -299,8 +296,8 @@ def main():
     pdf.subtitle("最佳实践 7: 用 discover 了解可用功能")
     pdf.text("如果你想知道这个 Skill 还有哪些功能，可以让 AI 助手调用 discover 命令:")
     pdf.bullet("discover: 列出所有可用命令")
-    pdf.bullet("discover {category: \"spc\"}: 只看 SPC 相关的命令")
-    pdf.bullet("discover {command_name: \"capability\"}: 查看某个命令的详细参数")
+    pdf.bullet('discover {category: "spc"}: 只看 SPC 相关的命令')
+    pdf.bullet('discover {command_name: "capability"}: 查看某个命令的详细参数')
     pdf.text("每个命令都会告诉你: 需要哪些参数（哪些是必需的）、返回什么结果。")
 
     # === 第7章: 总结 ===

@@ -369,7 +369,9 @@ def _attribute(reference, ratings, **kwargs):
                         total_pass_ratings += 1
     total_fail_ratings = total_ratings - total_pass_ratings
     if n_samples > 0 and total_ratings > 0:
-        p_e_overall = (total_pass_ref / n_samples) * (total_pass_ratings / total_ratings) + (total_fail_ref / n_samples) * (total_fail_ratings / total_ratings)
+        p_e_overall = (total_pass_ref / n_samples) * (total_pass_ratings / total_ratings) + (
+            total_fail_ref / n_samples
+        ) * (total_fail_ratings / total_ratings)
     else:
         p_e_overall = 0.5
     overall_kappa = (overall_agreement / 100 - p_e_overall) / (1 - p_e_overall) if (1 - p_e_overall) != 0 else 0

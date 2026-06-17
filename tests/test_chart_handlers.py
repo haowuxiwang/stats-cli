@@ -1,4 +1,5 @@
 """Tests for stats_engine/chart_handlers.py."""
+
 import base64
 
 import numpy as np
@@ -16,12 +17,28 @@ class TestChartHandlersRegistry:
 
     def test_expected_commands_present(self):
         expected = [
-            "descriptive", "normality", "control_chart", "capability",
-            "correlation", "regression", "timeseries", "report",
-            "ttest", "anova", "homogeneity", "multiple_comparison",
-            "equivalence", "power", "multivariate", "trend",
-            "outlier", "reliability", "gage_rr", "nonparametric",
-            "explore", "doe",
+            "descriptive",
+            "normality",
+            "control_chart",
+            "capability",
+            "correlation",
+            "regression",
+            "timeseries",
+            "report",
+            "ttest",
+            "anova",
+            "homogeneity",
+            "multiple_comparison",
+            "equivalence",
+            "power",
+            "multivariate",
+            "trend",
+            "outlier",
+            "reliability",
+            "gage_rr",
+            "nonparametric",
+            "explore",
+            "doe",
         ]
         for cmd in expected:
             assert cmd in CHART_HANDLERS, f"Missing handler for '{cmd}'"
@@ -34,7 +51,7 @@ class TestDescriptiveHandler:
         chart = handler(result, {})
         assert chart is not None
         decoded = base64.b64decode(chart)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_empty_values(self):
         handler = CHART_HANDLERS["descriptive"]
@@ -57,7 +74,9 @@ class TestControlChartHandler:
         result = {
             "_values": [10, 11, 12, 13, 14, 15],
             "chart_type": "imr",
-            "ucl": 16, "cl": 12.5, "lcl": 9,
+            "ucl": 16,
+            "cl": 12.5,
+            "lcl": 9,
             "out_of_control": [],
         }
         chart = handler(result, {})
@@ -69,8 +88,11 @@ class TestCapabilityHandler:
         handler = CHART_HANDLERS["capability"]
         result = {
             "_values": np.random.normal(10, 1, 50).tolist(),
-            "usl": 13, "lsl": 7, "target": 10,
-            "cp": 1.0, "cpk": 0.9,
+            "usl": 13,
+            "lsl": 7,
+            "target": 10,
+            "cp": 1.0,
+            "cpk": 0.9,
         }
         chart = handler(result, {})
         assert chart is not None

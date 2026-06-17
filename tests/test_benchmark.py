@@ -28,6 +28,7 @@ from stats_engine.ttest import ttest
 # All 4 datasets have nearly identical mean, variance, regression line, R^2
 # ============================================================================
 
+
 class TestAnscombeQuartet:
     """Anscombe's Quartet: 4 datasets with identical summary statistics."""
 
@@ -82,6 +83,7 @@ class TestAnscombeQuartet:
 # NIST StRD Linear Regression - Certified values to 15 digits
 # ============================================================================
 
+
 class TestNISTRegression:
     """NIST StRD certified regression datasets.
 
@@ -97,14 +99,82 @@ class TestNISTRegression:
             intercept: -0.262323073774029
             R^2:       0.999993745883712
         """
-        x = [0.2, 337.4, 118.2, 884.6, 10.1, 226.5, 666.3, 996.3, 448.6, 777.0,
-             558.2, 0.4, 0.6, 775.5, 666.9, 338.0, 447.5, 11.6, 556.0, 228.1,
-             995.8, 887.6, 120.2, 0.3, 0.3, 556.8, 339.1, 887.2, 999.0, 779.0,
-             11.1, 118.3, 229.2, 669.1, 448.9, 0.5]
-        y = [0.1, 338.8, 118.1, 888.0, 9.2, 228.1, 668.5, 998.5, 449.1, 778.9,
-             559.2, 0.3, 0.1, 778.1, 668.8, 339.3, 448.9, 10.8, 557.7, 228.3,
-             998.0, 888.8, 119.6, 0.3, 0.6, 557.6, 339.3, 888.0, 998.5, 778.9,
-             10.2, 117.6, 228.9, 668.4, 449.2, 0.2]
+        x = [
+            0.2,
+            337.4,
+            118.2,
+            884.6,
+            10.1,
+            226.5,
+            666.3,
+            996.3,
+            448.6,
+            777.0,
+            558.2,
+            0.4,
+            0.6,
+            775.5,
+            666.9,
+            338.0,
+            447.5,
+            11.6,
+            556.0,
+            228.1,
+            995.8,
+            887.6,
+            120.2,
+            0.3,
+            0.3,
+            556.8,
+            339.1,
+            887.2,
+            999.0,
+            779.0,
+            11.1,
+            118.3,
+            229.2,
+            669.1,
+            448.9,
+            0.5,
+        ]
+        y = [
+            0.1,
+            338.8,
+            118.1,
+            888.0,
+            9.2,
+            228.1,
+            668.5,
+            998.5,
+            449.1,
+            778.9,
+            559.2,
+            0.3,
+            0.1,
+            778.1,
+            668.8,
+            339.3,
+            448.9,
+            10.8,
+            557.7,
+            228.3,
+            998.0,
+            888.8,
+            119.6,
+            0.3,
+            0.6,
+            557.6,
+            339.3,
+            888.0,
+            998.5,
+            778.9,
+            10.2,
+            117.6,
+            228.9,
+            668.4,
+            449.2,
+            0.2,
+        ]
 
         result = regression(x=x, y=y, reg_type="linear")
         slope = result["coefficients"]["slope"]
@@ -121,15 +191,90 @@ class TestNISTRegression:
         NIST certifies quadratic model: R^2 = 0.999999884412830
         At 6-digit precision, R^2 rounds to 1.0.
         """
-        x = [150, 300, 450, 600, 750, 900, 1050, 1200, 1350, 1500, 1650, 1800,
-             1950, 2100, 2250, 2400, 2550, 2700, 2850, 3000, 150, 300, 450, 600,
-             750, 900, 1050, 1200, 1350, 1500, 1650, 1800, 1950, 2100, 2250, 2400,
-             2550, 2700, 2850, 3000]
-        y = [0.11019, 0.21956, 0.32949, 0.43899, 0.54803, 0.65694, 0.76562, 0.87487,
-             0.98292, 1.09146, 1.20001, 1.30822, 1.41599, 1.52399, 1.63194, 1.73947,
-             1.84646, 1.95392, 2.06128, 2.16844, 0.11052, 0.22018, 0.32939, 0.43886,
-             0.54798, 0.65739, 0.76596, 0.87474, 0.98300, 1.09150, 1.20004, 1.30818,
-             1.41613, 1.52408, 1.63159, 1.73965, 1.84696, 1.95445, 2.06177, 2.16829]
+        x = [
+            150,
+            300,
+            450,
+            600,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1500,
+            1650,
+            1800,
+            1950,
+            2100,
+            2250,
+            2400,
+            2550,
+            2700,
+            2850,
+            3000,
+            150,
+            300,
+            450,
+            600,
+            750,
+            900,
+            1050,
+            1200,
+            1350,
+            1500,
+            1650,
+            1800,
+            1950,
+            2100,
+            2250,
+            2400,
+            2550,
+            2700,
+            2850,
+            3000,
+        ]
+        y = [
+            0.11019,
+            0.21956,
+            0.32949,
+            0.43899,
+            0.54803,
+            0.65694,
+            0.76562,
+            0.87487,
+            0.98292,
+            1.09146,
+            1.20001,
+            1.30822,
+            1.41599,
+            1.52399,
+            1.63194,
+            1.73947,
+            1.84646,
+            1.95392,
+            2.06128,
+            2.16844,
+            0.11052,
+            0.22018,
+            0.32939,
+            0.43886,
+            0.54798,
+            0.65739,
+            0.76596,
+            0.87474,
+            0.98300,
+            1.09150,
+            1.20004,
+            1.30818,
+            1.41613,
+            1.52408,
+            1.63159,
+            1.73965,
+            1.84696,
+            1.95445,
+            2.06177,
+            2.16829,
+        ]
 
         result = regression(x=x, y=y, reg_type="quadratic")
         # NIST certified R^2 for quadratic model: 0.999999884412830
@@ -156,20 +301,81 @@ class TestNISTRegression:
 
         # Create temporary CSV with Longley data
         data = {
-            "y": [60323, 61122, 60171, 61187, 63221, 63639, 64989, 63761,
-                  66019, 67857, 68169, 66513, 68655, 69564, 69331, 70551],
-            "x1": [83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0,
-                   101.2, 104.6, 108.4, 110.8, 112.6, 114.2, 115.7, 116.9],
-            "x2": [234289, 259426, 258054, 284599, 328975, 346999, 365385, 363112,
-                   397469, 419180, 442769, 444546, 482704, 502601, 518173, 554894],
-            "x3": [2356, 2325, 3682, 3351, 2099, 1932, 1870, 3578,
-                   2904, 2822, 2936, 4681, 3813, 3931, 4806, 4007],
-            "x4": [1590, 1456, 1616, 1650, 3099, 3594, 3547, 3350,
-                   3048, 2857, 2798, 2637, 2552, 2514, 2572, 2827],
-            "x5": [107608, 108632, 109773, 110929, 112075, 113270, 115094, 116219,
-                   117388, 118734, 120445, 121950, 123366, 125368, 127852, 130081],
-            "x6": [1947, 1948, 1949, 1950, 1951, 1952, 1953, 1954,
-                   1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962],
+            "y": [
+                60323,
+                61122,
+                60171,
+                61187,
+                63221,
+                63639,
+                64989,
+                63761,
+                66019,
+                67857,
+                68169,
+                66513,
+                68655,
+                69564,
+                69331,
+                70551,
+            ],
+            "x1": [
+                83.0,
+                88.5,
+                88.2,
+                89.5,
+                96.2,
+                98.1,
+                99.0,
+                100.0,
+                101.2,
+                104.6,
+                108.4,
+                110.8,
+                112.6,
+                114.2,
+                115.7,
+                116.9,
+            ],
+            "x2": [
+                234289,
+                259426,
+                258054,
+                284599,
+                328975,
+                346999,
+                365385,
+                363112,
+                397469,
+                419180,
+                442769,
+                444546,
+                482704,
+                502601,
+                518173,
+                554894,
+            ],
+            "x3": [2356, 2325, 3682, 3351, 2099, 1932, 1870, 3578, 2904, 2822, 2936, 4681, 3813, 3931, 4806, 4007],
+            "x4": [1590, 1456, 1616, 1650, 3099, 3594, 3547, 3350, 3048, 2857, 2798, 2637, 2552, 2514, 2572, 2827],
+            "x5": [
+                107608,
+                108632,
+                109773,
+                110929,
+                112075,
+                113270,
+                115094,
+                116219,
+                117388,
+                118734,
+                120445,
+                121950,
+                123366,
+                125368,
+                127852,
+                130081,
+            ],
+            "x6": [1947, 1948, 1949, 1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962],
         }
         df = pd.DataFrame(data)
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")  # noqa: SIM115
@@ -197,12 +403,12 @@ class TestNISTRegression:
             }
 
             for name, nist_val in nist_coeffs.items():
-                assert abs(coeffs[name] - nist_val) < 1e-4, \
+                assert abs(coeffs[name] - nist_val) < 1e-4, (
                     f"{name}: got {coeffs[name]}, expected {nist_val}, err={abs(coeffs[name] - nist_val):.2e}"
+                )
 
             # Output rounded to 6 decimal places
-            assert abs(result["r_squared"] - 0.995479004577296) < 5e-7, \
-                f"R^2={result['r_squared']}"
+            assert abs(result["r_squared"] - 0.995479004577296) < 5e-7, f"R^2={result['r_squared']}"
         finally:
             os.unlink(tmp.name)
 
@@ -237,6 +443,7 @@ class TestNISTRegression:
         import tempfile
 
         import pandas as pd
+
         df = pd.DataFrame({"x1": x1, "x2": x2, "x3": x3, "y": y})
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")  # noqa: SIM115
         df.to_csv(tmp.name, index=False)
@@ -257,6 +464,7 @@ class TestNISTRegression:
             assert result["r_squared"] > 0.95, f"R^2={result['r_squared']}"
         finally:
             os.unlink(tmp.name)
+
 
 class TestNISTLinearRegression:
     """Additional NIST StRD linear regression datasets.
@@ -398,11 +606,58 @@ class TestNISTDescriptive:
         Tests basic integer-valued summary statistics.
         """
         # First 50 digits of pi (as digits 0-9)
-        digits = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3,
-                  5, 8, 9, 7, 9, 3, 2, 3, 8, 4,
-                  6, 2, 6, 4, 3, 3, 8, 3, 2, 7,
-                  9, 5, 0, 2, 8, 8, 4, 1, 9, 7,
-                  1, 6, 9, 3, 9, 9, 3, 7, 5, 1]
+        digits = [
+            3,
+            1,
+            4,
+            1,
+            5,
+            9,
+            2,
+            6,
+            5,
+            3,
+            5,
+            8,
+            9,
+            7,
+            9,
+            3,
+            2,
+            3,
+            8,
+            4,
+            6,
+            2,
+            6,
+            4,
+            3,
+            3,
+            8,
+            3,
+            2,
+            7,
+            9,
+            5,
+            0,
+            2,
+            8,
+            8,
+            4,
+            1,
+            9,
+            7,
+            1,
+            6,
+            9,
+            3,
+            9,
+            9,
+            3,
+            7,
+            5,
+            1,
+        ]
 
         result = descriptive(values=[float(d) for d in digits])
 
@@ -432,8 +687,7 @@ class TestNISTDescriptive:
         Tests with moderate spread scientific data.
         """
         # Typical speed-of-light measurements (in km/s)
-        values = [299850.0, 299740.0, 299900.0, 299680.0, 299770.0,
-                  299810.0, 299720.0, 299860.0, 299750.0, 299830.0]
+        values = [299850.0, 299740.0, 299900.0, 299680.0, 299770.0, 299810.0, 299720.0, 299860.0, 299750.0, 299830.0]
 
         result = descriptive(values=values)
 
@@ -441,6 +695,7 @@ class TestNISTDescriptive:
         assert 299700 < result["mean"] < 299900, f"mean={result['mean']}"
         # Std should be small (measurements are precise)
         assert result["std"] < 200, f"std={result['std']}"
+
 
 class TestHypothesisTesting:
     """Known results from statistics textbooks."""
@@ -505,6 +760,7 @@ class TestHypothesisTesting:
 # Correlation - Known relationships
 # ============================================================================
 
+
 class TestCorrelation:
     """Test correlation with known relationships."""
 
@@ -542,6 +798,7 @@ class TestCorrelation:
 # Normality Testing
 # ============================================================================
 
+
 class TestNormality:
     """Normality tests with known distributions."""
 
@@ -572,6 +829,7 @@ class TestNormality:
 # Outlier Detection
 # ============================================================================
 
+
 class TestOutlierDetection:
     """Outlier detection with known outliers."""
 
@@ -597,6 +855,7 @@ class TestOutlierDetection:
 # ============================================================================
 # Power Analysis - Known results
 # ============================================================================
+
 
 class TestPowerAnalysis:
     """Power analysis with known results."""
@@ -626,6 +885,7 @@ class TestPowerAnalysis:
 # ============================================================================
 # Edge Cases - Robustness
 # ============================================================================
+
 
 class TestEdgeCases:
     """Edge cases that could break the tool."""
@@ -711,6 +971,7 @@ class TestEdgeCases:
 # Input Robustness - NaN, Inf, type issues
 # ============================================================================
 
+
 class TestInputRobustness:
     """Test handling of messy real-world inputs."""
 
@@ -757,6 +1018,7 @@ class TestInputRobustness:
 # Regression Type Coverage
 # ============================================================================
 
+
 class TestRegressionTypes:
     """Test all regression types with appropriate data."""
 
@@ -794,6 +1056,7 @@ class TestRegressionTypes:
 # ============================================================================
 # Nonlinear Regression - Known-value tests for nonlinear types
 # ============================================================================
+
 
 class TestNonlinearRegression:
     """Known-value tests for nonlinear regression types."""
@@ -887,18 +1150,22 @@ class TestNonlinearRegression:
     def test_all_nonlinear_types_handler(self):
         """All nonlinear types should work through handler."""
         for reg_type in ["exponential", "power", "logarithmic", "sigmoid"]:
-            result = handler({
-                "command": "regression",
-                "params": {
-                    "x": [1, 2, 3, 4, 5],
-                    "y": [2, 4, 8, 16, 32],
-                    "reg_type": reg_type,
-                },
-            })
+            result = handler(
+                {
+                    "command": "regression",
+                    "params": {
+                        "x": [1, 2, 3, 4, 5],
+                        "y": [2, 4, 8, 16, 32],
+                        "reg_type": reg_type,
+                    },
+                }
+            )
             assert result["status"] == "success", f"{reg_type} failed: {result}"
+
 
 # Handler Integration - End-to-end through main.py
 # ============================================================================
+
 
 class TestHandlerIntegration:
     """End-to-end tests through the handler function."""
@@ -934,18 +1201,16 @@ class TestHandlerIntegration:
         assert result["data"]["total_commands"] > 20
 
     def test_regression_linear_via_handler(self):
-        result = handler({
-            "command": "regression",
-            "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "reg_type": "linear"}
-        })
+        result = handler(
+            {"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "reg_type": "linear"}}
+        )
         assert result["status"] == "success"
         assert result["data"]["r_squared"] > 0.99
 
     def test_correlation_via_handler(self):
-        result = handler({
-            "command": "correlation",
-            "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "method": "pearson"}
-        })
+        result = handler(
+            {"command": "correlation", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "method": "pearson"}}
+        )
         assert result["status"] in ("success", "warning")
         assert result["data"]["correlation"] > 0.99
 
@@ -957,20 +1222,23 @@ class TestHandlerIntegration:
 
     def test_chart_request_doe(self):
         """Chart=True on DOE should not crash."""
-        result = handler({
-            "command": "doe",
-            "params": {
-                "doe_type": "full_factorial",
-                "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}],
-                "chart": True,
+        result = handler(
+            {
+                "command": "doe",
+                "params": {
+                    "doe_type": "full_factorial",
+                    "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}],
+                    "chart": True,
+                },
             }
-        })
+        )
         assert result["status"] == "success"
 
 
 # ============================================================================
 # Anscombe's Quartet - Extended tests (additions to existing class)
 # ============================================================================
+
 
 class TestAnscombeQuartetExtended:
     """Extended Anscombe's Quartet tests: R-squared, raw data, x structure."""
@@ -994,8 +1262,7 @@ class TestAnscombeQuartetExtended:
             x = anscombe[f"x{i}"]
             y = anscombe[f"y{i}"]
             result = regression(x=x, y=y, reg_type="linear")
-            assert abs(result["r_squared"] - 0.67) < 0.05, \
-                f"Dataset {i}: R^2={result['r_squared']}, expected ~0.67"
+            assert abs(result["r_squared"] - 0.67) < 0.05, f"Dataset {i}: R^2={result['r_squared']}, expected ~0.67"
 
     def test_datasets_not_identical(self, anscombe):
         """The 4 y-datasets should have different raw values."""
@@ -1003,7 +1270,7 @@ class TestAnscombeQuartetExtended:
         # Every pair of datasets should differ in at least one value
         for i in range(len(ys)):
             for j in range(i + 1, len(ys)):
-                assert ys[i] != ys[j], f"y{i+1} and y{j+1} are identical"
+                assert ys[i] != ys[j], f"y{i + 1} and y{j + 1} are identical"
 
     def test_x_values_differ(self, anscombe):
         """x4 has x=8 repeated 10 times and one x=19, unlike x1-x3 which are all distinct."""
@@ -1021,6 +1288,7 @@ class TestAnscombeQuartetExtended:
     def test_correlation_similar(self, anscombe):
         """All 4 datasets should have similar correlation coefficients (r ~0.82)."""
         from stats_engine.correlation import correlation
+
         corrs = []
         for i in range(1, 5):
             x = anscombe[f"x{i}"]
@@ -1074,8 +1342,12 @@ class TestAnscombeQuartetExtended:
             cert = certified[i]
             assert abs(desc["mean"] - cert["mean"]) < 0.001, f"Dataset {i}: mean={desc['mean']}"
             assert abs(desc["std"] - cert["std"]) < 0.002, f"Dataset {i}: std={desc['std']}"
-            assert abs(reg["coefficients"]["slope"] - cert["slope"]) < 0.001, f"Dataset {i}: slope={reg['coefficients']['slope']}"
-            assert abs(reg["coefficients"]["intercept"] - cert["intercept"]) < 0.002, f"Dataset {i}: intercept={reg['coefficients']['intercept']}"
+            assert abs(reg["coefficients"]["slope"] - cert["slope"]) < 0.001, (
+                f"Dataset {i}: slope={reg['coefficients']['slope']}"
+            )
+            assert abs(reg["coefficients"]["intercept"] - cert["intercept"]) < 0.002, (
+                f"Dataset {i}: intercept={reg['coefficients']['intercept']}"
+            )
             assert abs(corr["correlation"] - cert["r"]) < 0.001, f"Dataset {i}: r={corr['correlation']}"
 
     def test_x_mean_similar(self, anscombe):
@@ -1107,6 +1379,7 @@ class TestAnscombeQuartetExtended:
 # Classic Textbook Datasets - Well-known results with certified values
 # ============================================================================
 
+
 class TestClassicTextbook:
     """Tests using well-known textbook datasets with known results."""
 
@@ -1115,33 +1388,171 @@ class TestClassicTextbook:
 
         Known: F ~119.26, p ~1.67e-31
         """
-        setosa = [5.1, 4.9, 4.7, 4.6, 5.0, 5.4, 4.6, 5.0, 4.4, 4.9,
-                  5.4, 4.8, 4.8, 4.3, 5.8, 5.7, 5.4, 5.1, 5.7, 5.1,
-                  5.4, 5.1, 4.6, 5.1, 4.8, 5.0, 5.0, 5.2, 5.2, 4.7,
-                  4.8, 5.4, 5.2, 5.5, 4.9, 5.0, 5.5, 4.9, 4.4, 5.1,
-                  5.0, 4.5, 4.4, 5.0, 5.1, 4.8, 5.1, 4.6, 5.3, 5.0]
-        versicolor = [7.0, 6.4, 6.9, 5.5, 6.5, 5.7, 6.3, 4.9, 6.6, 5.2,
-                      5.0, 5.9, 6.0, 6.1, 5.6, 6.7, 5.6, 5.8, 6.2, 5.6,
-                      5.9, 6.1, 6.3, 6.1, 6.4, 6.6, 6.8, 6.7, 6.0, 5.7,
-                      5.5, 5.5, 5.8, 6.0, 5.4, 6.0, 6.7, 6.3, 5.6, 5.5,
-                      5.5, 6.1, 5.8, 5.0, 5.6, 5.7, 5.7, 6.2, 5.1, 5.7]
-        virginica = [6.3, 5.8, 7.1, 6.3, 6.5, 7.6, 4.9, 7.3, 6.7, 7.2,
-                     6.5, 6.4, 6.8, 5.7, 5.8, 6.4, 6.5, 7.7, 7.7, 6.0,
-                     6.9, 5.6, 7.7, 6.3, 6.7, 7.2, 6.2, 6.1, 6.4, 7.2,
-                     7.4, 7.9, 6.4, 6.3, 6.1, 7.7, 6.3, 6.4, 6.0, 6.9,
-                     6.7, 6.9, 5.8, 6.8, 6.7, 6.7, 6.3, 6.5, 6.2, 5.9]
+        setosa = [
+            5.1,
+            4.9,
+            4.7,
+            4.6,
+            5.0,
+            5.4,
+            4.6,
+            5.0,
+            4.4,
+            4.9,
+            5.4,
+            4.8,
+            4.8,
+            4.3,
+            5.8,
+            5.7,
+            5.4,
+            5.1,
+            5.7,
+            5.1,
+            5.4,
+            5.1,
+            4.6,
+            5.1,
+            4.8,
+            5.0,
+            5.0,
+            5.2,
+            5.2,
+            4.7,
+            4.8,
+            5.4,
+            5.2,
+            5.5,
+            4.9,
+            5.0,
+            5.5,
+            4.9,
+            4.4,
+            5.1,
+            5.0,
+            4.5,
+            4.4,
+            5.0,
+            5.1,
+            4.8,
+            5.1,
+            4.6,
+            5.3,
+            5.0,
+        ]
+        versicolor = [
+            7.0,
+            6.4,
+            6.9,
+            5.5,
+            6.5,
+            5.7,
+            6.3,
+            4.9,
+            6.6,
+            5.2,
+            5.0,
+            5.9,
+            6.0,
+            6.1,
+            5.6,
+            6.7,
+            5.6,
+            5.8,
+            6.2,
+            5.6,
+            5.9,
+            6.1,
+            6.3,
+            6.1,
+            6.4,
+            6.6,
+            6.8,
+            6.7,
+            6.0,
+            5.7,
+            5.5,
+            5.5,
+            5.8,
+            6.0,
+            5.4,
+            6.0,
+            6.7,
+            6.3,
+            5.6,
+            5.5,
+            5.5,
+            6.1,
+            5.8,
+            5.0,
+            5.6,
+            5.7,
+            5.7,
+            6.2,
+            5.1,
+            5.7,
+        ]
+        virginica = [
+            6.3,
+            5.8,
+            7.1,
+            6.3,
+            6.5,
+            7.6,
+            4.9,
+            7.3,
+            6.7,
+            7.2,
+            6.5,
+            6.4,
+            6.8,
+            5.7,
+            5.8,
+            6.4,
+            6.5,
+            7.7,
+            7.7,
+            6.0,
+            6.9,
+            5.6,
+            7.7,
+            6.3,
+            6.7,
+            7.2,
+            6.2,
+            6.1,
+            6.4,
+            7.2,
+            7.4,
+            7.9,
+            6.4,
+            6.3,
+            6.1,
+            7.7,
+            6.3,
+            6.4,
+            6.0,
+            6.9,
+            6.7,
+            6.9,
+            5.8,
+            6.8,
+            6.7,
+            6.7,
+            6.3,
+            6.5,
+            6.2,
+            5.9,
+        ]
 
         result = anova(anova_type="one_way", groups=[setosa, versicolor, virginica])
 
         # F ~119.26, p ~1.67e-31
-        assert abs(result["f_statistic"] - 119.26) < 5.0, \
-            f"F={result['f_statistic']}, expected ~119.26"
-        assert result["p_value"] < 1e-20, \
-            f"p={result['p_value']}, expected <1e-20"
+        assert abs(result["f_statistic"] - 119.26) < 5.0, f"F={result['f_statistic']}, expected ~119.26"
+        assert result["p_value"] < 1e-20, f"p={result['p_value']}, expected <1e-20"
         assert result["significant"], "Iris ANOVA should be highly significant"
         # Eta-squared should be large (>0.6) since species explains most variance
-        assert result["eta_squared"] > 0.6, \
-            f"eta^2={result['eta_squared']}, expected >0.6"
+        assert result["eta_squared"] > 0.6, f"eta^2={result['eta_squared']}, expected >0.6"
 
     def test_fisher_z_known(self):
         """Known correlation: r=0.5, n=30 should be significant.
@@ -1158,11 +1569,9 @@ class TestClassicTextbook:
 
         result = correlation(x=x.tolist(), y=y.tolist(), method="pearson")
         # r should be in the neighborhood of 0.5 (with noise from sampling)
-        assert abs(result["correlation"]) > 0.2, \
-            f"r={result['correlation']}, expected |r|>0.2 with seed=123"
+        assert abs(result["correlation"]) > 0.2, f"r={result['correlation']}, expected |r|>0.2 with seed=123"
         # With r~0.5 and n=30, this should be significant
-        assert result["p_value"] < 0.05, \
-            f"p={result['p_value']}, expected <0.05 for r~0.5, n=30"
+        assert result["p_value"] < 0.05, f"p={result['p_value']}, expected <0.05 for r~0.5, n=30"
 
     def test_longley_full(self):
         """Longley dataset: verify all 7 coefficients match NIST.
@@ -1176,20 +1585,81 @@ class TestClassicTextbook:
         import pandas as pd
 
         data = {
-            "y": [60323, 61122, 60171, 61187, 63221, 63639, 64989, 63761,
-                  66019, 67857, 68169, 66513, 68655, 69564, 69331, 70551],
-            "x1": [83.0, 88.5, 88.2, 89.5, 96.2, 98.1, 99.0, 100.0,
-                   101.2, 104.6, 108.4, 110.8, 112.6, 114.2, 115.7, 116.9],
-            "x2": [234289, 259426, 258054, 284599, 328975, 346999, 365385, 363112,
-                   397469, 419180, 442769, 444546, 482704, 502601, 518173, 554894],
-            "x3": [2356, 2325, 3682, 3351, 2099, 1932, 1870, 3578,
-                   2904, 2822, 2936, 4681, 3813, 3931, 4806, 4007],
-            "x4": [1590, 1456, 1616, 1650, 3099, 3594, 3547, 3350,
-                   3048, 2857, 2798, 2637, 2552, 2514, 2572, 2827],
-            "x5": [107608, 108632, 109773, 110929, 112075, 113270, 115094, 116219,
-                   117388, 118734, 120445, 121950, 123366, 125368, 127852, 130081],
-            "x6": [1947, 1948, 1949, 1950, 1951, 1952, 1953, 1954,
-                   1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962],
+            "y": [
+                60323,
+                61122,
+                60171,
+                61187,
+                63221,
+                63639,
+                64989,
+                63761,
+                66019,
+                67857,
+                68169,
+                66513,
+                68655,
+                69564,
+                69331,
+                70551,
+            ],
+            "x1": [
+                83.0,
+                88.5,
+                88.2,
+                89.5,
+                96.2,
+                98.1,
+                99.0,
+                100.0,
+                101.2,
+                104.6,
+                108.4,
+                110.8,
+                112.6,
+                114.2,
+                115.7,
+                116.9,
+            ],
+            "x2": [
+                234289,
+                259426,
+                258054,
+                284599,
+                328975,
+                346999,
+                365385,
+                363112,
+                397469,
+                419180,
+                442769,
+                444546,
+                482704,
+                502601,
+                518173,
+                554894,
+            ],
+            "x3": [2356, 2325, 3682, 3351, 2099, 1932, 1870, 3578, 2904, 2822, 2936, 4681, 3813, 3931, 4806, 4007],
+            "x4": [1590, 1456, 1616, 1650, 3099, 3594, 3547, 3350, 3048, 2857, 2798, 2637, 2552, 2514, 2572, 2827],
+            "x5": [
+                107608,
+                108632,
+                109773,
+                110929,
+                112075,
+                113270,
+                115094,
+                116219,
+                117388,
+                118734,
+                120445,
+                121950,
+                123366,
+                125368,
+                127852,
+                130081,
+            ],
+            "x6": [1947, 1948, 1949, 1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962],
         }
         df = pd.DataFrame(data)
         tmp = tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w")  # noqa: SIM115
@@ -1197,15 +1667,17 @@ class TestClassicTextbook:
         tmp.close()
 
         try:
-            result = handler({
-                "command": "regression",
-                "params": {
-                    "file": tmp.name,
-                    "x_columns": ["x1", "x2", "x3", "x4", "x5", "x6"],
-                    "y_column": "y",
-                    "reg_type": "multiple",
-                },
-            })
+            result = handler(
+                {
+                    "command": "regression",
+                    "params": {
+                        "file": tmp.name,
+                        "x_columns": ["x1", "x2", "x3", "x4", "x5", "x6"],
+                        "y_column": "y",
+                        "reg_type": "multiple",
+                    },
+                }
+            )
             assert result["status"] == "success"
             data = result["data"]
             coeffs = data["coefficients"]
@@ -1221,11 +1693,9 @@ class TestClassicTextbook:
                 "x6": 1829.15146461355,
             }
             for name, nist_val in nist_coeffs.items():
-                assert abs(coeffs[name] - nist_val) < 1e-4, \
-                    f"{name}: got {coeffs[name]}, expected {nist_val}"
+                assert abs(coeffs[name] - nist_val) < 1e-4, f"{name}: got {coeffs[name]}, expected {nist_val}"
 
-            assert abs(data["r_squared"] - 0.995479004577296) < 5e-7, \
-                f"R^2={data['r_squared']}"
+            assert abs(data["r_squared"] - 0.995479004577296) < 5e-7, f"R^2={data['r_squared']}"
         finally:
             os.unlink(tmp.name)
 
@@ -1237,8 +1707,7 @@ class TestClassicTextbook:
         """
         result = power(analysis_type="t_test", effect_size=0.5, n=64)
         assert 0 < result["power"] < 1, f"power={result['power']}, should be in (0,1)"
-        assert result["power"] > 0.80, \
-            f"power={result['power']}, expected >0.80 for d=0.5, n=64"
+        assert result["power"] > 0.80, f"power={result['power']}, expected >0.80 for d=0.5, n=64"
 
     def test_plant_growth_anova(self):
         """R PlantGrowth dataset: 3 groups, 10 each.
@@ -1250,10 +1719,8 @@ class TestClassicTextbook:
         trt2 = [6.31, 5.12, 5.54, 5.50, 5.37, 5.29, 4.92, 6.15, 5.80, 5.26]
 
         result = anova(anova_type="one_way", groups=[ctrl, trt1, trt2])
-        assert abs(result["f_statistic"] - 4.85) < 1.0, \
-            f"F={result['f_statistic']}, expected ~4.85"
-        assert result["p_value"] < 0.05, \
-            f"p={result['p_value']}, expected <0.05"
+        assert abs(result["f_statistic"] - 4.85) < 1.0, f"F={result['f_statistic']}, expected ~4.85"
+        assert result["p_value"] < 0.05, f"p={result['p_value']}, expected <0.05"
         assert result["significant"]
 
     def test_two_way_anova_interaction(self):
@@ -1265,10 +1732,10 @@ class TestClassicTextbook:
             "factor_a": ["low"] * 10 + ["high"] * 10 + ["low"] * 10 + ["high"] * 10,
             "factor_b": ["low"] * 20 + ["high"] * 20,
             "values": (
-                np.random.normal(10, 1, 10).tolist() +  # A_low B_low
-                np.random.normal(15, 1, 10).tolist() +  # A_high B_low
-                np.random.normal(12, 1, 10).tolist() +  # A_low B_high
-                np.random.normal(22, 1, 10).tolist()    # A_high B_high (interaction boost)
+                np.random.normal(10, 1, 10).tolist()  # A_low B_low
+                + np.random.normal(15, 1, 10).tolist()  # A_high B_low
+                + np.random.normal(12, 1, 10).tolist()  # A_low B_high
+                + np.random.normal(22, 1, 10).tolist()  # A_high B_high (interaction boost)
             ),
         }
         result = anova(anova_type="two_way", groups=[], data=data)
@@ -1280,6 +1747,7 @@ class TestClassicTextbook:
 # ============================================================================
 # Statistical Properties - Mathematical invariants that must hold
 # ============================================================================
+
 
 class TestStatisticalProperties:
     """Test mathematical properties that must always hold."""
@@ -1294,11 +1762,11 @@ class TestStatisticalProperties:
         r2 = ttest(test_type="two_sample", values=g2, values2=g1)
 
         # t-statistics should have opposite signs (approximately)
-        assert r1["t_statistic"] * r2["t_statistic"] < 0, \
+        assert r1["t_statistic"] * r2["t_statistic"] < 0, (
             f"t1={r1['t_statistic']}, t2={r2['t_statistic']}, should have opposite signs"
+        )
         # p-values should be identical
-        assert abs(r1["p_value"] - r2["p_value"]) < 1e-10, \
-            f"p1={r1['p_value']}, p2={r2['p_value']}, should be equal"
+        assert abs(r1["p_value"] - r2["p_value"]) < 1e-10, f"p1={r1['p_value']}, p2={r2['p_value']}, should be equal"
 
     def test_anova_f_non_negative(self):
         """F-statistic from ANOVA must always be >= 0."""
@@ -1308,14 +1776,12 @@ class TestStatisticalProperties:
         g3 = np.random.normal(30, 3, 20).tolist()
 
         result = anova(anova_type="one_way", groups=[g1, g2, g3])
-        assert result["f_statistic"] >= 0, \
-            f"F={result['f_statistic']}, must be >= 0"
+        assert result["f_statistic"] >= 0, f"F={result['f_statistic']}, must be >= 0"
 
         # Also test with identical groups (F should be ~0)
         g = np.random.normal(10, 1, 20).tolist()
         result2 = anova(anova_type="one_way", groups=[g, g, g])
-        assert result2["f_statistic"] >= 0, \
-            f"F={result2['f_statistic']}, must be >= 0 even for identical groups"
+        assert result2["f_statistic"] >= 0, f"F={result2['f_statistic']}, must be >= 0 even for identical groups"
 
     def test_correlation_range(self):
         """Correlation coefficient must be in [-1, 1] for all methods."""
@@ -1327,8 +1793,7 @@ class TestStatisticalProperties:
             result = correlation(x=x, y=y, method=method)
             r_val = result["correlation"]
             if r_val is not None:  # Skip if undefined (constant input)
-                assert -1 <= r_val <= 1, \
-                    f"{method}: r={r_val}, must be in [-1, 1]"
+                assert -1 <= r_val <= 1, f"{method}: r={r_val}, must be in [-1, 1]"
 
     def test_regression_r_squared_range(self):
         """R-squared from regression must be in [0, 1]."""
@@ -1339,13 +1804,11 @@ class TestStatisticalProperties:
 
         # Noisy data: 0 <= R^2 <= 1
         r1 = regression(x=x, y=y_noisy, reg_type="linear")
-        assert 0 <= r1["r_squared"] <= 1, \
-            f"R^2={r1['r_squared']}, must be in [0, 1]"
+        assert 0 <= r1["r_squared"] <= 1, f"R^2={r1['r_squared']}, must be in [0, 1]"
 
         # Perfect linear: R^2 ~ 1
         r2 = regression(x=x, y=y_perfect, reg_type="linear")
-        assert 0 <= r2["r_squared"] <= 1, \
-            f"R^2={r2['r_squared']}, must be in [0, 1]"
+        assert 0 <= r2["r_squared"] <= 1, f"R^2={r2['r_squared']}, must be in [0, 1]"
 
     def test_p_value_range(self):
         """p-values from all tests must be in [0, 1]."""
@@ -1355,22 +1818,19 @@ class TestStatisticalProperties:
 
         # t-test p-value
         t_result = ttest(test_type="two_sample", values=g1, values2=g2)
-        assert 0 <= t_result["p_value"] <= 1, \
-            f"t-test p={t_result['p_value']}, must be in [0, 1]"
+        assert 0 <= t_result["p_value"] <= 1, f"t-test p={t_result['p_value']}, must be in [0, 1]"
 
         # ANOVA p-value
         g3 = np.random.normal(14, 1, 30).tolist()
         a_result = anova(anova_type="one_way", groups=[g1, g2, g3])
-        assert 0 <= a_result["p_value"] <= 1, \
-            f"ANOVA p={a_result['p_value']}, must be in [0, 1]"
+        assert 0 <= a_result["p_value"] <= 1, f"ANOVA p={a_result['p_value']}, must be in [0, 1]"
 
         # Correlation p-value
         x = np.random.normal(0, 1, 30).tolist()
         y = np.random.normal(0, 1, 30).tolist()
         c_result = correlation(x=x, y=y, method="pearson")
         if c_result["p_value"] is not None:
-            assert 0 <= c_result["p_value"] <= 1, \
-                f"Correlation p={c_result['p_value']}, must be in [0, 1]"
+            assert 0 <= c_result["p_value"] <= 1, f"Correlation p={c_result['p_value']}, must be in [0, 1]"
 
     def test_eta_squared_range(self):
         """Eta-squared from ANOVA must be in [0, 1]."""
@@ -1401,13 +1861,13 @@ class TestStatisticalProperties:
 
         assert ci_lower is not None, "CI lower should not be None for n>=2"
         assert ci_upper is not None, "CI upper should not be None for n>=2"
-        assert ci_lower <= mean <= ci_upper, \
-            f"Mean={mean} not in CI=[{ci_lower}, {ci_upper}]"
+        assert ci_lower <= mean <= ci_upper, f"Mean={mean} not in CI=[{ci_lower}, {ci_upper}]"
 
 
 # ============================================================================
 # Datasaurus Dozen - Identical summary stats, wildly different distributions
 # ============================================================================
+
 
 class TestDatasaurusDozen:
     """Datasaurus Dozen: identical stats, wildly different distributions."""
@@ -1415,18 +1875,130 @@ class TestDatasaurusDozen:
     @pytest.fixture
     def dino(self):
         """Dinosaur shape - the iconic Anscombe-like dataset."""
-        x = [55.38, 51.54, 46.15, 42.82, 40.77, 38.46, 35.38, 33.08, 30.77, 28.46,
-             26.92, 25.38, 24.10, 22.56, 21.54, 20.26, 19.23, 18.46, 17.44, 16.92,
-             16.15, 15.64, 15.38, 15.38, 16.15, 16.92, 17.69, 18.97, 20.51, 22.56,
-             24.87, 27.44, 30.00, 32.82, 35.64, 38.72, 41.54, 44.36, 47.44, 50.26,
-             53.08, 55.38, 55.38, 51.54, 46.15, 42.82, 40.77, 38.46, 35.38, 33.08,
-             30.77, 28.46, 26.92, 25.38, 24.10, 22.56, 21.54, 20.26, 19.23, 18.46]
-        y = [97.18, 96.03, 94.49, 92.44, 91.15, 89.36, 86.79, 84.36, 82.18, 80.00,
-             78.08, 76.03, 74.10, 71.92, 70.00, 67.82, 65.38, 63.08, 60.64, 58.08,
-             55.38, 52.69, 49.74, 46.79, 44.10, 41.67, 39.49, 37.69, 36.41, 35.77,
-             35.64, 36.15, 37.18, 38.72, 40.64, 43.08, 45.90, 49.10, 52.56, 56.03,
-             59.49, 62.69, 65.38, 67.82, 70.00, 71.92, 74.10, 76.03, 78.08, 80.00,
-             82.18, 84.36, 86.79, 89.36, 91.15, 92.44, 94.49, 96.03, 97.18, 97.18]
+        x = [
+            55.38,
+            51.54,
+            46.15,
+            42.82,
+            40.77,
+            38.46,
+            35.38,
+            33.08,
+            30.77,
+            28.46,
+            26.92,
+            25.38,
+            24.10,
+            22.56,
+            21.54,
+            20.26,
+            19.23,
+            18.46,
+            17.44,
+            16.92,
+            16.15,
+            15.64,
+            15.38,
+            15.38,
+            16.15,
+            16.92,
+            17.69,
+            18.97,
+            20.51,
+            22.56,
+            24.87,
+            27.44,
+            30.00,
+            32.82,
+            35.64,
+            38.72,
+            41.54,
+            44.36,
+            47.44,
+            50.26,
+            53.08,
+            55.38,
+            55.38,
+            51.54,
+            46.15,
+            42.82,
+            40.77,
+            38.46,
+            35.38,
+            33.08,
+            30.77,
+            28.46,
+            26.92,
+            25.38,
+            24.10,
+            22.56,
+            21.54,
+            20.26,
+            19.23,
+            18.46,
+        ]
+        y = [
+            97.18,
+            96.03,
+            94.49,
+            92.44,
+            91.15,
+            89.36,
+            86.79,
+            84.36,
+            82.18,
+            80.00,
+            78.08,
+            76.03,
+            74.10,
+            71.92,
+            70.00,
+            67.82,
+            65.38,
+            63.08,
+            60.64,
+            58.08,
+            55.38,
+            52.69,
+            49.74,
+            46.79,
+            44.10,
+            41.67,
+            39.49,
+            37.69,
+            36.41,
+            35.77,
+            35.64,
+            36.15,
+            37.18,
+            38.72,
+            40.64,
+            43.08,
+            45.90,
+            49.10,
+            52.56,
+            56.03,
+            59.49,
+            62.69,
+            65.38,
+            67.82,
+            70.00,
+            71.92,
+            74.10,
+            76.03,
+            78.08,
+            80.00,
+            82.18,
+            84.36,
+            86.79,
+            89.36,
+            91.15,
+            92.44,
+            94.49,
+            96.03,
+            97.18,
+            97.18,
+        ]
         return x, y
 
     @pytest.fixture
@@ -1469,31 +2041,32 @@ class TestDatasaurusDozen:
             for name, val in stats.items():
                 if avg != 0:
                     ratio = abs(val[key] - avg) / abs(avg)
-                    assert ratio < 0.5, \
-                        f"{name}.{key}={val[key]}, avg={avg}, ratio={ratio:.2f}"
+                    assert ratio < 0.5, f"{name}.{key}={val[key]}, avg={avg}, ratio={ratio:.2f}"
 
     def test_different_patterns(self, dino, circle):
         """Dino and circle should have different structural patterns."""
         import numpy as np
+
         arr_dino_x = np.array(dino[0])
         arr_circle_x = np.array(circle[0])
         range_dino = float(np.max(arr_dino_x) - np.min(arr_dino_x))
         range_circle = float(np.max(arr_circle_x) - np.min(arr_circle_x))
-        assert abs(range_dino - range_circle) > 1, \
+        assert abs(range_dino - range_circle) > 1, (
             f"Dino range={range_dino:.1f}, circle range={range_circle:.1f}, should differ"
+        )
 
     def test_regression_similar_r_squared(self, dino, circle, star):
         """All datasets should have low R-squared (no strong linear relationship)."""
         datasets = {"dino": dino, "circle": circle, "star": star}
         for name, (x, y) in datasets.items():
             result = regression(x=x, y=y, reg_type="linear")
-            assert result["r_squared"] < 0.2, \
-                f"{name}: R^2={result['r_squared']}, expected <0.2"
+            assert result["r_squared"] < 0.2, f"{name}: R^2={result['r_squared']}, expected <0.2"
 
 
 # ============================================================================
 # Multicollinearity - Deliberately correlated predictors
 # ============================================================================
+
 
 class TestMulticollinearity:
     """Test with deliberately multicollinear data."""
@@ -1552,8 +2125,7 @@ class TestMulticollinearity:
                 y_column="y",
                 reg_type="multiple",
             )
-            assert result["r_squared"] > 0.5, \
-                f"R^2={result['r_squared']}, expected >0.5 for strong predictor"
+            assert result["r_squared"] > 0.5, f"R^2={result['r_squared']}, expected >0.5 for strong predictor"
         finally:
             os.unlink(tmp_path)
 
@@ -1583,8 +2155,7 @@ class TestMulticollinearity:
                 reg_type="multiple",
             )
             assert "coefficients" in result
-            assert result["r_squared"] > 0.5, \
-                f"R^2={result['r_squared']}, expected >0.5"
+            assert result["r_squared"] > 0.5, f"R^2={result['r_squared']}, expected >0.5"
         finally:
             os.unlink(tmp_path)
 
@@ -1592,6 +2163,7 @@ class TestMulticollinearity:
 # ============================================================================
 # Extreme Data Sizes - Large, empty, single value
 # ============================================================================
+
 
 class TestLargeAndEmpty:
     """Test with extreme data sizes."""
@@ -1641,6 +2213,7 @@ class TestLargeAndEmpty:
 # Messy Strings - Non-numeric and mixed-type inputs
 # ============================================================================
 
+
 class TestMessyStrings:
     """Test with data containing messy strings."""
 
@@ -1667,9 +2240,11 @@ class TestMessyStrings:
         result = handler({"command": "descriptive", "params": {"values": ["a", "b", "c"]}})
         assert result["status"] == "error"
 
+
 # ============================================================================
 # Performance Benchmark - Speed regression tests
 # ============================================================================
+
 
 class TestPerformanceBenchmark:
     """Performance regression tests - ensure no command becomes too slow."""
@@ -1677,31 +2252,34 @@ class TestPerformanceBenchmark:
     def test_descriptive_speed(self):
         """Descriptive should handle 1000 values in <50ms."""
         import time
+
         values = list(range(1000))
         start = time.time()
         for _ in range(10):
             handler({"command": "descriptive", "params": {"values": values}})
         elapsed = (time.time() - start) / 10
-        assert elapsed < 0.05, f"descriptive took {elapsed*1000:.0f}ms, expected <50ms"
+        assert elapsed < 0.05, f"descriptive took {elapsed * 1000:.0f}ms, expected <50ms"
 
     def test_capability_speed(self):
         """Capability should handle 500 values in <50ms."""
         import time
+
         np.random.seed(42)
         values = np.random.normal(10, 1, 500).tolist()
         start = time.time()
         for _ in range(10):
             handler({"command": "capability", "params": {"values": values, "usl": 13, "lsl": 7}})
         elapsed = (time.time() - start) / 10
-        assert elapsed < 0.05, f"capability took {elapsed*1000:.0f}ms, expected <50ms"
+        assert elapsed < 0.05, f"capability took {elapsed * 1000:.0f}ms, expected <50ms"
 
     def test_correlation_speed(self):
         """Correlation should handle 1000 pairs in <10ms."""
         import time
+
         x = list(range(1000))
         y = list(range(1000))
         start = time.time()
         for _ in range(10):
             handler({"command": "correlation", "params": {"x": x, "y": y}})
         elapsed = (time.time() - start) / 10
-        assert elapsed < 0.01, f"correlation took {elapsed*1000:.0f}ms, expected <10ms"
+        assert elapsed < 0.01, f"correlation took {elapsed * 1000:.0f}ms, expected <10ms"

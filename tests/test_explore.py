@@ -1,4 +1,5 @@
 """Tests for stats_engine/explore.py."""
+
 import json
 
 import pandas as pd
@@ -106,9 +107,8 @@ class TestExploreText:
 
 class TestExploreErrors:
     def test_nonexistent_file(self):
-        result = explore(file="/tmp/nonexistent_xyz_12345.xlsx")
-        assert result.get("error") is True
-        assert "not found" in result["message"].lower()
+        with pytest.raises(FileNotFoundError, match="not found"):
+            explore(file="/tmp/nonexistent_xyz_12345.xlsx")
 
     def test_invalid_csv(self, tmp_path):
         p = tmp_path / "bad.csv"
@@ -122,11 +122,7 @@ class TestExploreErrors:
 class TestExploreOptions:
     @pytest.fixture
     def csv_file(self, tmp_path):
-        df = pd.DataFrame({
-            "x": range(100),
-            "y": [i * 2 for i in range(100)],
-            "z": ["cat"] * 50 + ["dog"] * 50
-        })
+        df = pd.DataFrame({"x": range(100), "y": [i * 2 for i in range(100)], "z": ["cat"] * 50 + ["dog"] * 50})
         p = tmp_path / "large.csv"
         df.to_csv(p, index=False)
         return str(p)
@@ -142,14 +138,17 @@ class TestExploreOptions:
 
 def test_explore_spec_detection():
     """Explore detects USL/LSL columns."""
-    import tempfile, os
+    import os
+    import tempfile
+
     # Create a CSV with spec limit columns
     csv_content = "value,USL,LSL\n10,12,8\n11,12,8\n10.5,12,8\n"
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         f.write(csv_content)
         tmpfile = f.name
     try:
         from stats_engine.explore import explore
+
         result = explore(file=tmpfile)
         assert "detected_specs" in result
         assert "usl" in result["detected_specs"]
@@ -161,13 +160,16 @@ def test_explore_spec_detection():
 
 def test_explore_no_spec_columns():
     """Explore with no spec columns returns no detected_specs."""
-    import tempfile, os
+    import os
+    import tempfile
+
     csv_content = "x,y\n1,2\n3,4\n"
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         f.write(csv_content)
         tmpfile = f.name
     try:
         from stats_engine.explore import explore
+
         result = explore(file=tmpfile)
         assert "detected_specs" not in result
     finally:
@@ -176,13 +178,16 @@ def test_explore_no_spec_columns():
 
 def test_explore_spec_target_column():
     """Explore detects Target column."""
-    import tempfile, os
+    import os
+    import tempfile
+
     csv_content = "value,Target\n10,10\n11,10\n"
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         f.write(csv_content)
         tmpfile = f.name
     try:
         from stats_engine.explore import explore
+
         result = explore(file=tmpfile)
         assert "detected_specs" in result
         assert "target" in result["detected_specs"]

@@ -1,4 +1,5 @@
 """Tests for stats_engine/charts.py."""
+
 import base64
 
 import numpy as np
@@ -34,7 +35,7 @@ class TestHistogram:
         decoded = base64.b64decode(result)
         assert len(decoded) > 0
         # Should be PNG
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_with_normal_curve(self):
         np.random.seed(42)
@@ -168,7 +169,7 @@ class TestACFPlot:
         result = acf_plot(values, max_lag=20, title="ACF Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_small_sample(self):
         values = [1, 2, 3]
@@ -188,7 +189,7 @@ class TestParetoPlot:
         result = pareto_plot(effects, names, title="Pareto Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_negative_effects(self):
         names = ["A", "B", "C"]
@@ -203,7 +204,7 @@ class TestOutlierPlot:
         result = outlier_plot(values, outlier_indices=[4], title="Outlier Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_no_outliers(self):
         values = [10, 11, 10, 12, 11, 10, 12, 11, 10, 11]
@@ -218,7 +219,7 @@ class TestResidualPlot:
         result = residual_plot(x, y, slope=2.0, intercept=0.0, title="Residual Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_no_slope(self):
         x = [1, 2, 3, 4, 5]
@@ -233,7 +234,7 @@ class TestWeibullPlot:
         result = weibull_plot(times, shape=2.0, scale=500, title="Weibull Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_no_params(self):
         times = [100, 200, 300, 400, 500]
@@ -252,7 +253,7 @@ class TestVarianceComponentPlot:
         result = variance_component_plot(components, title="Variance Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_empty(self):
         result = variance_component_plot({})
@@ -266,7 +267,7 @@ class TestTtestPlot:
         result = ttest_plot(g1, group2=g2, p_value=0.001, title="t-test Plot")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_one_group(self):
         g1 = [10.2, 10.5, 10.3, 10.1, 10.4]
@@ -281,7 +282,7 @@ class TestMissingValuesPlot:
         result = missing_values_plot(columns, counts, title="Missing Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
 
 class TestMeansComparisonPlot:
@@ -293,7 +294,7 @@ class TestMeansComparisonPlot:
         result = means_comparison_plot(names, means, ci_lowers, ci_uppers, title="Means Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
 
 class TestTOSTPlot:
@@ -301,7 +302,7 @@ class TestTOSTPlot:
         result = tost_plot(0.1, -0.3, 0.5, delta=1.0, title="TOST Equivalent")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"
 
     def test_not_equivalent(self):
         result = tost_plot(2.0, 1.0, 3.0, delta=0.5, title="TOST Not Equivalent")
@@ -314,4 +315,4 @@ class TestPowerCurve:
         result = power_curve(0.5, n_values, target_power=0.8, title="Power Test")
         assert isinstance(result, str)
         decoded = base64.b64decode(result)
-        assert decoded[:4] == b'\x89PNG'
+        assert decoded[:4] == b"\x89PNG"

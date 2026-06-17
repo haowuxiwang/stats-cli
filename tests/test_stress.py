@@ -3,7 +3,6 @@
 Tests extreme inputs, boundary conditions, and error recovery.
 """
 
-
 import numpy as np
 import pytest
 
@@ -19,6 +18,7 @@ from stats_engine.ttest import ttest
 # ============================================================================
 # Extreme Value Stress Tests
 # ============================================================================
+
 
 class TestExtremeValues:
     """Test with extreme numeric values."""
@@ -79,6 +79,7 @@ class TestExtremeValues:
 # Input Validation Stress Tests
 # ============================================================================
 
+
 class TestInputValidation:
     """Test input validation and error handling."""
 
@@ -131,6 +132,7 @@ class TestInputValidation:
 # ============================================================================
 # Statistical Correctness Stress Tests
 # ============================================================================
+
 
 class TestStatisticalCorrectness:
     """Verify statistical results against known properties."""
@@ -192,17 +194,20 @@ class TestStatisticalCorrectness:
         result = normality(values=values)
 
         # At least 2 out of 3 tests should say normal
-        normal_count = sum([
-            result["shapiro_wilk"]["normal"],
-            result["anderson_darling"]["normal"],
-            result["lilliefors"]["normal"],
-        ])
+        normal_count = sum(
+            [
+                result["shapiro_wilk"]["normal"],
+                result["anderson_darling"]["normal"],
+                result["lilliefors"]["normal"],
+            ]
+        )
         assert normal_count >= 2, f"Only {normal_count}/3 tests say normal"
 
 
 # ============================================================================
 # Regression Type Stress Tests
 # ============================================================================
+
 
 class TestRegressionStress:
     """Stress test all regression types."""
@@ -241,6 +246,7 @@ class TestRegressionStress:
 # ANOVA Stress Tests
 # ============================================================================
 
+
 class TestAnovaStress:
     """Stress test ANOVA."""
 
@@ -277,6 +283,7 @@ class TestAnovaStress:
 # Outlier Detection Stress Tests
 # ============================================================================
 
+
 class TestOutlierStress:
     """Stress test outlier detection."""
 
@@ -305,6 +312,7 @@ class TestOutlierStress:
 # Handler End-to-End Stress Tests
 # ============================================================================
 
+
 class TestHandlerStress:
     """End-to-end handler stress tests."""
 
@@ -314,9 +322,21 @@ class TestHandlerStress:
         assert result["status"] == "success"
         commands = result["data"]["commands"]
         expected = [
-            "descriptive", "normality", "ttest", "anova", "regression",
-            "correlation", "outlier", "power", "control_chart", "capability",
-            "doe", "gage_rr", "reliability", "multivariate", "timeseries",
+            "descriptive",
+            "normality",
+            "ttest",
+            "anova",
+            "regression",
+            "correlation",
+            "outlier",
+            "power",
+            "control_chart",
+            "capability",
+            "doe",
+            "gage_rr",
+            "reliability",
+            "multivariate",
+            "timeseries",
         ]
         for cmd in expected:
             assert cmd in commands, f"Missing command: {cmd}"

@@ -107,6 +107,7 @@ def test_discriminant_no_file():
 def test_pca_with_file():
     """PCA with file input."""
     import os
+
     fixture = "tests/fixtures/excel/001_single_column_10rows.xlsx"
     if os.path.exists(fixture):
         try:
@@ -119,6 +120,7 @@ def test_pca_with_file():
 def test_cluster_with_file():
     """Cluster with file input."""
     import os
+
     fixture = "tests/fixtures/excel/001_single_column_10rows.xlsx"
     if os.path.exists(fixture):
         try:
@@ -131,6 +133,7 @@ def test_cluster_with_file():
 def test_correlation_matrix_with_file():
     """Correlation matrix with file input."""
     import os
+
     fixture = "tests/fixtures/excel/001_single_column_10rows.xlsx"
     if os.path.exists(fixture):
         try:
@@ -143,6 +146,7 @@ def test_correlation_matrix_with_file():
 def test_discriminant_with_data():
     """Discriminant with proper data."""
     import os
+
     fixture = "tests/fixtures/excel/001_single_column_10rows.xlsx"
     if os.path.exists(fixture):
         try:
@@ -159,10 +163,13 @@ def test_discriminant_with_data():
 
 def test_discriminant_no_group_column():
     """Discriminant without group_column raises ValueError."""
+    import os
+    import tempfile
+
     from stats_engine.multivariate import multivariate
-    import tempfile, os
+
     csv_content = "x1,x2\n1,2\n3,4\n5,6\n"
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
         f.write(csv_content)
         tmpfile = f.name
     try:
@@ -175,6 +182,7 @@ def test_discriminant_no_group_column():
 def test_correlation_matrix_empty_columns():
     """Correlation matrix with empty columns uses default variable names."""
     from stats_engine.multivariate import multivariate
+
     result = multivariate(analysis_type="correlation_matrix", columns=[], values=[[1, 2], [3, 4]])
     assert result["analysis_type"] == "correlation_matrix"
     assert "matrix" in result

@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 
-from utils.output import ErrorType, error, success, warning, to_json
+from utils.output import ErrorType, error, success, to_json, warning
 
 
 def handler(input_data):
@@ -60,6 +60,12 @@ def handler(input_data):
         return error(str(e), _classify_value_error(str(e)))
     except FileNotFoundError as e:
         return error(str(e), ErrorType.FILE_NOT_FOUND)
+    except PermissionError as e:
+        return error(
+            f"Permission denied / 权限不足: {e}",
+            ErrorType.PARAM_ERROR,
+            suggestion="Check if the path is a directory or file requires elevated permissions",
+        )
     except ImportError as e:
         return error(
             str(e),
@@ -72,11 +78,20 @@ def handler(input_data):
             ErrorType.MEMORY_ERROR,
         )
     except TypeError as e:
-        if "unexpected keyword argument" in str(e):
-            return error(str(e), ErrorType.PARAM_ERROR)
-        return error(f"{type(e).__name__}: {e}", ErrorType.INTERNAL_ERROR)
+        msg = str(e)
+        # Clean up Python function signatures from error messages
+        # "descriptive() missing 1 required positional argument: 'values'" -> "Missing required parameter: 'values'"
+        import re
+
+        msg = re.sub(r"\w+\(\)\s*", "", msg)  # Remove function_name()
+        if "unexpected keyword argument" in msg:
+            return error(msg, ErrorType.PARAM_ERROR)
+        if "missing" in msg and "required" in msg and "argument" in msg:
+            return error(f"Missing required parameter / 缺少必填参数: {msg}", ErrorType.PARAM_ERROR)
+        return error(f"Invalid parameter type / 参数类型错误: {msg}", ErrorType.PARAM_ERROR)
     except Exception as e:
-        return error(f"{type(e).__name__}: {e}", ErrorType.INTERNAL_ERROR)
+        logging.exception("Unexpected error in command handler")
+        return error(f"Internal error / 内部错误: {e}", ErrorType.INTERNAL_ERROR)
 
 
 def _classify_value_error(msg):
@@ -89,16 +104,30 @@ def _classify_value_error(msg):
     msg_lower = msg.lower()
     # Data-related errors
     data_keywords = [
-        "need at least", "no numeric", "no valid", "not found in file",
-        "not found.", "after removing", "after cleaning", "insufficient",
-        "no data", "empty", "column", "sheet",
+        "need at least",
+        "no numeric",
+        "no valid",
+        "not found in file",
+        "not found.",
+        "after removing",
+        "after cleaning",
+        "insufficient",
+        "no data",
+        "empty",
+        "column",
+        "sheet",
     ]
     if any(kw in msg_lower for kw in data_keywords):
         return ErrorType.DATA_ERROR
     # Computation-related errors
     comp_keywords = [
-        "cannot", "undefined", "zero variance", "identical",
-        "convergence", "singular", "infinity",
+        "cannot",
+        "undefined",
+        "zero variance",
+        "identical",
+        "convergence",
+        "singular",
+        "infinity",
     ]
     if any(kw in msg_lower for kw in comp_keywords):
         return ErrorType.COMPUTATION_ERROR
@@ -169,12 +198,15 @@ def _route(command, params):
         y_col = params.get("y_column")
         if x_col and y_col:
             from utils.data_loader import load_data
+
             header = params.pop("header", 0)
             params.pop("x_column")
             params.pop("y_column")
             data = load_data(
-                file=params.pop("file"), columns=[x_col, y_col],
-                sheet=params.pop("sheet", None), header=header,
+                file=params.pop("file"),
+                columns=[x_col, y_col],
+                sheet=params.pop("sheet", None),
+                header=header,
             )
             params["x"] = data["x"]
             params["y"] = data["y"]
@@ -183,10 +215,13 @@ def _route(command, params):
     # Single-column file loading for other commands
     elif command not in NO_DATA_COMMANDS and "file" in params and "values" not in params:
         from utils.data_loader import load_data
+
         header = params.pop("header", 0)
         data = load_data(
-            file=params.pop("file"), column=params.pop("column", None),
-            sheet=params.pop("sheet", None), header=header,
+            file=params.pop("file"),
+            column=params.pop("column", None),
+            sheet=params.pop("sheet", None),
+            header=header,
         )
         params["values"] = data["values"]
 
@@ -224,32 +259,128 @@ def _discover(params):
 
 
 def _run_script(params):
-    """Run custom Python script with data."""
+    """Run custom Python script with data.
+
+    Security: Blocks dangerous patterns (dunder access, imports, file/network ops).
+    Timeout: Uses threading + ctypes to enforce timeout on infinite loops.
+    Intended for simple data transformations only, NOT untrusted code execution.
+    """
+    import ctypes
+    import threading
+
     script = params.get("script")
     data = params.get("data", {})
+    timeout = params.get("timeout", 5)  # Default 5 seconds
 
     if not script:
         raise ValueError("'script' parameter is required")
 
+    # Security: block dangerous patterns
+    _DANGEROUS_PATTERNS = [
+        "__",  # dunder access (class, subclasses, builtins, import)
+        "import ",  # import statements
+        "open(",  # file operations
+        "exec(",  # nested exec
+        "eval(",  # eval
+        "compile(",  # compile
+        "globals(",  # globals/locals access
+        "locals(",
+        "getattr(",  # attribute access
+        "setattr(",
+        "delattr(",
+        "os.",  # os module
+        "sys.",  # sys module
+        "subprocess",  # subprocess
+        "shutil",  # file operations
+        "pathlib",  # path operations
+        "socket",  # network
+        "urllib",  # network
+        "requests",  # network
+    ]
+    script_lower = script.lower()
+    for pattern in _DANGEROUS_PATTERNS:
+        if pattern in script_lower:
+            raise ValueError(
+                f"Script contains blocked pattern: '{pattern}'. "
+                "The run command supports simple data transformations only. "
+                "Blocked: dunder access, imports, file/network operations."
+            )
+
     # Restricted namespace - no imports, no file access
     safe_builtins = {
-        "abs": abs, "all": all, "any": any, "bool": bool, "dict": dict,
-        "enumerate": enumerate, "filter": filter, "float": float, "format": format,
-        "frozenset": frozenset, "int": int, "isinstance": isinstance, "len": len,
-        "list": list, "map": map, "max": max, "min": min, "pow": pow,
-        "print": print, "range": range, "repr": repr, "reversed": reversed,
-        "round": round, "set": set, "slice": slice, "sorted": sorted,
-        "str": str, "sum": sum, "tuple": tuple, "zip": zip,
+        "abs": abs,
+        "all": all,
+        "any": any,
+        "bool": bool,
+        "dict": dict,
+        "enumerate": enumerate,
+        "filter": filter,
+        "float": float,
+        "format": format,
+        "frozenset": frozenset,
+        "int": int,
+        "isinstance": isinstance,
+        "len": len,
+        "list": list,
+        "map": map,
+        "max": max,
+        "min": min,
+        "pow": pow,
+        "print": print,
+        "range": range,
+        "repr": repr,
+        "reversed": reversed,
+        "round": round,
+        "set": set,
+        "slice": slice,
+        "sorted": sorted,
+        "str": str,
+        "sum": sum,
+        "tuple": tuple,
+        "zip": zip,
     }
     namespace = {"data": data, "result": None, "__builtins__": safe_builtins}
-    exec(script, namespace)
-    return namespace.get("result", {"message": "Script executed"})
+
+    # Execute with timeout using threading + ctypes
+    result_holder = {"result": None, "error": None}
+
+    def _exec():
+        try:
+            exec(script, namespace)
+            result_holder["result"] = namespace.get("result", {"message": "Script executed"})
+        except Exception as e:
+            result_holder["error"] = e
+
+    thread = threading.Thread(target=_exec, daemon=True)
+    thread.start()
+    thread.join(timeout=timeout)
+
+    if thread.is_alive():
+        # Force terminate the thread by raising SystemExit
+        try:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_ulong(thread.ident),
+                ctypes.py_object(SystemExit),
+            )
+        except (ValueError, SystemError):
+            pass
+        thread.join(timeout=1)
+        raise ValueError(
+            f"Script execution timed out after {timeout} seconds. "
+            "Increase 'timeout' parameter or optimize your script."
+        )
+
+    if result_holder["error"]:
+        raise result_holder["error"]
+
+    return result_holder["result"]
 
 
 def _generate_chart(command, result, params):
     """Generate chart for supported commands. Returns base64 PNG or None."""
     try:
         from stats_engine.chart_handlers import CHART_HANDLERS
+
         handler = CHART_HANDLERS.get(command)
         if handler:
             return handler(result, params)
@@ -260,7 +391,7 @@ def _generate_chart(command, result, params):
 
 def main():
     """CLI entry point - read JSON from stdin or file."""
-    logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
     try:
         if len(sys.argv) > 1:
             with open(sys.argv[1]) as f:

@@ -129,14 +129,14 @@ def test_quadratic():
     """Quadratic regression."""
     np.random.seed(42)
     x = np.linspace(-3, 3, 30)
-    y = (x ** 2 + np.random.normal(0, 0.5, 30)).tolist()
+    y = (x**2 + np.random.normal(0, 0.5, 30)).tolist()
     result = regression(x=x.tolist(), y=y, reg_type="quadratic")
     assert "polynomial" in result["regression_type"] or "quadratic" in result["regression_type"]
 
 
 def test_regression_with_nan():
     """Regression should handle NaN values."""
-    x = [1, 2, float('nan'), 4, 5]
+    x = [1, 2, float("nan"), 4, 5]
     y = [2, 4, 6, 8, 10]
     try:
         result = regression(x=x, y=y, reg_type="linear")
@@ -147,7 +147,7 @@ def test_regression_with_nan():
 
 def test_regression_with_inf():
     """Regression should handle Inf values."""
-    x = [1, 2, float('inf'), 4, 5]
+    x = [1, 2, float("inf"), 4, 5]
     y = [2, 4, 6, 8, 10]
     try:
         result = regression(x=x, y=y, reg_type="linear")

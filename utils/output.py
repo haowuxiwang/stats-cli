@@ -16,12 +16,13 @@ DEFAULT_PRECISION = 6
 PRECISION = {
     "default": 6,
     "percent": 2,
-    "statistic": 4,   # F, t, chi2 statistics
+    "statistic": 4,  # F, t, chi2 statistics
     "p_value": 4,
     "effect_size": 3,
     "kappa": 3,
     "ppm": 2,
 }
+
 
 # Standardized error types
 class ErrorType:
@@ -110,14 +111,11 @@ def p_value_context(result, p_value, alpha=0.05, n=None):
     if p_value is not None and alpha * 0.8 < p_value < alpha * 1.2:
         result["p_boundary"] = True
         result["p_boundary_warning"] = (
-            f"p={r(p_value)} is near alpha={alpha}; "
-            "result is borderline — interpret with caution"
+            f"p={r(p_value)} is near alpha={alpha}; result is borderline — interpret with caution"
         )
         warnings.append(result["p_boundary_warning"])
     if n is not None and n < 10:
-        result["small_sample_warning"] = (
-            f"n={n}: statistical power is very low, results may be unreliable"
-        )
+        result["small_sample_warning"] = f"n={n}: statistical power is very low, results may be unreliable"
         warnings.append(result["small_sample_warning"])
     if warnings:
         result["_warning"] = "; ".join(warnings)

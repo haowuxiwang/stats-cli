@@ -1,10 +1,10 @@
 """Tests for main.py handler and routing."""
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
-import os
 
 import pytest
 
@@ -74,7 +74,10 @@ def test_handler_params_none():
 JSON_SERIALIZABLE_CASES = [
     {"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5]}},
     {"command": "normality", "params": {"values": [1, 2, 3, 4, 5]}},
-    {"command": "capability", "params": {"values": [9.5, 10.2, 10.5, 10.1, 9.8, 10.3, 10.0, 9.9, 10.4, 10.2] * 3, "usl": 12, "lsl": 8}},
+    {
+        "command": "capability",
+        "params": {"values": [9.5, 10.2, 10.5, 10.1, 9.8, 10.3, 10.0, 9.9, 10.4, 10.2] * 3, "usl": 12, "lsl": 8},
+    },
     {"command": "control_chart", "params": {"chart_type": "imr", "values": [10] * 25}},
     {"command": "ttest", "params": {"test_type": "one_sample", "values": [10, 12, 11, 13, 14], "mu": 12}},
     {"command": "anova", "params": {"anova_type": "one_way", "groups": [[1, 2, 3], [4, 5, 6]]}},
@@ -83,10 +86,16 @@ JSON_SERIALIZABLE_CASES = [
     {"command": "nonparametric", "params": {"test_type": "mann_whitney", "x": [1, 2, 3], "y": [4, 5, 6]}},
     {"command": "homogeneity", "params": {"test_type": "levene", "groups": [[1, 2, 3], [4, 5, 6]]}},
     {"command": "multiple_comparison", "params": {"test_type": "tukey", "groups": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}},
-    {"command": "equivalence", "params": {"test_type": "tost", "values": [10, 11, 12], "values2": [10.5, 11.5, 12.5], "delta": 1}},
+    {
+        "command": "equivalence",
+        "params": {"test_type": "tost", "values": [10, 11, 12], "values2": [10.5, 11.5, 12.5], "delta": 1},
+    },
     {"command": "outlier", "params": {"values": [1, 2, 3, 4, 100], "method": "grubbs"}},
     {"command": "trend", "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "test_type": "runs"}},
-    {"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}]}},
+    {
+        "command": "doe",
+        "params": {"doe_type": "full_factorial", "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}]},
+    },
     {"command": "reliability", "params": {"analysis_type": "weibull", "times": [100, 200, 300], "status": [1, 1, 1]}},
     {"command": "power", "params": {"analysis_type": "t_test", "effect_size": 0.5, "power": 0.80}},
     {"command": "clean", "params": {"values": [1, 2, None, 4, 5], "method": "drop"}},
@@ -96,7 +105,10 @@ JSON_SERIALIZABLE_CASES = [
     {"command": "check_assumptions", "params": {"values": [10, 11, 12], "test_type": "ttest"}},
     {"command": "recommend", "params": {"data_description": {"goal": "compare means", "n_groups": 2}}},
     {"command": "workflow", "params": {"steps": [{"command": "descriptive"}], "values": [1, 2, 3]}},
-    {"command": "workflow_template", "params": {"template_name": "manufacturing", "values": [10, 11, 12], "usl": 12, "lsl": 8}},
+    {
+        "command": "workflow_template",
+        "params": {"template_name": "manufacturing", "values": [10, 11, 12], "usl": 12, "lsl": 8},
+    },
 ]
 
 
@@ -112,19 +124,22 @@ def test_json_serializable(case):
 def test_json_serializable_gage_rr():
     """Gage R&R needs special setup — test separately."""
     import numpy as np
+
     np.random.seed(42)
     parts = list(range(1, 7)) * 6  # 6 parts, 3 operators, 2 replicates
     operators = (["O1"] * 6 + ["O2"] * 6 + ["O3"] * 6) * 2
     measurements = np.random.normal(100, 2, 36).tolist()
-    result = handler({
-        "command": "gage_rr",
-        "params": {
-            "analysis_type": "crossed",
-            "measurements": measurements,
-            "parts": parts,
-            "operators": operators,
-        },
-    })
+    result = handler(
+        {
+            "command": "gage_rr",
+            "params": {
+                "analysis_type": "crossed",
+                "measurements": measurements,
+                "parts": parts,
+                "operators": operators,
+            },
+        }
+    )
     assert result["status"] == "success"
     json.dumps(result)
 
@@ -138,10 +153,12 @@ def test_handler_discover_unknown_command():
 
 def test_handler_run_script():
     """run command should execute script and return result."""
-    result = handler({
-        "command": "run",
-        "params": {"script": "result = {'sum': sum(data['values'])}", "data": {"values": [1, 2, 3]}},
-    })
+    result = handler(
+        {
+            "command": "run",
+            "params": {"script": "result = {'sum': sum(data['values'])}", "data": {"values": [1, 2, 3]}},
+        }
+    )
     assert result["status"] == "success"
     assert result["data"]["sum"] == 6
 
@@ -154,29 +171,35 @@ def test_handler_run_script_no_script():
 
 def test_handler_chart_request():
     """chart=true should generate chart_base64."""
-    result = handler({
-        "command": "descriptive",
-        "params": {"values": [1, 2, 3, 4, 5], "chart": True},
-    })
+    result = handler(
+        {
+            "command": "descriptive",
+            "params": {"values": [1, 2, 3, 4, 5], "chart": True},
+        }
+    )
     assert result["status"] == "success"
     assert "chart_base64" in result["data"]
 
 
 def test_handler_chart_request_unsupported():
     """chart=true for unsupported command should have chart_base64=None."""
-    result = handler({
-        "command": "discover",
-        "params": {"chart": True},
-    })
+    result = handler(
+        {
+            "command": "discover",
+            "params": {"chart": True},
+        }
+    )
     assert result["status"] == "success"
 
 
 def test_handler_type_error_keyword():
     """TypeError with 'unexpected keyword argument' should be VALIDATION_ERROR."""
-    result = handler({
-        "command": "descriptive",
-        "params": {"values": [1, 2, 3], "nonexistent_param": 42},
-    })
+    result = handler(
+        {
+            "command": "descriptive",
+            "params": {"values": [1, 2, 3], "nonexistent_param": 42},
+        }
+    )
     assert result["status"] == "error"
     assert result["error_type"] == "PARAM_ERROR"
 
@@ -190,10 +213,12 @@ def test_handler_missing_dependency():
 
 def test_handler_file_not_found():
     """FileNotFoundError should return FILE_NOT_FOUND."""
-    result = handler({
-        "command": "descriptive",
-        "params": {"file": "/nonexistent/path/data.csv"},
-    })
+    result = handler(
+        {
+            "command": "descriptive",
+            "params": {"file": "/nonexistent/path/data.csv"},
+        }
+    )
     assert result["status"] == "error"
     assert result["error_type"] == "FILE_NOT_FOUND"
 
@@ -206,7 +231,9 @@ class TestMainCLI:
         r = subprocess.run(
             [sys.executable, "main.py"],
             input='{"command":"descriptive","params":{"values":[1,2,3,4,5]}}',
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         assert r.returncode == 0
         out = json.loads(r.stdout)
@@ -220,7 +247,9 @@ class TestMainCLI:
         try:
             r = subprocess.run(
                 [sys.executable, "main.py", tmpfile],
-                capture_output=True, text=True, encoding="utf-8",
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             )
             assert r.returncode == 0
             out = json.loads(r.stdout)
@@ -232,7 +261,9 @@ class TestMainCLI:
         """main() should handle missing file gracefully."""
         r = subprocess.run(
             [sys.executable, "main.py", "/nonexistent/file.json"],
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         assert r.returncode == 0
         out = json.loads(r.stdout)
@@ -244,7 +275,9 @@ class TestMainCLI:
         r = subprocess.run(
             [sys.executable, "main.py"],
             input="not json",
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         assert r.returncode == 0
         out = json.loads(r.stdout)
@@ -256,7 +289,9 @@ class TestMainCLI:
         r = subprocess.run(
             [sys.executable, "main.py"],
             input='{"command":"nonexistent"}',
-            capture_output=True, text=True, encoding="utf-8",
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         assert r.returncode == 0
         out = json.loads(r.stdout)
@@ -269,6 +304,7 @@ class TestMainDirect:
     def test_main_stdin(self, monkeypatch, capsys):
         """main() reads from stdin when no args."""
         import main as main_module
+
         monkeypatch.setattr("sys.argv", ["main.py"])
         monkeypatch.setattr("sys.stdin.read", lambda: '{"command":"descriptive","params":{"values":[1,2,3]}}')
         main_module.main()
@@ -279,6 +315,7 @@ class TestMainDirect:
     def test_main_file(self, monkeypatch, capsys):
         """main() reads from file when arg provided."""
         import main as main_module
+
         tmpfile = tempfile.mktemp(suffix=".json")
         with open(tmpfile, "w") as f:
             json.dump({"command": "descriptive", "params": {"values": [1, 2, 3]}}, f)
@@ -294,6 +331,7 @@ class TestMainDirect:
     def test_main_file_not_found(self, monkeypatch, capsys):
         """main() handles missing file."""
         import main as main_module
+
         monkeypatch.setattr("sys.argv", ["main.py", "/nonexistent.json"])
         main_module.main()
         captured = capsys.readouterr()
@@ -304,6 +342,7 @@ class TestMainDirect:
     def test_main_invalid_json(self, monkeypatch, capsys):
         """main() handles invalid JSON."""
         import main as main_module
+
         monkeypatch.setattr("sys.argv", ["main.py"])
         monkeypatch.setattr("sys.stdin.read", lambda: "not json")
         main_module.main()
@@ -315,6 +354,7 @@ class TestMainDirect:
     def test_main_generic_error(self, monkeypatch, capsys):
         """main() handles generic exceptions."""
         import main as main_module
+
         monkeypatch.setattr("sys.argv", ["main.py"])
         monkeypatch.setattr("sys.stdin.read", lambda: None)  # Will cause TypeError
         main_module.main()
@@ -357,6 +397,7 @@ class TestClassifyValueError:
     def test_classify_value_error_data(self):
         """Data errors classified as DATA_ERROR."""
         from main import _classify_value_error
+
         assert _classify_value_error("Need at least 2 values") == "DATA_ERROR"
         assert _classify_value_error("No numeric columns found") == "DATA_ERROR"
         assert _classify_value_error("Column 'x' not found") == "DATA_ERROR"
@@ -365,6 +406,7 @@ class TestClassifyValueError:
     def test_classify_value_error_computation(self):
         """Computation errors classified as COMPUTATION_ERROR."""
         from main import _classify_value_error
+
         assert _classify_value_error("Cannot calculate: zero variance") == "COMPUTATION_ERROR"
         assert _classify_value_error("Result is undefined") == "COMPUTATION_ERROR"
         assert _classify_value_error("Singular matrix encountered") == "COMPUTATION_ERROR"
@@ -372,5 +414,6 @@ class TestClassifyValueError:
     def test_classify_value_error_param(self):
         """Param errors classified as PARAM_ERROR."""
         from main import _classify_value_error
+
         assert _classify_value_error("Unknown method: foo") == "PARAM_ERROR"
         assert _classify_value_error("Invalid argument") == "PARAM_ERROR"

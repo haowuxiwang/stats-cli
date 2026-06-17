@@ -1,4 +1,5 @@
 """Tests for stats_engine/discover.py."""
+
 import json
 
 from stats_engine.discover import COMMANDS
@@ -17,9 +18,18 @@ class TestCommandsStructure:
 
     def test_all_commands_have_valid_category(self):
         valid_categories = {
-            "basic", "hypothesis", "spc", "regression",
-            "doe", "msa", "reliability", "multivariate",
-            "advanced", "data", "report", "workflow"
+            "basic",
+            "hypothesis",
+            "spc",
+            "regression",
+            "doe",
+            "msa",
+            "reliability",
+            "multivariate",
+            "advanced",
+            "data",
+            "report",
+            "workflow",
         }
         for name, cmd in COMMANDS.items():
             assert cmd["category"] in valid_categories, f"{name}: invalid category '{cmd['category']}'"
@@ -35,15 +45,33 @@ class TestCommandsStructure:
 
 class TestRequiredCommands:
     REQUIRED_COMMANDS = [
-        "descriptive", "normality", "outlier",
-        "ttest", "anova", "nonparametric", "homogeneity",
-        "equivalence", "multiple_comparison", "power",
-        "control_chart", "capability", "trend",
-        "regression", "correlation",
-        "doe", "gage_rr",
-        "reliability", "multivariate", "timeseries",
-        "explore", "clean", "transform", "report",
-        "discover", "advanced", "run",
+        "descriptive",
+        "normality",
+        "outlier",
+        "ttest",
+        "anova",
+        "nonparametric",
+        "homogeneity",
+        "equivalence",
+        "multiple_comparison",
+        "power",
+        "control_chart",
+        "capability",
+        "trend",
+        "regression",
+        "correlation",
+        "doe",
+        "gage_rr",
+        "reliability",
+        "multivariate",
+        "timeseries",
+        "explore",
+        "clean",
+        "transform",
+        "report",
+        "discover",
+        "advanced",
+        "run",
     ]
 
     def test_all_required_commands_exist(self):
@@ -54,8 +82,18 @@ class TestRequiredCommands:
 class TestExamples:
     # Some examples use [...] as placeholders which is not valid JSON
     SKIP_PARSE = {
-        "capability", "outlier", "control_chart", "trend", "doe", "gage_rr",
-        "reliability", "multivariate", "clean", "transform", "report", "run"
+        "capability",
+        "outlier",
+        "control_chart",
+        "trend",
+        "doe",
+        "gage_rr",
+        "reliability",
+        "multivariate",
+        "clean",
+        "transform",
+        "report",
+        "run",
     }
 
     def test_all_examples_have_valid_json_or_placeholder(self):
@@ -64,8 +102,9 @@ class TestExamples:
             if name in self.SKIP_PARSE:
                 # These use [...] placeholder; just verify structure
                 assert '"command"' in example, f"{name}: example missing 'command'"
-                assert f'"command": "{name}"' in example or f'"command":"{name}"' in example, \
+                assert f'"command": "{name}"' in example or f'"command":"{name}"' in example, (
                     f"{name}: example command doesn't match key"
+                )
             else:
                 parsed = json.loads(example)
                 assert "command" in parsed, f"{name}: example missing 'command' field"

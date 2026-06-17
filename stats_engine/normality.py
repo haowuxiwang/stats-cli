@@ -42,9 +42,7 @@ def normality(values):
     ad_result = sp_stats.anderson(arr, dist="norm")
     result["anderson_darling"] = {
         "statistic": r(ad_result.statistic),
-        "critical_values": {
-            f"{sl}%": r(cv) for sl, cv in zip(ad_result.significance_level, ad_result.critical_values)
-        },
+        "critical_values": {f"{sl}%": r(cv) for sl, cv in zip(ad_result.significance_level, ad_result.critical_values)},
         "normal": float(ad_result.statistic) < float(ad_result.critical_values[2]),  # 5% level
     }
 

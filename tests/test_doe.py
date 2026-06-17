@@ -111,11 +111,7 @@ def test_factor_no_levels():
 
 def test_full_factorial_3_factors():
     """Full factorial with 3 factors."""
-    factors = [
-        {"name": "A", "levels": 2},
-        {"name": "B", "levels": 2},
-        {"name": "C", "levels": 2}
-    ]
+    factors = [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}, {"name": "C", "levels": 2}]
     result = doe(doe_type="full_factorial", factors=factors)
     assert result["n_runs"] == 8
 
@@ -146,7 +142,7 @@ def test_fractional_factorial_with_resolution():
         {"name": "A", "levels": 2},
         {"name": "B", "levels": 2},
         {"name": "C", "levels": 2},
-        {"name": "D", "levels": 2}
+        {"name": "D", "levels": 2},
     ]
     result = doe(doe_type="fractional_factorial", factors=factors, resolution=3)
     assert result["doe_type"] == "fractional_factorial"

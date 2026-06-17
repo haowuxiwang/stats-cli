@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis, SPC control charts, process capability, hypothesis testing, regression, DOE, outlier detection, trend analysis, MSA/Gage R&R, data cleaning, data transformation, reliability analysis, multivariate analysis, time series, power analysis, chi-square tests, workflow automation, PDF/Excel export, or assumption checking. NOT for: real-time streaming, text analysis, image data, non-numeric datasets, database queries. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, DOE, 正态性检验, 异常值, 趋势分析, SPC, Cp, Cpk, capability, normality, regression, correlation, outlier, quality, manufacturing, 质量分析, 过程控制, 假设检验, 方差分析, 实验设计, MSA, Gage R&R, 测量系统分析, 数据清洗, 数据变换, Box-Cox, 可靠性, Weibull, 生存分析, PCA, 聚类, 判别分析, 时间序列, ARIMA, 功效分析, 样本量, 卡方检验, chi-square, 工作流, workflow, 假设检查, 方法推荐, PDF导出, Excel导出."
+description: "Use when user needs statistical analysis for manufacturing/quality data. SPC: control charts, process capability (Cp/Cpk), trend. Hypothesis: t-test, ANOVA, chi-square, nonparametric, equivalence, power. Regression: linear, polynomial, logistic, nonlinear, correlation. Quality: MSA/Gage R&R, reliability (Weibull), DOE. Multivariate: PCA, cluster, discriminant. Time Series: ARIMA, exponential smoothing. Data: cleaning, transform (Box-Cox), outlier detection, workflow. NOT for: text, image, streaming, non-numeric data. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, SPC, 质量分析, 假设检验, MSA, 可靠性, 时间序列, Cp, Cpk, 正态性, 异常值, Box-Cox, Weibull, PCA, DOE, 实验设计, 测量系统分析, 功效分析, 样本量, 卡方检验."
 ---
 
 # stats-cli-py
@@ -547,6 +547,7 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 - NOT available: `__import__`, `open`, `exec`, `eval`, `getattr`, `compile`, `globals`, `locals`
 - No file I/O, no network access, no module imports
 - Set `result` variable to return data from your script
+- **Timeout:** Default 5 seconds. Add `"timeout": 10` to params for longer scripts. Infinite loops are automatically terminated.
 
 ### Workflow Automation (工作流自动化)
 
