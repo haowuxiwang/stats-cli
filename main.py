@@ -366,8 +366,7 @@ def _run_script(params):
             pass
         thread.join(timeout=1)
         raise ValueError(
-            f"Script execution timed out after {timeout} seconds. "
-            "Increase 'timeout' parameter or optimize your script."
+            f"Script execution timed out after {timeout} seconds. Increase 'timeout' parameter or optimize your script."
         )
 
     if result_holder["error"]:
