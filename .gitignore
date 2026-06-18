@@ -80,6 +80,8 @@ output/*.pdf
 *.html
 report.pdf
 report.xlsx
+test-output/
+docs/*.pdf
 
 # Test data
 test_data.csv

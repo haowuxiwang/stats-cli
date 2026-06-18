@@ -1,9 +1,0 @@
-{
-  "status": "success",
-  "version": "1.0.0",
-  "timestamp": "2026-06-09T07:37:33.532183+00:00",
-  "data": {
-    "error": true,
-    "message": "Dixon's Q test works best with 3-30 data points"
-  }
-}
