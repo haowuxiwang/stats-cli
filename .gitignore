@@ -87,11 +87,8 @@ test_data.txt
 test_data.json
 test_arima.*
 
-# Test fixtures (generated Excel files)
-tests/fixtures/
-
 # Sample data files
-excel/
+/excel/
 
 # Claude Code
 .claude/

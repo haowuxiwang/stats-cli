@@ -28,11 +28,6 @@ def multivariate(analysis_type, **kwargs):
 
 def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
     """Principal Component Analysis."""
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for PCA")
-
     if file and columns:
         from utils.data_loader import read_dataframe
 
@@ -87,11 +82,6 @@ def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
 
 def _cluster(values=None, file=None, columns=None, method="kmeans", n_clusters=3, **kwargs):
     """Cluster analysis."""
-    try:
-        import pandas as pd
-    except ImportError:
-        raise ImportError("pandas required for cluster analysis")
-
     if file and columns:
         from utils.data_loader import read_dataframe
 
@@ -165,7 +155,6 @@ def _hierarchical(X, n_clusters):
 def _discriminant(values=None, file=None, columns=None, group_column=None, **kwargs):
     """Discriminant analysis (LDA)."""
     try:
-        import pandas as pd
         from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
     except ImportError:
         raise ImportError("scikit-learn required for discriminant analysis")
