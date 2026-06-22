@@ -462,7 +462,7 @@ COMMANDS = {
             },
             {"name": "target", "required": False, "type": "number", "desc": "Target value (default: mean of values)"},
         ],
-        "output_fields": ["test_type", "alarm_points", "stable"],
+        "output_fields": ["test_type", "n", "target", "alarm_points", "stable", "interpretation"],
         "example": '{"command": "trend", "params": {"values": [10.1, 10.2, 10.0, 10.3, 10.1], "test_type": "cusum"}}',
     },
     "doe": {

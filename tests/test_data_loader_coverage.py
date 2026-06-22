@@ -1,6 +1,5 @@
 """Additional tests for utils/data_loader.py to improve coverage."""
 
-
 import pytest
 
 from utils.data_loader import load_data

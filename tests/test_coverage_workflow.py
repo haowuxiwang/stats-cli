@@ -10,28 +10,32 @@ class TestWorkflowAssumptions:
 
     def test_workflow_assumptions_no_values(self):
         """Workflow assumptions with no values in step."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "ttest", "params": {"values": [1, 2, 3, 4, 5]}},
-                ],
-                "check_assumptions": True,
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "ttest", "params": {"values": [1, 2, 3, 4, 5]}},
+                    ],
+                    "check_assumptions": True,
+                },
+            }
+        )
         assert result["status"] in ("success", "error", "warning")
 
     def test_workflow_assumptions_few_values(self):
         """Workflow assumptions with too few values."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "ttest", "params": {"values": [1, 2]}},
-                ],
-                "check_assumptions": True,
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "ttest", "params": {"values": [1, 2]}},
+                    ],
+                    "check_assumptions": True,
+                },
+            }
+        )
         assert result["status"] in ("success", "error", "warning")
 
     def test_workflow_assumptions_welch(self):
@@ -39,15 +43,17 @@ class TestWorkflowAssumptions:
         # Create data with very different variances
         g1 = [1.0] * 20
         g2 = [100.0 + np.random.normal(0, 0.01) for _ in range(20)]
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "ttest", "params": {"values": g1, "values2": g2}},
-                ],
-                "check_assumptions": True,
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "ttest", "params": {"values": g1, "values2": g2}},
+                    ],
+                    "check_assumptions": True,
+                },
+            }
+        )
         assert result["status"] in ("success", "error", "warning")
 
     def test_workflow_assumptions_anova_welch(self):
@@ -55,15 +61,17 @@ class TestWorkflowAssumptions:
         g1 = [1.0] * 20
         g2 = [100.0 + np.random.normal(0, 0.01) for _ in range(20)]
         g3 = [200.0 + np.random.normal(0, 0.01) for _ in range(20)]
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "anova", "params": {"groups": [g1, g2, g3]}},
-                ],
-                "check_assumptions": True,
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "anova", "params": {"groups": [g1, g2, g3]}},
+                    ],
+                    "check_assumptions": True,
+                },
+            }
+        )
         assert result["status"] in ("success", "error", "warning")
 
 
@@ -72,53 +80,64 @@ class TestWorkflowContext:
 
     def test_workflow_with_clean_step(self):
         """Workflow with clean step updates context."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "clean", "params": {"values": [1, 2, None, 4, 5], "method": "drop"}},
-                    {"command": "descriptive"},
-                ],
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "clean", "params": {"values": [1, 2, None, 4, 5], "method": "drop"}},
+                        {"command": "descriptive"},
+                    ],
+                },
+            }
+        )
         assert result["status"] == "success"
 
     def test_workflow_with_transform_step(self):
         """Workflow with transform step updates context."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "transform", "params": {"values": [1, 2, 3, 4, 5], "method": "log"}},
-                    {"command": "descriptive"},
-                ],
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "transform", "params": {"values": [1, 2, 3, 4, 5], "method": "log"}},
+                        {"command": "descriptive"},
+                    ],
+                },
+            }
+        )
         assert result["status"] == "success"
 
     def test_workflow_with_outlier_step(self):
         """Workflow with outlier step updates context."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "outlier", "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100], "method": "grubbs"}},
-                    {"command": "descriptive"},
-                ],
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {
+                            "command": "outlier",
+                            "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100], "method": "grubbs"},
+                        },
+                        {"command": "descriptive"},
+                    ],
+                },
+            }
+        )
         assert result["status"] == "success"
 
     def test_workflow_step_error(self):
         """Workflow step with error is handled."""
-        result = handler({
-            "command": "workflow",
-            "params": {
-                "steps": [
-                    {"command": "capability", "params": {"values": [1, 2, 3]}},
-                ],
-            },
-        })
+        result = handler(
+            {
+                "command": "workflow",
+                "params": {
+                    "steps": [
+                        {"command": "capability", "params": {"values": [1, 2, 3]}},
+                    ],
+                },
+            }
+        )
         assert result["status"] in ("success", "error", "warning")
 
 

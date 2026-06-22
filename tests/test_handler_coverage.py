@@ -54,14 +54,16 @@ class TestTwoColumnFileLoading:
             for i in range(20):
                 writer.writerow([i, i * 2 + 1])
 
-        result = handler({
-            "command": "correlation",
-            "params": {
-                "file": str(csv_file),
-                "x_column": "x",
-                "y_column": "y",
-            },
-        })
+        result = handler(
+            {
+                "command": "correlation",
+                "params": {
+                    "file": str(csv_file),
+                    "x_column": "x",
+                    "y_column": "y",
+                },
+            }
+        )
         assert result["status"] == "success"
         assert "correlation" in result["data"]
 
@@ -76,15 +78,17 @@ class TestTwoColumnFileLoading:
             for i in range(20):
                 writer.writerow([i, i * 2 + 1])
 
-        result = handler({
-            "command": "regression",
-            "params": {
-                "file": str(csv_file),
-                "x_column": "x",
-                "y_column": "y",
-                "reg_type": "linear",
-            },
-        })
+        result = handler(
+            {
+                "command": "regression",
+                "params": {
+                    "file": str(csv_file),
+                    "x_column": "x",
+                    "y_column": "y",
+                    "reg_type": "linear",
+                },
+            }
+        )
         assert result["status"] == "success"
         assert "r_squared" in result["data"]
 
@@ -94,64 +98,78 @@ class TestRunScriptSecurity:
 
     def test_run_script_blocked_dunder(self):
         """Script with dunder access is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "x = data.__class__"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "x = data.__class__"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_import(self):
         """Script with import statement is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "import os"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "import os"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_open(self):
         """Script with open() is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "f = open('test.txt')"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "f = open('test.txt')"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_exec(self):
         """Script with exec() is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "exec('print(1)')"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "exec('print(1)')"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_eval(self):
         """Script with eval() is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "eval('1+1')"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "eval('1+1')"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_os(self):
         """Script with os module is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "os.listdir('.')"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "os.listdir('.')"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
     def test_run_script_blocked_sys(self):
         """Script with sys module is blocked."""
-        result = handler({
-            "command": "run",
-            "params": {"script": "sys.exit(0)"},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"script": "sys.exit(0)"},
+            }
+        )
         assert result["status"] == "error"
         assert "blocked pattern" in result["message"].lower()
 
@@ -161,45 +179,53 @@ class TestRunScriptExecution:
 
     def test_run_script_normal_execution(self):
         """Normal script executes and returns result."""
-        result = handler({
-            "command": "run",
-            "params": {
-                "script": "result = {'sum': sum(data['values'])}",
-                "data": {"values": [1, 2, 3, 4, 5]},
-            },
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {
+                    "script": "result = {'sum': sum(data['values'])}",
+                    "data": {"values": [1, 2, 3, 4, 5]},
+                },
+            }
+        )
         assert result["status"] == "success"
         assert result["data"]["sum"] == 15
 
     def test_run_script_runtime_error(self):
         """Script with runtime error returns error."""
-        result = handler({
-            "command": "run",
-            "params": {
-                "script": "x = 1 / 0",
-                "data": {},
-            },
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {
+                    "script": "x = 1 / 0",
+                    "data": {},
+                },
+            }
+        )
         assert result["status"] == "error"
         assert "division by zero" in result["message"].lower() or "ZeroDivisionError" in result["message"]
 
     def test_run_script_no_script(self):
         """Missing script parameter returns error."""
-        result = handler({
-            "command": "run",
-            "params": {"data": {}},
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {"data": {}},
+            }
+        )
         assert result["status"] == "error"
 
     def test_run_script_timeout(self):
         """Script timeout returns error."""
-        result = handler({
-            "command": "run",
-            "params": {
-                "script": "while True: pass",
-                "timeout": 1,
-            },
-        })
+        result = handler(
+            {
+                "command": "run",
+                "params": {
+                    "script": "while True: pass",
+                    "timeout": 1,
+                },
+            }
+        )
         assert result["status"] == "error"
         assert "timed out" in result["message"].lower()
 
@@ -211,13 +237,18 @@ class TestGenerateChart:
         """Chart generation exception is caught and returns None."""
         with (
             patch("main._route", return_value={"mean": 10.0}),
-            patch("stats_engine.chart_handlers.CHART_HANDLERS", {"descriptive": MagicMock(side_effect=Exception("chart error"))}),
+            patch(
+                "stats_engine.chart_handlers.CHART_HANDLERS",
+                {"descriptive": MagicMock(side_effect=Exception("chart error"))},
+            ),
         ):
-            result = handler({
-                "command": "descriptive",
-                "params": {"values": [1, 2, 3, 4, 5]},
-                "chart": True,
-            })
+            result = handler(
+                {
+                    "command": "descriptive",
+                    "params": {"values": [1, 2, 3, 4, 5]},
+                    "chart": True,
+                }
+            )
             # Should not crash, chart error is handled
             assert result["status"] == "success"
 
@@ -233,6 +264,7 @@ class TestMainEntryPoint:
             with patch("main.print", side_effect=BrokenPipeError):
                 # Should not raise
                 from main import main
+
                 main()
 
 

@@ -15,10 +15,12 @@ class TestDataLoaderEncoding:
         with open(test_file, "wb") as f:
             f.write(b"value\n1\n2\n3\n\xe9\xe8\xea\n")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(test_file)},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(test_file)},
+            }
+        )
         assert result["status"] in ("success", "error")
 
     def test_detect_delimiter_error(self, tmp_path):
@@ -28,10 +30,12 @@ class TestDataLoaderEncoding:
         with open(test_file, "wb") as f:
             f.write(b"\x00\x01\x02\x03\x04\x05")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(test_file)},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(test_file)},
+            }
+        )
         assert result["status"] in ("success", "error")
 
 
@@ -46,10 +50,12 @@ class TestDataLoaderExcel:
         pd.DataFrame({"a": [1, 2, 3]}).to_excel(excel_file, index=False)
 
         # This will work normally, but tests the import path
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(excel_file), "column": "a"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(excel_file), "column": "a"},
+            }
+        )
         assert result["status"] == "success"
 
     def test_excel_datetime_handling(self, tmp_path):
@@ -57,16 +63,20 @@ class TestDataLoaderExcel:
         import pandas as pd
 
         excel_file = tmp_path / "datetime.xlsx"
-        df = pd.DataFrame({
-            "date": pd.date_range("2024-01-01", periods=5),
-            "value": [1, 2, 3, 4, 5],
-        })
+        df = pd.DataFrame(
+            {
+                "date": pd.date_range("2024-01-01", periods=5),
+                "value": [1, 2, 3, 4, 5],
+            }
+        )
         df.to_excel(excel_file, index=False)
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(excel_file), "column": "value"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(excel_file), "column": "value"},
+            }
+        )
         assert result["status"] == "success"
 
     def test_excel_multiple_sheets_available(self, tmp_path):
@@ -78,10 +88,12 @@ class TestDataLoaderExcel:
             pd.DataFrame({"a": [1, 2, 3]}).to_excel(writer, sheet_name="Sheet1", index=False)
             pd.DataFrame({"b": [4, 5, 6]}).to_excel(writer, sheet_name="Sheet2", index=False)
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(excel_file), "column": "a", "sheet": "Sheet1"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(excel_file), "column": "a", "sheet": "Sheet1"},
+            }
+        )
         assert result["status"] == "success"
 
 
@@ -94,10 +106,12 @@ class TestDataLoaderCSV:
         with open(csv_file, "wb") as f:
             f.write(b"\xef\xbb\xbfvalue\n1\n2\n3\n")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(csv_file), "column": "value"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(csv_file), "column": "value"},
+            }
+        )
         assert result["status"] == "success"
 
     def test_csv_column_by_name_not_found(self, tmp_path):
@@ -106,10 +120,12 @@ class TestDataLoaderCSV:
         with open(csv_file, "w") as f:
             f.write("a,b,c\n1,2,3\n4,5,6\n")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(csv_file), "column": "nonexistent"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(csv_file), "column": "nonexistent"},
+            }
+        )
         assert result["status"] == "error"
 
     def test_csv_column_by_index(self, tmp_path):
@@ -118,10 +134,12 @@ class TestDataLoaderCSV:
         with open(csv_file, "w") as f:
             f.write("a,b,c\n1,2,3\n4,5,6\n")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(csv_file), "column": "1"},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(csv_file), "column": "1"},
+            }
+        )
         assert result["status"] == "success"
 
     def test_csv_no_numeric_columns(self, tmp_path):
@@ -130,10 +148,12 @@ class TestDataLoaderCSV:
         with open(csv_file, "w") as f:
             f.write("name,desc\nhello,world\nfoo,bar\n")
 
-        result = handler({
-            "command": "descriptive",
-            "params": {"file": str(csv_file)},
-        })
+        result = handler(
+            {
+                "command": "descriptive",
+                "params": {"file": str(csv_file)},
+            }
+        )
         assert result["status"] == "error"
 
 
@@ -225,24 +245,28 @@ class TestReliabilityEdgeCases:
 
     def test_distribution_fit_values_alias(self):
         """Distribution fit with values alias."""
-        result = handler({
-            "command": "reliability",
-            "params": {
-                "values": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
-                "analysis_type": "distribution",
-            },
-        })
+        result = handler(
+            {
+                "command": "reliability",
+                "params": {
+                    "values": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+                    "analysis_type": "distribution",
+                },
+            }
+        )
         assert result["status"] == "success"
 
     def test_stability_analysis(self):
         """Stability/shelf life analysis."""
-        result = handler({
-            "command": "reliability",
-            "params": {
-                "times": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
-                "analysis_type": "stability",
-            },
-        })
+        result = handler(
+            {
+                "command": "reliability",
+                "params": {
+                    "times": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+                    "analysis_type": "stability",
+                },
+            }
+        )
         assert result["status"] in ("success", "error")
 
 
@@ -258,10 +282,12 @@ class TestExploreEdgeCases:
             pd.DataFrame({"a": [1, 2, 3]}).to_excel(writer, sheet_name="Sheet1", index=False)
             pd.DataFrame({"b": [4, 5, 6]}).to_excel(writer, sheet_name="Sheet2", index=False)
 
-        result = handler({
-            "command": "explore",
-            "params": {"file": str(excel_file), "sheet": 0},
-        })
+        result = handler(
+            {
+                "command": "explore",
+                "params": {"file": str(excel_file), "sheet": 0},
+            }
+        )
         assert result["status"] == "success"
 
     def test_explore_text_non_numeric(self, tmp_path):
@@ -270,10 +296,12 @@ class TestExploreEdgeCases:
         with open(txt_file, "w") as f:
             f.write("1\nhello\n3\nworld\n5\n")
 
-        result = handler({
-            "command": "explore",
-            "params": {"file": str(txt_file)},
-        })
+        result = handler(
+            {
+                "command": "explore",
+                "params": {"file": str(txt_file)},
+            }
+        )
         assert result["status"] == "success"
 
     def test_explore_spec_tolerance(self, tmp_path):
@@ -282,8 +310,10 @@ class TestExploreEdgeCases:
         with open(csv_file, "w") as f:
             f.write("name,target+-tolerance\na,10+-0.5\nb,20+-1.0\n")
 
-        result = handler({
-            "command": "explore",
-            "params": {"file": str(csv_file)},
-        })
+        result = handler(
+            {
+                "command": "explore",
+                "params": {"file": str(csv_file)},
+            }
+        )
         assert result["status"] == "success"

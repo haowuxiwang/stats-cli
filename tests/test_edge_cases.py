@@ -31,7 +31,9 @@ class TestZeroVariance:
         assert result["status"] in ["error", "warning"]
 
     def test_homogeneity_identical(self):
-        result = handler({"command": "homogeneity", "params": {"test_type": "levene", "groups": [[5, 5, 5], [5, 5, 5]]}})
+        result = handler(
+            {"command": "homogeneity", "params": {"test_type": "levene", "groups": [[5, 5, 5], [5, 5, 5]]}}
+        )
         # Should either succeed, warning, or return error, not crash
         assert result["status"] in ["success", "error", "warning"]
 
