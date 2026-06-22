@@ -1,7 +1,7 @@
 """Final coverage boost tests to reach 97%."""
 
 import csv
-import json
+
 import numpy as np
 import pytest
 

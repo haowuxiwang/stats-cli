@@ -1,7 +1,6 @@
 """Workflow coverage tests."""
 
 import numpy as np
-import pytest
 
 from main import handler
 

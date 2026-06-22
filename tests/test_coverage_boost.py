@@ -1,7 +1,5 @@
 """Additional tests to boost coverage from 95% to 97%."""
 
-import numpy as np
-import pytest
 
 from main import handler
 

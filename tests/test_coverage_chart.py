@@ -118,7 +118,6 @@ class TestChartHandlers:
 
     def test_multivariate_chart(self):
         """Multivariate correlation matrix chart."""
-        import numpy as np
         data = np.random.randn(50, 3).tolist()
         result = handler({
             "command": "multivariate",
