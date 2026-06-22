@@ -1,8 +1,8 @@
-scipy>=1.10,<3
-statsmodels>=0.14,<1
-pandas>=1.5,<4
-numpy>=1.23,<3
-openpyxl>=3.0,<4
-scikit-learn>=1.0,<2
-matplotlib>=3.5,<4
-fpdf2>=2.8,<3
+scipy==1.15.3
+statsmodels==0.14.6
+pandas==2.3.3
+numpy==2.4.5
+openpyxl==3.1.5
+scikit-learn==1.7.0
+matplotlib==3.10.8
+fpdf2==2.8.7
