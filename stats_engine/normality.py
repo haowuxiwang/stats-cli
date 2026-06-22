@@ -51,12 +51,21 @@ def normality(values):
     mean_val = np.mean(arr)
     std_val = np.std(arr, ddof=1)
     if std_val > 0:
-        ks_stat, ks_p = sp_stats.kstest(arr, "norm", args=(mean_val, std_val))
-        result["lilliefors"] = {
-            "statistic": r(ks_stat),
-            "p_value": r(ks_p),
-            "normal": bool(ks_p > 0.05),
-        }
+        try:
+            ks_stat, ks_p = sp_stats.kstest(arr, "norm", args=(mean_val, std_val))
+            result["lilliefors"] = {
+                "statistic": r(ks_stat),
+                "p_value": r(ks_p),
+                "normal": bool(ks_p > 0.05),
+            }
+        except TypeError:
+            # scipy >= 1.18 changed kstest signature
+            ks_stat, ks_p = sp_stats.kstest(arr, lambda x: sp_stats.norm.cdf(x, loc=mean_val, scale=std_val))
+            result["lilliefors"] = {
+                "statistic": r(ks_stat),
+                "p_value": r(ks_p),
+                "normal": bool(ks_p > 0.05),
+            }
 
     # Overall assessment (majority vote)
     normals = []
