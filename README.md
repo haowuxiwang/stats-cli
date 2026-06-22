@@ -1,10 +1,12 @@
 # stats-cli-py
 
+> **⚠️ This project is archived and no longer actively maintained. See [ARCHIVE.md](ARCHIVE.md) for details.**
+
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.2.1
+**Version**: 1.2.2
 **Commands**: 33
-**Test Coverage**: 95%
+**Test Coverage**: 96%
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 ---
