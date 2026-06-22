@@ -1,11 +1,6 @@
 """Additional tests for main.py to improve coverage from 86% to 97%."""
 
-import json
-import os
-import tempfile
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from main import handler
 
@@ -214,15 +209,17 @@ class TestGenerateChart:
 
     def test_generate_chart_exception_handled(self):
         """Chart generation exception is caught and returns None."""
-        with patch("main._route", return_value={"mean": 10.0}):
-            with patch("stats_engine.chart_handlers.CHART_HANDLERS", {"descriptive": MagicMock(side_effect=Exception("chart error"))}):
-                result = handler({
-                    "command": "descriptive",
-                    "params": {"values": [1, 2, 3, 4, 5]},
-                    "chart": True,
-                })
-                # Should not crash, chart error is handled
-                assert result["status"] == "success"
+        with (
+            patch("main._route", return_value={"mean": 10.0}),
+            patch("stats_engine.chart_handlers.CHART_HANDLERS", {"descriptive": MagicMock(side_effect=Exception("chart error"))}),
+        ):
+            result = handler({
+                "command": "descriptive",
+                "params": {"values": [1, 2, 3, 4, 5]},
+                "chart": True,
+            })
+            # Should not crash, chart error is handled
+            assert result["status"] == "success"
 
 
 class TestMainEntryPoint:

@@ -1,6 +1,5 @@
 """Additional tests for stats_engine/workflow.py to improve coverage."""
 
-import pytest
 
 from main import handler
 

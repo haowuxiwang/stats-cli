@@ -186,3 +186,29 @@ def test_correlation_matrix_empty_columns():
     result = multivariate(analysis_type="correlation_matrix", columns=[], values=[[1, 2], [3, 4]])
     assert result["analysis_type"] == "correlation_matrix"
     assert "matrix" in result
+
+
+def test_pca_no_values_no_file():
+    """PCA without values or file raises ValueError."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="pca")
+
+
+def test_cluster_no_values_no_file():
+    """Cluster without values or file raises ValueError."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="cluster", method="kmeans", n_clusters=2)
+
+
+def test_discriminant_no_file_no_values():
+    """Discriminant without file raises ValueError."""
+    with pytest.raises(ValueError, match="Provide"):
+        multivariate(analysis_type="discriminant", columns=["x1"], group_column="group")
+
+
+def test_pca_with_n_components():
+    """PCA with explicit n_components."""
+    np.random.seed(42)
+    data = np.random.normal(0, 1, (50, 3)).tolist()
+    result = multivariate(analysis_type="pca", values=data, n_components=2)
+    assert result["n_components"] == 2

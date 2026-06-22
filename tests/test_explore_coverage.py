@@ -1,6 +1,5 @@
 """Additional tests for stats_engine/explore.py to improve coverage."""
 
-import pytest
 
 from main import handler
 

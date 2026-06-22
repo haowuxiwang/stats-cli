@@ -1,7 +1,5 @@
 """Additional tests for utils/data_loader.py to improve coverage."""
 
-import os
-import tempfile
 
 import pytest
 
