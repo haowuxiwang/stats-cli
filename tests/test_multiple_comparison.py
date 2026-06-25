@@ -28,3 +28,8 @@ def test_scheffe(three_groups):
 def test_unknown_type():
     with pytest.raises(ValueError, match="Unknown test_type"):
         multiple_comparison(test_type="invalid", groups=[[1, 2], [3, 4]])
+
+
+def test_single_group():
+    with pytest.raises(ValueError):
+        multiple_comparison(test_type="tukey", groups=[[1, 2, 3]])

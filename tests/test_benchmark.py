@@ -2322,7 +2322,9 @@ class TestPerformanceBenchmark:
         labels = [0] * 100 + [1] * 100
         start = time.time()
         for _ in range(3):
-            handler({"command": "mining", "params": {"analysis_type": "classify", "features": features, "labels": labels}})
+            handler(
+                {"command": "mining", "params": {"analysis_type": "classify", "features": features, "labels": labels}}
+            )
         elapsed = (time.time() - start) / 3
         assert elapsed < 2.0, f"mining classify took {elapsed * 1000:.0f}ms, expected <2000ms"
 
@@ -2333,10 +2335,17 @@ class TestPerformanceBenchmark:
         inputs = {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}}
         start = time.time()
         for _ in range(3):
-            handler({
-                "command": "sensitivity",
-                "params": {"analysis_type": "monte_carlo", "inputs": inputs, "formula": "x * 2", "n_simulations": 10000},
-            })
+            handler(
+                {
+                    "command": "sensitivity",
+                    "params": {
+                        "analysis_type": "monte_carlo",
+                        "inputs": inputs,
+                        "formula": "x * 2",
+                        "n_simulations": 10000,
+                    },
+                }
+            )
         elapsed = (time.time() - start) / 3
         assert elapsed < 3.0, f"monte carlo took {elapsed * 1000:.0f}ms, expected <3000ms"
 
@@ -2407,3 +2416,109 @@ class TestNewModulesBenchmark:
         inputs = {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}}
         result = sensitivity("monte_carlo", inputs=inputs, formula="x", n_simulations=10000)
         assert 9.8 < result["mean"] < 10.2
+
+
+# ============================================================================
+# Mining Benchmark Tests
+# ============================================================================
+
+
+class TestMiningBenchmark:
+    """Numerical accuracy and performance benchmarks for mining module."""
+
+    def test_classify_accuracy_known_separable(self):
+        """Well-separated clusters should achieve >90% accuracy."""
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        # Two clearly separated clusters
+        features = np.vstack(
+            [
+                np.random.normal(0, 0.5, (50, 3)),
+                np.random.normal(5, 0.5, (50, 3)),
+            ]
+        ).tolist()
+        labels = [0] * 50 + [1] * 50
+        result = mining("classify", features=features, labels=labels, method="random_forest")
+        assert result["accuracy"] > 0.90
+
+    def test_classify_feature_importance_ordering(self):
+        """Feature with most discriminative power should rank first."""
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        # Feature 0 is discriminative, features 1-2 are noise
+        f0 = np.concatenate([np.zeros(50), np.ones(50)])
+        f1 = np.random.randn(100)
+        f2 = np.random.randn(100)
+        features = np.column_stack([f0, f1, f2]).tolist()
+        labels = [0] * 50 + [1] * 50
+        result = mining("classify", features=features, labels=labels)
+        # Feature 0 should be most important
+        assert result["feature_importance"][0]["feature"] == "f0"
+
+    def test_anomaly_detection_rate(self):
+        """Known outliers should be detected with >50% rate."""
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        values = np.random.normal(10, 1, 95).tolist() + [50, -30, 100, -50, 200]
+        result = mining("anomaly", values=values, method="isolation_forest", contamination=0.05)
+        # At least some of the extreme outliers should be detected
+        assert result["n_anomalies"] >= 2
+
+    def test_associate_known_rules(self):
+        """Strong association should produce high-confidence rules."""
+        from stats_engine.mining import mining
+
+        # A and B always appear together
+        transactions = [["a", "b", "c"]] * 8 + [["c"]] * 2
+        result = mining("associate", transactions=transactions, min_support=0.3, min_confidence=0.7)
+        # Should find rule a → b with high confidence
+        a_to_b = [r for r in result["rules"] if r["antecedent"] == ["a"] and r["consequent"] == ["b"]]
+        assert len(a_to_b) >= 1
+        assert a_to_b[0]["confidence"] >= 0.9
+
+    def test_mining_classify_performance(self):
+        """Random forest 200x5 should complete in <2s."""
+        import time
+
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        features = np.random.randn(200, 5).tolist()
+        labels = [0] * 100 + [1] * 100
+        start = time.time()
+        for _ in range(3):
+            mining("classify", features=features, labels=labels)
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 2.0, f"mining classify took {elapsed * 1000:.0f}ms, expected <2000ms"
+
+    def test_mining_anomaly_performance(self):
+        """Anomaly detection on 1000 points should complete in <1s."""
+        import time
+
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        values = np.random.normal(10, 1, 1000).tolist()
+        start = time.time()
+        for _ in range(3):
+            mining("anomaly", values=values, method="isolation_forest")
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 1.0, f"anomaly detection took {elapsed * 1000:.0f}ms, expected <1000ms"
+
+    def test_mining_associate_performance(self):
+        """Association rules on 100 transactions should complete in <1s."""
+        import time
+
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        items = ["a", "b", "c", "d", "e"]
+        transactions = [np.random.choice(items, np.random.randint(2, 5), replace=False).tolist() for _ in range(100)]
+        start = time.time()
+        for _ in range(3):
+            mining("associate", transactions=transactions, min_support=0.2, min_confidence=0.5)
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 1.0, f"association rules took {elapsed * 1000:.0f}ms, expected <1000ms"

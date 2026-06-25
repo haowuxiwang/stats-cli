@@ -54,3 +54,18 @@ def test_normal_gaussian():
     result = normality(values=values)
     assert bool(result["is_normal"]) is True
     assert result["shapiro_wilk"]["p_value"] > 0.05
+
+
+def test_normality_large_sample():
+    """Shapiro-Wilk subsamples when n > 5000."""
+    np.random.seed(42)
+    values = np.random.normal(10, 2, 6000).tolist()
+    result = normality(values=values)
+    assert "shapiro_wilk" in result
+
+
+def test_normality_small_sample_warning():
+    """Small sample (n < 10) should include warning (line 25)."""
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    result = normality(values=values)
+    assert "n=5" in result.get("_warning", "")

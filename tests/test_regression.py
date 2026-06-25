@@ -154,3 +154,44 @@ def test_regression_with_inf():
         assert result["regression_type"] == "linear"
     except ValueError:
         pass  # May raise for Inf input
+
+
+def test_regression_unknown_nonlinear():
+    with pytest.raises(ValueError, match="Unknown regression type"):
+        regression(x=[1, 2, 3, 4, 5], y=[2, 4, 6, 8, 10], reg_type="unknown_model")
+
+
+def test_simple_linear_unequal_lengths():
+    """x and y must have same length."""
+    with pytest.raises(ValueError, match="same length"):
+        import numpy as np
+
+        from stats_engine.regression import _simple_linear
+
+        _simple_linear(np.array([1.0, 2.0, 3.0]), np.array([1.0, 2.0]), 0.05)
+
+
+def test_simple_linear_single_point():
+    """At least 2 data points required."""
+    with pytest.raises(ValueError, match="At least 2"):
+        import numpy as np
+
+        from stats_engine.regression import _simple_linear
+
+        _simple_linear(np.array([1.0]), np.array([2.0]), 0.05)
+
+
+def test_polynomial_too_few_points():
+    """At least 2 data points required for polynomial."""
+    with pytest.raises((ValueError, np.linalg.LinAlgError)):
+        regression(x=[1.0], y=[2.0], reg_type="polynomial", degree=2)
+
+
+def test_unknown_nonlinear_model():
+    """Unknown nonlinear model raises ValueError."""
+    with pytest.raises(ValueError, match="Unknown nonlinear model"):
+        import numpy as np
+
+        from stats_engine.regression import _nonlinear
+
+        _nonlinear(np.array([1.0, 2.0, 3.0]), np.array([1.0, 2.0, 3.0]), "badmodel", 0.05)

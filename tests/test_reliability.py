@@ -104,6 +104,13 @@ def test_kaplan_meier_all_censored():
         pass  # May fail with all censored data
 
 
+def test_kaplan_meier_default_status():
+    """Kaplan-Meier without status should default to all failures (line 94)."""
+    result = reliability(analysis_type="kaplan_meier", times=[100, 200, 300, 400, 500])
+    assert result["analysis_type"] == "kaplan_meier"
+    assert result["n_events"] == 5
+
+
 def test_weibull_single_failure():
     """Weibull with single failure time."""
     times = [100]
@@ -152,3 +159,33 @@ def test_shelf_life_with_lsl():
     assert result["analysis_type"] == "stability"
     assert "shelf_life" in result
     assert result["shelf_life"] is not None
+
+
+def test_distribution_fit_with_invalid_data():
+    """Distribution fit with all zeros should handle gracefully."""
+    result = reliability(analysis_type="distribution", times=[0, 0, 0, 0, 0])
+    assert "distributions" in result
+
+
+def test_distribution_fit_error_handlers():
+    """Each distribution fit error is caught independently (lines 162-195)."""
+    # Use data that may cause individual fits to fail
+    # All-same-value data can cause issues with some distributions
+    result = reliability(analysis_type="distribution", times=[5.0, 5.0, 5.0, 5.0, 5.0])
+    assert "distributions" in result
+    # At least one distribution should be fitted
+    fitted = [k for k, v in result["distributions"].items() if "error" not in v]
+    assert len(fitted) >= 1
+
+
+def test_distribution_fit_single_value():
+    """Single value distribution fit."""
+    result = reliability(analysis_type="distribution", times=[100.0])
+    assert "distributions" in result
+
+
+def test_distribution_fit_extreme_values():
+    """Very large values should still fit some distributions."""
+    result = reliability(analysis_type="distribution", times=[1e10, 2e10, 3e10, 4e10, 5e10])
+    assert "distributions" in result
+    assert result["best_fit"] is not None

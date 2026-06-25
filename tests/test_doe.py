@@ -146,3 +146,17 @@ def test_fractional_factorial_with_resolution():
     ]
     result = doe(doe_type="fractional_factorial", factors=factors, resolution=3)
     assert result["doe_type"] == "fractional_factorial"
+
+
+def test_taguchi_many_factors():
+    """Taguchi with >7 factors should fall back to full factorial."""
+    factors = [{"name": f"F{i}", "levels": 2} for i in range(8)]
+    result = doe(doe_type="taguchi", factors=factors)
+    assert "design_matrix" in result
+
+
+def test_fractional_factorial_mixed_levels():
+    """Mixed-level factors in fractional factorial."""
+    factors = [{"name": "A", "levels": 3}, {"name": "B", "levels": 2}]
+    result = doe(doe_type="fractional_factorial", factors=factors)
+    assert "design_matrix" in result

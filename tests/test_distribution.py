@@ -219,3 +219,22 @@ class TestDistributionJsonSerializable:
         values = np.random.normal(10, 2, 50).tolist()
         result = distribution("select", values=values)
         json.dumps(result)  # Should not raise
+
+    def test_fit_bad_method(self):
+        with pytest.raises(ValueError, match="Unknown method"):
+            distribution("fit", values=[1, 2, 3, 4, 5], method="invalid")
+
+    def test_gof_bad_dist(self):
+        with pytest.raises(ValueError, match="Unknown distribution"):
+            distribution("gof", values=[1, 2, 3, 4, 5], dist_name="unknown")
+
+    def test_gof_non_normal_data(self):
+        """Uniform data tested against normal should give low KS p-value."""
+        np.random.seed(42)
+        values = np.random.uniform(0, 100, 500).tolist()
+        result = distribution("gof", values=values, dist_name="normal")
+        assert result["ks_p_value"] < 0.05
+
+    def test_select_bad_criterion(self):
+        with pytest.raises(ValueError, match="Unknown criterion"):
+            distribution("select", values=[1, 2, 3, 4, 5], criterion="invalid")

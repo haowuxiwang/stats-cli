@@ -145,9 +145,32 @@ def test_johnson_constant_values():
         pass  # May fail with constant data
 
 
+def test_johnson_fallback_triggers():
+    """Johnson transform fallback to Box-Cox when johnsonsu.fit fails (lines 69-73)."""
+    from unittest.mock import patch
+
+    # Force johnsonsu.fit to raise, triggering the except branch
+    np.random.seed(42)
+    values = np.random.normal(10, 2, 50).tolist()
+    with patch("scipy.stats.johnsonsu.fit", side_effect=RuntimeError("fit failed")):
+        result = transform(values=values, method="johnson")
+    assert result["method"] == "johnson"
+
+
 def test_standardize_constant():
     """Standardize with constant values should return zeros."""
     values = [5.0, 5.0, 5.0, 5.0, 5.0]
     result = transform(values=values, method="standardize")
     assert result["method"] == "standardize"
     assert all(v == 0 for v in result["values"])
+
+
+def test_large_dataset_truncation():
+    """Large dataset (>100 values) should truncate output (lines 118-119)."""
+    np.random.seed(42)
+    values = np.random.normal(10, 2, 150).tolist()
+    result = transform(values=values, method="log")
+    assert result.get("values_truncated") is True
+    assert "values_sample" in result
+    assert len(result["values_sample"]) == 20
+    assert "values" not in result

@@ -61,7 +61,11 @@ def _classify(features, labels, method="random_forest", test_size=0.3, random_st
 
     # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(
-        features, labels, test_size=test_size, random_state=random_state, stratify=labels if len(np.unique(labels)) > 1 else None
+        features,
+        labels,
+        test_size=test_size,
+        random_state=random_state,
+        stratify=labels if len(np.unique(labels)) > 1 else None,
     )
 
     # Train model
@@ -106,7 +110,7 @@ def _classify(features, labels, method="random_forest", test_size=0.3, random_st
             if k in [str(c) for c in classes] or k in ("macro avg", "weighted avg")
         },
         "interpretation": (
-            f"{method.replace('_', ' ').title()} achieved {r(accuracy*100, 2)}% accuracy "
+            f"{method.replace('_', ' ').title()} achieved {r(accuracy * 100, 2)}% accuracy "
             f"on {n_samples} samples with {n_features} features. "
             f"Top feature: {feature_importance[0]['feature']} ({feature_importance[0]['importance']})"
         ),
@@ -238,7 +242,7 @@ def _anomaly(values=None, data=None, method="isolation_forest", contamination=0.
         "stats": stats,
         "interpretation": (
             f"Detected {primary['n_anomalies']} anomalies "
-            f"({r(primary['n_anomalies']/n_samples*100, 2)}%) "
+            f"({r(primary['n_anomalies'] / n_samples * 100, 2)}%) "
             f"using {method} (contamination={contamination})"
         ),
     }
@@ -340,13 +344,15 @@ def _associate(transactions, min_support=0.3, min_confidence=0.7, max_length=3, 
                         cons_support = frequent_itemsets.get(consequent, _get_support(consequent))
                         lift = confidence / cons_support if cons_support > 0 else 0
 
-                        rules.append({
-                            "antecedent": sorted(antecedent),
-                            "consequent": sorted(consequent),
-                            "support": r(support),
-                            "confidence": r(confidence),
-                            "lift": r(lift),
-                        })
+                        rules.append(
+                            {
+                                "antecedent": sorted(antecedent),
+                                "consequent": sorted(consequent),
+                                "support": r(support),
+                                "confidence": r(confidence),
+                                "lift": r(lift),
+                            }
+                        )
 
     # Sort rules by lift
     rules.sort(key=lambda x: x["lift"], reverse=True)
@@ -354,11 +360,13 @@ def _associate(transactions, min_support=0.3, min_confidence=0.7, max_length=3, 
     # Format frequent itemsets
     formatted_itemsets = []
     for itemset, sup in sorted(frequent_itemsets.items(), key=lambda x: (-x[1], len(x[0]))):
-        formatted_itemsets.append({
-            "items": sorted(itemset),
-            "support": r(sup),
-            "count": int(sup * n_transactions),
-        })
+        formatted_itemsets.append(
+            {
+                "items": sorted(itemset),
+                "support": r(sup),
+                "count": int(sup * n_transactions),
+            }
+        )
 
     return {
         "analysis_type": "associate",

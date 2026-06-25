@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from stats_engine.mining import mining
 
@@ -146,3 +147,47 @@ class TestAssociate:
         ]
         result = mining("associate", transactions=transactions, min_support=0.3, min_confidence=0.5)
         json.dumps(result)  # Should not raise
+
+
+class TestMiningGuards:
+    """Guard tests for mining.py error paths."""
+
+    def test_classify_1d_features(self):
+        with pytest.raises(ValueError, match="2D"):
+            mining("classify", features=[1, 2, 3], labels=[0, 1, 1])
+
+    def test_classify_mismatched_labels(self):
+        with pytest.raises(ValueError, match="same length"):
+            mining("classify", features=[[1, 2], [3, 4]], labels=[0])
+
+    def test_classify_bad_method(self):
+        np.random.seed(42)
+        features = np.random.randn(50, 3).tolist()
+        labels = [0] * 25 + [1] * 25
+        with pytest.raises(ValueError, match="Unknown method"):
+            mining("classify", features=features, labels=labels, method="svm")
+
+    def test_anomaly_bad_method(self):
+        with pytest.raises(ValueError, match="Unknown method"):
+            mining("anomaly", values=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], method="invalid")
+
+    def test_anomaly_no_data(self):
+        with pytest.raises(ValueError, match="Provide either"):
+            mining("anomaly")
+
+    def test_anomaly_too_few(self):
+        with pytest.raises(ValueError, match="at least"):
+            mining("anomaly", values=[1, 2, 3])
+
+    def test_anomaly_data_1d(self):
+        """Pass 1D array as data should reshape to 2D."""
+        result = mining("anomaly", data=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], method="isolation_forest")
+        assert result["n_dimensions"] == 1
+
+    def test_associate_empty(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            mining("associate", transactions=[])
+
+    def test_associate_all_empty(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            mining("associate", transactions=[[], []])

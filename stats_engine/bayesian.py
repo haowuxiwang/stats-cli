@@ -57,10 +57,10 @@ def _estimate(values, prior_mean=None, prior_std=None, credible_level=0.95, **kw
         prior_std = 10 * sample_std
 
     # Known variance = sample variance (plug-in)
-    sigma2 = sample_std ** 2
+    sigma2 = sample_std**2
 
     # Posterior parameters (Normal-Normal conjugate)
-    prior_precision = 1.0 / prior_std ** 2
+    prior_precision = 1.0 / prior_std**2
     data_precision = n / sigma2
     posterior_precision = prior_precision + data_precision
     posterior_var = 1.0 / posterior_precision
@@ -100,7 +100,7 @@ def _estimate(values, prior_mean=None, prior_std=None, credible_level=0.95, **kw
         "bayes_factor_h0_vs_h1": r(bf_10),
         "interpretation": (
             f"Posterior mean = {r(posterior_mean)} "
-            f"({credible_level*100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]). "
+            f"({credible_level * 100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]). "
             f"BF01 = {r(bf_10)}: {'evidence for H0: mu=0' if bf_10 > 1 else 'evidence against H0: mu=0'}"
         ),
     }
@@ -165,7 +165,7 @@ def _bayesian_ttest(values, values2=None, mu=0, paired=False, credible_level=0.9
         log_lik_null = np.sum(sp_stats.norm.logpdf(residuals_null, loc=0, scale=sigma_null))
         log_lik_alt = np.sum(sp_stats.norm.logpdf(residuals_alt, loc=0, scale=sigma_alt))
         k_null = 1  # pooled mean
-        k_alt = 2   # two group means
+        k_alt = 2  # two group means
     else:
         if paired:
             data = diff
@@ -178,7 +178,7 @@ def _bayesian_ttest(values, values2=None, mu=0, paired=False, credible_level=0.9
         log_lik_null = np.sum(sp_stats.norm.logpdf(residuals_null, loc=0, scale=sigma_null))
         log_lik_alt = np.sum(sp_stats.norm.logpdf(residuals_alt, loc=0, scale=sigma_alt))
         k_null = 1  # sigma only (mean fixed at mu)
-        k_alt = 2   # mean + sigma
+        k_alt = 2  # mean + sigma
 
     total_n = len(arr1) + (len(arr2) if values2 is not None else 0)
     bic_null = -2 * log_lik_null + k_null * np.log(total_n)
@@ -239,7 +239,7 @@ def _bayesian_ttest(values, values2=None, mu=0, paired=False, credible_level=0.9
         "bf_interpretation": bf_label,
         "credible_level": credible_level,
         "credible_interval": [r(ci_lower), r(ci_upper)],
-        "interpretation": f"BF10 = {r(bf_10)} ({bf_label}). {credible_level*100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]",
+        "interpretation": f"BF10 = {r(bf_10)} ({bf_label}). {credible_level * 100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]",
     }
 
     return result
@@ -318,7 +318,7 @@ def _bayesian_proportion(successes, n, prior_alpha=1, prior_beta=1, credible_lev
         "interpretation": (
             f"Posterior: Beta({r(post_alpha)}, {r(post_beta)}). "
             f"Mean = {r(post_mean)}, MAP = {r(map_estimate)}, "
-            f"{credible_level*100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]"
+            f"{credible_level * 100:.0f}% CI: [{r(ci_lower)}, {r(ci_upper)}]"
         ),
     }
 
@@ -360,7 +360,7 @@ def _bayesian_anova(groups, credible_level=0.95, **kwargs):
     # H0: all group means equal (grand mean only)
     # H1: each group has its own mean
     residuals_null = all_data - grand_mean
-    sse_null = np.sum(residuals_null ** 2)
+    sse_null = np.sum(residuals_null**2)
 
     sse_alt = 0
     for g in clean_groups:
@@ -376,7 +376,7 @@ def _bayesian_anova(groups, credible_level=0.95, **kwargs):
         log_lik_alt += np.sum(sp_stats.norm.logpdf(g, loc=np.mean(g), scale=sigma_alt)) if sigma_alt > 0 else -1e10
 
     bic_null = -2 * log_lik_null + 1 * np.log(n_total)  # 1 param: grand mean
-    bic_alt = -2 * log_lik_alt + k * np.log(n_total)     # k params: group means
+    bic_alt = -2 * log_lik_alt + k * np.log(n_total)  # k params: group means
 
     bf_10 = np.exp((bic_null - bic_alt) / 2)
 
@@ -391,15 +391,17 @@ def _bayesian_anova(groups, credible_level=0.95, **kwargs):
         std_i = np.std(g, ddof=1)
         se_i = std_i / np.sqrt(n_i)
 
-        group_posteriors.append({
-            "group": i,
-            "n": n_i,
-            "sample_mean": r(mean_i),
-            "sample_std": r(std_i),
-            "posterior_mean": r(mean_i),
-            "posterior_se": r(se_i),
-            "credible_interval": [r(mean_i - z_crit * se_i), r(mean_i + z_crit * se_i)],
-        })
+        group_posteriors.append(
+            {
+                "group": i,
+                "n": n_i,
+                "sample_mean": r(mean_i),
+                "sample_std": r(std_i),
+                "posterior_mean": r(mean_i),
+                "posterior_se": r(se_i),
+                "credible_interval": [r(mean_i - z_crit * se_i), r(mean_i + z_crit * se_i)],
+            }
+        )
 
     # Effect size (eta-squared)
     ss_between = sum(len(g) * (np.mean(g) - grand_mean) ** 2 for g in clean_groups)

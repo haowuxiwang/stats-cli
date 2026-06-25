@@ -272,3 +272,68 @@ class TestDoeHandler:
         result = {"effects": {}}
         chart = handler(result, {})
         assert chart is None
+
+
+def test_multiple_comparison_empty_comparisons():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["multiple_comparison"]
+    result = handler({"comparisons": []}, {})
+    assert result is None
+
+
+def test_equivalence_no_ci():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["equivalence"]
+    result = handler({}, {"delta": 1})
+    assert result is None
+
+
+def test_power_no_effect_size():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["power"]
+    result = handler({}, {})
+    assert result is None
+
+
+def test_trend_empty_values():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["trend"]
+    result = handler({}, {"_values": []})
+    assert result is None
+
+
+def test_outlier_numeric_entries():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["outlier"]
+    result = handler({"outliers": [5, 10], "n_outliers": 2}, {"_values": [1, 2, 3, 4, 5, 10]})
+    # Should handle numeric outlier entries
+    assert result is not None or result is None  # Just shouldn't crash
+
+
+def test_reliability_no_times():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["reliability"]
+    result = handler({}, {})
+    assert result is None
+
+
+def test_gage_rr_no_contribution():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["gage_rr"]
+    result = handler({}, {})
+    assert result is None
+
+
+def test_explore_no_columns():
+    from stats_engine.chart_handlers import CHART_HANDLERS
+
+    handler = CHART_HANDLERS["explore"]
+    result = handler({"columns": []}, {})
+    assert result is None

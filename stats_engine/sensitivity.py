@@ -48,9 +48,19 @@ def _safe_eval(formula, variables):
     """
     # Only allow math operations
     safe_builtins = {
-        "abs": abs, "min": min, "max": max, "round": round,
-        "pow": pow, "sqrt": np.sqrt, "log": np.log, "exp": np.exp,
-        "sin": np.sin, "cos": np.cos, "tan": np.tan, "pi": np.pi, "e": np.e,
+        "abs": abs,
+        "min": min,
+        "max": max,
+        "round": round,
+        "pow": pow,
+        "sqrt": np.sqrt,
+        "log": np.log,
+        "exp": np.exp,
+        "sin": np.sin,
+        "cos": np.cos,
+        "tan": np.tan,
+        "pi": np.pi,
+        "e": np.e,
     }
     namespace = {**safe_builtins, **variables}
     return eval(formula, {"__builtins__": {}}, namespace)
@@ -90,7 +100,9 @@ def _monte_carlo(inputs, formula, n_simulations=10000, seed=42, percentiles=None
     for name, spec in inputs.items():
         dist_name = spec.get("dist", "").lower()
         if dist_name not in INPUT_DISTRIBUTIONS:
-            raise ValueError(f"Unknown distribution for '{name}': {dist_name}. Supported: {', '.join(INPUT_DISTRIBUTIONS)}")
+            raise ValueError(
+                f"Unknown distribution for '{name}': {dist_name}. Supported: {', '.join(INPUT_DISTRIBUTIONS)}"
+            )
 
     # Generate samples
     samples = {}
@@ -98,9 +110,7 @@ def _monte_carlo(inputs, formula, n_simulations=10000, seed=42, percentiles=None
         dist_name = spec["dist"].lower()
         params = spec.get("params", {})
         try:
-            samples[name] = np.array([
-                INPUT_DISTRIBUTIONS[dist_name]["rvs"](params) for _ in range(n_simulations)
-            ])
+            samples[name] = np.array([INPUT_DISTRIBUTIONS[dist_name]["rvs"](params) for _ in range(n_simulations)])
         except Exception as e:
             raise ValueError(f"Error sampling '{name}' ({dist_name}): {e}")
 
@@ -241,17 +251,19 @@ def _tornado(inputs, formula, base_values=None, variation=0.1, **kwargs):
         swing = abs(high_output - low_output)
         sensitivity_coeff = swing / (2 * delta) if delta > 0 else 0
 
-        sensitivities.append({
-            "variable": name,
-            "base_value": r(base_val),
-            "low_value": r(base_val - delta),
-            "high_value": r(base_val + delta),
-            "low_output": r(low_output),
-            "high_output": r(high_output),
-            "swing": r(swing),
-            "sensitivity_coefficient": r(sensitivity_coeff),
-            "elasticity": r(sensitivity_coeff * base_val / base_output) if base_output != 0 else None,
-        })
+        sensitivities.append(
+            {
+                "variable": name,
+                "base_value": r(base_val),
+                "low_value": r(base_val - delta),
+                "high_value": r(base_val + delta),
+                "low_output": r(low_output),
+                "high_output": r(high_output),
+                "swing": r(swing),
+                "sensitivity_coefficient": r(sensitivity_coeff),
+                "elasticity": r(sensitivity_coeff * base_val / base_output) if base_output != 0 else None,
+            }
+        )
 
     # Sort by swing (most sensitive first)
     sensitivities.sort(key=lambda x: x["swing"], reverse=True)
@@ -269,8 +281,9 @@ def _tornado(inputs, formula, base_values=None, variation=0.1, **kwargs):
         "sensitivities": sensitivities,
         "most_sensitive": sensitivities[0]["variable"] if sensitivities else None,
         "interpretation": (
-            f"Most sensitive variable: {sensitivities[0]['variable']} "
-            f"(swing={sensitivities[0]['swing']})" if sensitivities else "No sensitivity data"
+            f"Most sensitive variable: {sensitivities[0]['variable']} (swing={sensitivities[0]['swing']})"
+            if sensitivities
+            else "No sensitivity data"
         ),
     }
 
@@ -399,6 +412,6 @@ def _sobol(inputs, formula, n_simulations=10000, seed=42, **kwargs):
         "interpretation": (
             f"Most influential: {ranking[0][0]} "
             f"(S1={s1_indices[ranking[0][0]]}, ST={st_indices[ranking[0][0]]}). "
-            f"Interaction share: {r(interaction_share*100, 1)}%"
+            f"Interaction share: {r(interaction_share * 100, 1)}%"
         ),
     }

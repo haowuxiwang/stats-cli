@@ -3,6 +3,7 @@
 import json
 
 import numpy as np
+import pytest
 
 from stats_engine.bayesian import bayesian
 
@@ -230,3 +231,139 @@ class TestBayesianCoverage:
         g2 = np.random.normal(10.5, 5, 5).tolist()
         result = bayesian("ttest", values=g1, values2=g2)
         assert result["bayes_factor_01"] > 0
+
+    def test_ttest_very_large_effect(self):
+        """g1=N(0,0.1,200), g2=N(10,0.1,200) → BF10 > 100 (extreme H1, line 207)."""
+        np.random.seed(42)
+        g1 = np.random.normal(0, 0.1, 200).tolist()
+        g2 = np.random.normal(10, 0.1, 200).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        assert result["bayes_factor_10"] > 100
+        assert "extreme" in result["bf_interpretation"]
+
+    def test_ttest_strong_h1(self):
+        """Strong evidence for H1 (10 < BF10 < 30, line 211)."""
+        np.random.seed(30)
+        g1 = np.random.normal(10, 2, 20).tolist()
+        g2 = np.random.normal(13, 2, 20).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        assert 10 < result["bayes_factor_10"] < 30
+        assert result["bf_interpretation"] == "strong evidence for H1"
+
+    def test_ttest_moderate_h1(self):
+        """Moderate evidence for H1 (3 < BF10 < 10, line 213)."""
+        np.random.seed(1)
+        g1 = np.random.normal(10, 2, 12).tolist()
+        g2 = np.random.normal(12, 2, 12).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        assert 3 < result["bayes_factor_10"] < 10
+        assert result["bf_interpretation"] == "moderate evidence for H1"
+
+    def test_ttest_anecdotal_h1(self):
+        """Anecdotal evidence for H1 (1 < BF10 < 3, line 215)."""
+        np.random.seed(10)
+        g1 = np.random.normal(10, 3, 10).tolist()
+        g2 = np.random.normal(12, 3, 10).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        assert 1 < result["bayes_factor_10"] < 3
+        assert result["bf_interpretation"] == "anecdotal evidence for H1"
+
+    def test_ttest_strong_h0_line221(self):
+        """Strong evidence for H0 (1/30 < BF10 < 1/10, line 221)."""
+        np.random.seed(42)
+        data = np.random.normal(10, 1, 400).tolist()
+        result = bayesian("ttest", values=data, values2=data)
+        assert 1 / 30 < result["bayes_factor_10"] < 1 / 10
+        assert result["bf_interpretation"] == "strong evidence for H0"
+
+    def test_ttest_very_strong_h0(self):
+        """Very strong evidence for H0 (1/100 < BF10 < 1/30, line 223)."""
+        np.random.seed(42)
+        data = np.random.normal(10, 1, 500).tolist()
+        result = bayesian("ttest", values=data, values2=data)
+        assert 1 / 100 < result["bayes_factor_10"] < 1 / 30
+        assert result["bf_interpretation"] == "very strong evidence for H0"
+
+    def test_ttest_extreme_h0(self):
+        """Extreme evidence for H0 (BF10 < 1/100, line 225)."""
+        np.random.seed(42)
+        data = np.random.normal(10, 1, 50000).tolist()
+        result = bayesian("ttest", values=data, values2=data)
+        assert result["bayes_factor_10"] < 1 / 100
+        assert result["bf_interpretation"] == "extreme evidence for H0"
+
+    def test_ttest_strong_evidence_h0(self):
+        """Small sample, tiny difference → strong evidence for H0 (1/30 < bf < 1/10)."""
+        np.random.seed(42)
+        g1 = np.random.normal(10, 5, 5).tolist()
+        g2 = np.random.normal(10.1, 5, 5).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        # With 5+5 samples and tiny mean difference, BF should favor H0
+        assert result["bayes_factor_01"] > 1
+
+    def test_anova_moderate_evidence_for_diff(self):
+        """Groups with moderate effect → moderate evidence for group differences (line 413)."""
+        np.random.seed(2)
+        g1 = np.random.normal(10, 2, 8).tolist()
+        g2 = np.random.normal(12, 2, 8).tolist()
+        result = bayesian("anova", groups=[g1, g2])
+        assert 3 < result["bayes_factor_10"] < 10
+        assert result["bf_interpretation"] == "moderate evidence for group differences"
+
+    def test_anova_anecdotal_evidence_for_diff(self):
+        """Small effect → anecdotal evidence for group differences (line 415)."""
+        np.random.seed(42)
+        g1 = np.random.normal(10, 2, 15).tolist()
+        g2 = np.random.normal(12, 2, 15).tolist()
+        result = bayesian("anova", groups=[g1, g2])
+        assert result["bayes_factor_10"] > 1
+        assert result["bf_interpretation"] == "anecdotal evidence for group differences"
+
+    def test_anova_anecdotal_evidence_for_no_diff(self):
+        """Nearly constant groups → anecdotal evidence for no group differences (line 417)."""
+        groups = [[10, 10.1, 10.2], [10, 10.1, 10.2]]
+        result = bayesian("anova", groups=groups)
+        assert 1 / 3 < result["bayes_factor_10"] < 1
+        assert result["bf_interpretation"] == "anecdotal evidence for no group differences"
+
+    def test_anova_moderate_evidence_for_no_diff(self):
+        """Identical groups → moderate evidence for no group differences (line 419)."""
+        groups = [[10, 11, 12, 13, 14], [10, 11, 12, 13, 14]]
+        result = bayesian("anova", groups=groups)
+        assert 1 / 10 < result["bayes_factor_10"] < 1 / 3
+        assert result["bf_interpretation"] == "moderate evidence for no group differences"
+
+    def test_anova_strong_evidence_for_no_diff(self):
+        """Constant groups → strong evidence for no group differences (line 421)."""
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            groups = [[10, 10, 10, 10, 10], [10, 10, 10, 10, 10]]
+            result = bayesian("anova", groups=groups)
+        assert result["bayes_factor_10"] <= 1 / 10
+        assert result["bf_interpretation"] == "strong evidence for no group differences"
+
+
+class TestBayesianGuards:
+    """Guard tests for bayesian.py error paths."""
+
+    def test_ttest_paired_unequal_lengths(self):
+        with pytest.raises(ValueError):
+            bayesian("ttest", values=[1, 2, 3], values2=[1, 2], paired=True)
+
+    def test_proportion_invalid_n(self):
+        with pytest.raises(ValueError):
+            bayesian("proportion", successes=0, n=0)
+
+    def test_proportion_invalid_successes(self):
+        with pytest.raises(ValueError):
+            bayesian("proportion", successes=11, n=10)
+
+    def test_anova_not_list(self):
+        with pytest.raises(ValueError, match="at least 2 groups"):
+            bayesian("anova", groups=42)
+
+    def test_anova_single_value_group(self):
+        with pytest.raises(ValueError):
+            bayesian("anova", groups=[[1], [2, 3, 4]])

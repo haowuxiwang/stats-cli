@@ -13,7 +13,11 @@ DISTRIBUTIONS = {
     "exponential": {"dist": sp_stats.expon, "param_names": ["loc", "scale"], "bounds": {}},
     "gamma": {"dist": sp_stats.gamma, "param_names": ["a", "loc", "scale"], "bounds": {"a": (0.001, None)}},
     "weibull": {"dist": sp_stats.weibull_min, "param_names": ["c", "loc", "scale"], "bounds": {"c": (0.001, None)}},
-    "beta": {"dist": sp_stats.beta, "param_names": ["a", "b", "loc", "scale"], "bounds": {"a": (0.001, None), "b": (0.001, None)}},
+    "beta": {
+        "dist": sp_stats.beta,
+        "param_names": ["a", "b", "loc", "scale"],
+        "bounds": {"a": (0.001, None), "b": (0.001, None)},
+    },
     "logistic": {"dist": sp_stats.logistic, "param_names": ["loc", "scale"], "bounds": {}},
     "gumbel": {"dist": sp_stats.gumbel_r, "param_names": ["loc", "scale"], "bounds": {}},
 }
@@ -175,8 +179,8 @@ def _gof(values, dist_name="normal", **kwargs):
 
         lo = min(min_idx, merge_with)
         hi = max(min_idx, merge_with)
-        observed = np.concatenate([observed[:lo], [observed[lo] + observed[hi]], observed[hi + 1:]])
-        expected = np.concatenate([expected[:lo], [expected[lo] + expected[hi]], expected[hi + 1:]])
+        observed = np.concatenate([observed[:lo], [observed[lo] + observed[hi]], observed[hi + 1 :]])
+        expected = np.concatenate([expected[:lo], [expected[lo] + expected[hi]], expected[hi + 1 :]])
 
     if len(expected) > 1 and np.all(expected > 0):
         chi2_stat = np.sum((observed - expected) ** 2 / expected)
@@ -252,20 +256,24 @@ def _select(values, distributions=None, criterion="aic", **kwargs):
             # KS test
             ks_stat, ks_p = sp_stats.kstest(arr, dist.cdf, args=params)
 
-            results.append({
-                "distribution": dist_name,
-                "parameters": {name: r(params[i]) for i, name in enumerate(param_names)},
-                "log_likelihood": r(log_lik),
-                "aic": r(aic),
-                "bic": r(bic),
-                "ks_statistic": r(ks_stat),
-                "ks_p_value": r(ks_p),
-            })
+            results.append(
+                {
+                    "distribution": dist_name,
+                    "parameters": {name: r(params[i]) for i, name in enumerate(param_names)},
+                    "log_likelihood": r(log_lik),
+                    "aic": r(aic),
+                    "bic": r(bic),
+                    "ks_statistic": r(ks_stat),
+                    "ks_p_value": r(ks_p),
+                }
+            )
         except Exception as e:
-            results.append({
-                "distribution": dist_name,
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "distribution": dist_name,
+                    "error": str(e),
+                }
+            )
 
     # Sort by criterion (lower is better), put errors at end
     valid = [r for r in results if "error" not in r]
