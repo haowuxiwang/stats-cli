@@ -1,5 +1,7 @@
 """Additional tests for stats_engine/explore.py to improve coverage."""
 
+import pytest
+
 from main import handler
 
 
@@ -79,3 +81,35 @@ class TestExploreEdgeCases:
             }
         )
         assert result["status"] == "success"
+
+
+class TestExploreSheetIndexError:
+    """Test sheet index out-of-range guard (line 59)."""
+
+    def test_explore_excel_invalid_sheet_index(self, tmp_path):
+        """Explore with out-of-range sheet index raises ValueError."""
+        import pandas as pd
+
+        from stats_engine.explore import _explore_excel
+
+        excel_file = tmp_path / "multi_sheet.xlsx"
+        with pd.ExcelWriter(excel_file) as writer:
+            pd.DataFrame({"a": [1, 2]}).to_excel(writer, sheet_name="Sheet1", index=False)
+            pd.DataFrame({"b": [3, 4]}).to_excel(writer, sheet_name="Sheet2", index=False)
+
+        # sheet=5 is out of range for a 2-sheet workbook
+        with pytest.raises(ValueError, match="Sheet index .* out of range"):
+            _explore_excel(str(excel_file), sheet=5, rows=5)
+
+    def test_explore_excel_invalid_sheet_name(self, tmp_path):
+        """Explore with non-existent sheet name raises ValueError."""
+        import pandas as pd
+
+        from stats_engine.explore import _explore_excel
+
+        excel_file = tmp_path / "multi_sheet.xlsx"
+        with pd.ExcelWriter(excel_file) as writer:
+            pd.DataFrame({"a": [1, 2]}).to_excel(writer, sheet_name="Sheet1", index=False)
+
+        with pytest.raises(ValueError, match="not found"):
+            _explore_excel(str(excel_file), sheet="NoSuchSheet", rows=5)

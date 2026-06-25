@@ -1,6 +1,11 @@
 """Tests for stats_engine/report.py and discover.py."""
 
+import builtins
+import importlib
+import sys
+
 import numpy as np
+import pytest
 
 from stats_engine.discover import COMMANDS
 from stats_engine.report import report
@@ -138,3 +143,93 @@ def test_export_pdf_via_handler():
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+class TestReportImportErrors:
+    """Test ImportError guards in report export functions."""
+
+    def test_export_excel_pandas_import_error(self):
+        """export_excel raises ImportError when pandas is missing (lines 78-79)."""
+
+        saved = {}
+        keys_to_remove = [k for k in sys.modules if k in ("pandas", "openpyxl")]
+        for k in keys_to_remove:
+            saved[k] = sys.modules.pop(k)
+
+        real_import = builtins.__import__
+
+        def blocking_import(name, *args, **kwargs):
+            if name in ("pandas", "openpyxl"):
+                raise ImportError(f"mocked: no module named '{name}'")
+            return real_import(name, *args, **kwargs)
+
+        builtins.__import__ = blocking_import
+        importlib.reload(sys.modules["stats_engine.report"])
+        from stats_engine.report import export_excel as export_excel_fresh
+
+        try:
+            with pytest.raises(ImportError, match="pandas and openpyxl required"):
+                export_excel_fresh({"summary": {}}, output_path="/tmp/test.xlsx")
+        finally:
+            builtins.__import__ = real_import
+            sys.modules.update(saved)
+            importlib.reload(sys.modules["stats_engine.report"])
+
+    def test_export_pdf_fpdf2_import_error(self):
+        """export_pdf raises ImportError when fpdf2 is missing (lines 176-177)."""
+
+        saved = {}
+        keys_to_remove = [k for k in sys.modules if k.startswith("fpdf")]
+        for k in keys_to_remove:
+            saved[k] = sys.modules.pop(k)
+
+        real_import = builtins.__import__
+
+        def blocking_import(name, *args, **kwargs):
+            if name == "fpdf" or name.startswith("fpdf."):
+                raise ImportError(f"mocked: no module named '{name}'")
+            return real_import(name, *args, **kwargs)
+
+        builtins.__import__ = blocking_import
+        importlib.reload(sys.modules["stats_engine.report"])
+        from stats_engine.report import export_pdf as export_pdf_fresh
+
+        try:
+            with pytest.raises(ImportError, match="fpdf2 required"):
+                export_pdf_fresh({"summary": {}}, output_path="/tmp/test.pdf")
+        finally:
+            builtins.__import__ = real_import
+            sys.modules.update(saved)
+            importlib.reload(sys.modules["stats_engine.report"])
+
+    def test_register_cjk_font_linux_paths(self):
+        """_register_cjk_font tries Linux font paths on Linux (lines 141-147)."""
+        from unittest.mock import MagicMock, patch
+
+        from stats_engine.report import _register_cjk_font
+
+        pdf = MagicMock()
+        pdf.add_font = MagicMock()
+
+        # platform and Path are imported locally, so patch at the stdlib level
+        with patch("platform.system", return_value="Linux"), patch("pathlib.Path.exists", return_value=True):
+            font = _register_cjk_font(pdf)
+
+        # Should have tried to add a font and returned the font name
+        assert pdf.add_font.called
+        assert font != "Helvetica"
+
+    def test_register_cjk_font_add_font_error(self):
+        """_register_cjk_font falls back to Helvetica when add_font raises (lines 158-160)."""
+        from unittest.mock import MagicMock, patch
+
+        from stats_engine.report import _register_cjk_font
+
+        pdf = MagicMock()
+        pdf.add_font.side_effect = Exception("font load failed")
+
+        with patch("platform.system", return_value="Linux"), patch("pathlib.Path.exists", return_value=True):
+            font = _register_cjk_font(pdf)
+
+        # Should fall back to Helvetica after all fonts fail
+        assert font == "Helvetica"
