@@ -28,6 +28,13 @@ test = [
 [project.scripts]
 stats-cli = "main:main"
 
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+include = ["stats_engine*", "utils*"]
+exclude = ["tests*", "docs*", "examples*", "test-output*"]
+
 [tool.ruff]
 target-version = "py39"
 line-length = 120
