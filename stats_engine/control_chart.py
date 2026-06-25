@@ -13,7 +13,16 @@ D4 = {2: 3.267, 3: 2.574, 4: 2.282, 5: 2.114, 6: 2.004, 7: 1.924, 8: 1.864, 9: 1
 
 
 def control_chart(
-    chart_type, values, subgroup_size=5, sample_size=None, target=None, lambda_=None, k=None, h=None, alpha=None
+    chart_type,
+    values,
+    subgroup_size=5,
+    sample_size=None,
+    target=None,
+    lambda_=None,
+    k=None,
+    h=None,
+    alpha=None,
+    fir=False,
 ):
     """Generate control chart data.
 
@@ -28,6 +37,8 @@ def control_chart(
         k: CUSUM reference value (in sigma units)
         h: CUSUM decision interval (in sigma units)
         alpha: Significance level for hotelling_t2/ewma_mv (default 0.0027)
+        fir: CUSUM fast initial response (head start). When True, initial
+             CUSUM values are set to h/2 instead of 0 (default False)
 
     Returns:
         Dict with chart data
@@ -87,7 +98,7 @@ def control_chart(
     elif chart_type == "ewma":
         result = _ewma_chart(values, target, lambda_ if lambda_ is not None else 0.2)
     elif chart_type == "cusum":
-        result = _cusum_chart(values, target, k if k is not None else 0.5, h if h is not None else 5)
+        result = _cusum_chart(values, target, k if k is not None else 0.5, h if h is not None else 5, fir)
     else:
         raise ValueError(f"Unknown chart type: {chart_type}")
 
@@ -419,8 +430,17 @@ def _ewma_chart(values, target, lambda_):
     }
 
 
-def _cusum_chart(values, target, k, h):
-    """CUSUM chart."""
+def _cusum_chart(values, target, k, h, fir=False):
+    """CUSUM chart.
+
+    Args:
+        values: Data values
+        target: Target value (default: mean)
+        k: Reference value in sigma units
+        h: Decision interval in sigma units
+        fir: Fast initial response (head start). When True, initial CUSUM
+             values are set to h/2 instead of 0.
+    """
     n = len(values)
     if target is None:
         target = float(np.mean(values))
@@ -431,8 +451,13 @@ def _cusum_chart(values, target, k, h):
 
     cusum_pos = np.zeros(n)
     cusum_neg = np.zeros(n)
-    cusum_pos[0] = max(0, values[0] - target - k_val)
-    cusum_neg[0] = max(0, target - values[0] - k_val)
+
+    if fir:
+        cusum_pos[0] = h_val * 0.5
+        cusum_neg[0] = -h_val * 0.5
+    else:
+        cusum_pos[0] = max(0, values[0] - target - k_val)
+        cusum_neg[0] = max(0, target - values[0] - k_val)
 
     for i in range(1, n):
         cusum_pos[i] = max(0, cusum_pos[i - 1] + values[i] - target - k_val)
@@ -449,9 +474,10 @@ def _cusum_chart(values, target, k, h):
         "cusum_neg": [r(v) for v in cusum_neg],
         "k": k,
         "h": h,
+        "fir": fir,
         "alarm_points": alarm_points,
         "n_alarms": len(alarm_points),
-        "title": "CUSUM Chart",
+        "title": "CUSUM Chart" + (" (FIR)" if fir else ""),
     }
 
     return {

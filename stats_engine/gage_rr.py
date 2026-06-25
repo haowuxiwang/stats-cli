@@ -19,6 +19,8 @@ def gage_rr(analysis_type, **kwargs):
         return _crossed(**kwargs)
     elif analysis_type == "nested":
         return _nested(**kwargs)
+    elif analysis_type == "destructive":
+        return _destructive(**kwargs)
     elif analysis_type == "attribute":
         return _attribute(**kwargs)
     elif analysis_type == "bias":
@@ -29,6 +31,53 @@ def gage_rr(analysis_type, **kwargs):
         return _stability(**kwargs)
     else:
         raise ValueError(f"Unknown analysis_type: {analysis_type}")
+
+
+def _satterthwaite_df(ms_values, df_values, coefficients):
+    """Compute Satterthwaite approximate degrees of freedom.
+
+    For a linear combination V = sum(coeff_i * MS_i), the approximate df is:
+        df = (sum(coeff_i * MS_i))^2 / sum((coeff_i * MS_i)^2 / df_i)
+
+    Args:
+        ms_values: List of mean square values
+        df_values: List of corresponding degrees of freedom
+        coefficients: List of coefficients (can be negative)
+
+    Returns:
+        Approximate degrees of freedom (float), or 1.0 if computation fails
+    """
+    numerator_terms = [c * ms for c, ms in zip(coefficients, ms_values)]
+    numerator = sum(numerator_terms) ** 2
+    denominator = sum((ct**2 / df) for ct, df in zip(numerator_terms, df_values) if df > 0)
+    if denominator <= 0:
+        return 1.0
+    return max(1.0, numerator / denominator)
+
+
+def _variance_ci(variance, df, alpha=0.05):
+    """Compute confidence interval for a variance component using chi-squared.
+
+    CI: (df * variance / chi2_upper, df * variance / chi2_lower)
+    where chi2_lower = chi2.ppf(alpha/2, df) and chi2_upper = chi2.ppf(1-alpha/2, df).
+
+    Args:
+        variance: Point estimate of variance
+        df: Degrees of freedom
+        alpha: Significance level (default 0.05 for 95% CI)
+
+    Returns:
+        Tuple (ci_lower, ci_upper), both >= 0
+    """
+    if df <= 0 or variance < 0:
+        return (0.0, 0.0)
+    chi2_lower = sp_stats.chi2.ppf(alpha / 2, df)
+    chi2_upper = sp_stats.chi2.ppf(1 - alpha / 2, df)
+    if chi2_lower <= 0:
+        return (0.0, float("inf"))
+    ci_lower = df * variance / chi2_upper
+    ci_upper = df * variance / chi2_lower
+    return (max(0.0, ci_lower), max(0.0, ci_upper))
 
 
 def _crossed(measurements, parts, operators, tolerance=None, **kwargs):
@@ -157,6 +206,36 @@ def _crossed(measurements, parts, operators, tolerance=None, **kwargs):
         rating = "Unacceptable"
         rating_desc = "Measurement system needs improvement"
 
+    # 95% confidence intervals for variance components
+    # Repeatability (error): exact chi-squared CI
+    ci_error = _variance_ci(sigma2_error, df_error)
+
+    if has_interaction:
+        # Interaction: Satterthwaite approx with MS_interact and MS_error
+        ci_interact = _variance_ci(sigma2_interaction, df_interact)
+        # Operator: Satterthwaite approx with MS_oper and MS_interact
+        sat_df_oper = _satterthwaite_df(
+            [ms_oper, ms_interact], [df_oper, df_interact], [1.0 / (k * n_reps), -1.0 / (k * n_reps)]
+        )
+        ci_operator = _variance_ci(sigma2_operator, sat_df_oper)
+        # Part: Satterthwaite approx with MS_part and MS_interact
+        sat_df_part = _satterthwaite_df(
+            [ms_part, ms_interact], [df_part, df_interact], [1.0 / (m * n_reps), -1.0 / (m * n_reps)]
+        )
+        ci_part = _variance_ci(sigma2_part, sat_df_part)
+    else:
+        ci_interact = (0.0, 0.0)
+        # Operator and Part: Satterthwaite with MS and MS_error
+        sat_df_oper = _satterthwaite_df([ms_oper, ms_error], [df_oper, df_error], [1.0 / k, -1.0 / k])
+        ci_operator = _variance_ci(sigma2_operator, sat_df_oper)
+        sat_df_part = _satterthwaite_df([ms_part, ms_error], [df_part, df_error], [1.0 / m, -1.0 / m])
+        ci_part = _variance_ci(sigma2_part, sat_df_part)
+
+    # GRR CI: sum of error + interaction + operator CIs
+    ci_grr = (ci_error[0] + ci_interact[0] + ci_operator[0], ci_error[1] + ci_interact[1] + ci_operator[1])
+    # Reproducibility CI: interaction + operator
+    ci_repro = (ci_interact[0] + ci_operator[0], ci_interact[1] + ci_operator[1])
+
     result = {
         "analysis_type": "crossed",
         "n": n,
@@ -181,22 +260,41 @@ def _crossed(measurements, parts, operators, tolerance=None, **kwargs):
                 "variance": r(sigma2_error),
                 "std": r(sd_repeatability),
                 "sv": r(sv_repeatability),
+                "ci_lower": r(ci_error[0]),
+                "ci_upper": r(ci_error[1]),
             },
             "reproducibility": {
                 "variance": r(sigma2_operator + sigma2_interaction),
                 "std": r(sd_reproducibility),
                 "sv": r(sv_reproducibility),
-                "operator": {"variance": r(sigma2_operator), "std": r(np.sqrt(sigma2_operator))},
+                "ci_lower": r(ci_repro[0]),
+                "ci_upper": r(ci_repro[1]),
+                "operator": {
+                    "variance": r(sigma2_operator),
+                    "std": r(np.sqrt(sigma2_operator)),
+                    "ci_lower": r(ci_operator[0]),
+                    "ci_upper": r(ci_operator[1]),
+                },
                 "interaction": {
                     "variance": r(sigma2_interaction),
                     "std": r(np.sqrt(sigma2_interaction)),
+                    "ci_lower": r(ci_interact[0]),
+                    "ci_upper": r(ci_interact[1]),
                 },
             },
-            "grr": {"variance": r(sigma2_grr), "std": r(sd_grr), "sv": r(sv_grr)},
+            "grr": {
+                "variance": r(sigma2_grr),
+                "std": r(sd_grr),
+                "sv": r(sv_grr),
+                "ci_lower": r(ci_grr[0]),
+                "ci_upper": r(ci_grr[1]),
+            },
             "part_to_part": {
                 "variance": r(sigma2_part),
                 "std": r(sd_part),
                 "sv": r(sv_part),
+                "ci_lower": r(ci_part[0]),
+                "ci_upper": r(ci_part[1]),
             },
             "total": {"variance": r(sigma2_total), "std": r(sd_total)},
         },
@@ -300,6 +398,66 @@ def _nested(measurements, parts, operators, **kwargs):
         "rating": rating,
         "interpretation": f"Gage R&R = {r(pct_sv_grr, 1)}% of study variation. {rating} (ndc = {ndc})",
     }
+
+
+def _destructive(measurements, parts, operators, **kwargs):
+    """Destructive test Gage R&R (nested design).
+
+    In a destructive test, each part can only be measured once because the
+    measurement process destroys or alters the part. This requires a nested
+    design where different specimens from the same lot are assigned to
+    different operators.
+
+    Key assumptions:
+    - Each operator measures different specimens from the same lot
+    - Within-lot homogeneity: specimens from the same lot are assumed
+      to be identical in the property being measured
+    - The part-to-part variance component actually represents lot-to-lot
+      variation plus within-lot specimen variation
+
+    The analysis is performed using the nested ANOVA method. The ndc
+    interpretation differs from crossed designs: a low ndc may indicate
+    within-lot heterogeneity rather than poor measurement precision.
+
+    Args:
+        measurements: Measurement values (flat array)
+        parts: Part/lot identifiers (nested within operators)
+        operators: Operator identifiers
+
+    Returns:
+        Dict with destructive Gage R&R results
+    """
+    # Delegate to nested analysis - same statistical model
+    result = _nested(measurements=measurements, parts=parts, operators=operators, **kwargs)
+
+    # Override metadata for destructive context
+    result["analysis_type"] = "destructive"
+    result["assumptions"] = [
+        "Within-lot homogeneity: specimens from the same lot are assumed identical",
+        "Different specimens from each lot are assigned to different operators",
+        "Part-to-part variance includes within-lot specimen variation",
+    ]
+
+    ndc = result["ndc"]
+    rating = result["rating"]
+    if ndc < 2:
+        ndc_note = (
+            "ndc < 2: Cannot distinguish parts. In destructive testing, this may indicate "
+            "within-lot heterogeneity rather than poor measurement precision. "
+            "Verify lot homogeneity before concluding measurement system is inadequate."
+        )
+    elif ndc < 5:
+        ndc_note = (
+            "ndc < 5: Marginal discrimination. Consider whether within-lot variation "
+            "is contributing to the low ndc in this destructive test context."
+        )
+    else:
+        ndc_note = "ndc >= 5: Adequate discrimination for destructive testing."
+
+    result["destructive_notes"] = ndc_note
+    result["interpretation"] = f"Destructive Gage R&R: {rating} (ndc = {ndc}). {ndc_note}"
+
+    return result
 
 
 def _attribute(reference, ratings, **kwargs):

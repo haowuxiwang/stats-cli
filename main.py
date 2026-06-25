@@ -174,6 +174,7 @@ COMMAND_REGISTRY = {
     "mining": ("stats_engine.mining", "mining"),
     "sensitivity": ("stats_engine.sensitivity", "sensitivity"),
     "acceptance_sampling": ("stats_engine.acceptance_sampling", "acceptance_sampling"),
+    "functional": ("stats_engine.functional", "functional"),
 }
 
 # Commands that don't need file-based data loading
@@ -186,6 +187,7 @@ NO_DATA_COMMANDS = {
     "mining",
     "sensitivity",
     "acceptance_sampling",
+    "functional",
 }
 
 # Commands that need two-column file loading (x and y)

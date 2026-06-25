@@ -32,7 +32,7 @@ def capability(
         usl: Upper specification limit
         lsl: Lower specification limit
         target: Target value (default: midpoint of specs)
-        capability_type: 'normal' or 'boxcox'
+        capability_type: 'normal', 'boxcox', or 'johnson'
         sigma_method: Method for within-subgroup std estimation:
             'mr' (default) - Moving Range (individual data)
             'rbar' - Subgroup R-bar (requires subgroup_size)
@@ -188,6 +188,10 @@ def capability(
     if capability_type == "boxcox" and n >= 5:
         result["boxcox"] = _boxcox_capability(arr, usl, lsl)
 
+    # Johnson transformation for non-normal data
+    if capability_type == "johnson" and n >= 5:
+        result["johnson"] = _johnson_capability(arr, usl, lsl)
+
     # Rating
     cpk_val = result.get("cpk") or 0
     if cpk_val >= 1.67:
@@ -284,6 +288,66 @@ def _boxcox_capability(arr, usl, lsl):
                 "cpk": r(cpk_bc),
                 "cpu": r(cpu_bc),
                 "cpl": r(cpl_bc),
+            }
+        )
+
+    return result
+
+
+def _johnson_capability(arr, usl, lsl):
+    """Johnson SU transformation capability analysis.
+
+    Uses CDF-then-PPF approach: transform data through Johnson SU CDF to
+    uniform, then through normal PPF to get normal scores. Spec limits are
+    transformed the same way. Capability indices are computed on the
+    transformed (normal) data.
+    """
+    # Fit Johnson SU distribution
+    params = sp_stats.johnsonsu.fit(arr)
+    gamma, delta, xi, lam = params
+
+    # Transform data: Johnson CDF -> normal PPF
+    uniform = sp_stats.johnsonsu.cdf(arr, *params)
+    # Clamp to avoid +/-inf from norm.ppf at 0 or 1
+    eps = 1e-10
+    uniform = np.clip(uniform, eps, 1 - eps)
+    transformed = sp_stats.norm.ppf(uniform)
+
+    mean_t = float(np.mean(transformed))
+    sd_t = float(np.std(transformed, ddof=1))
+
+    # Transform spec limits using the same CDF-then-PPF approach
+    usl_t = None
+    lsl_t = None
+    if usl is not None:
+        u_unif = float(sp_stats.johnsonsu.cdf(usl, *params))
+        u_unif = np.clip(u_unif, eps, 1 - eps)
+        usl_t = float(sp_stats.norm.ppf(u_unif))
+    if lsl is not None:
+        l_unif = float(sp_stats.johnsonsu.cdf(lsl, *params))
+        l_unif = np.clip(l_unif, eps, 1 - eps)
+        lsl_t = float(sp_stats.norm.ppf(l_unif))
+
+    result = {
+        "gamma": r(gamma, 4),
+        "delta": r(delta, 4),
+        "xi": r(xi, 4),
+        "lambda": r(lam, 4),
+        "mean_transformed": r(mean_t, 6),
+        "std_transformed": r(sd_t, 6),
+    }
+
+    if usl_t is not None and lsl_t is not None and sd_t > 0:
+        cp_j = (usl_t - lsl_t) / (6 * sd_t)
+        cpu_j = (usl_t - mean_t) / (3 * sd_t)
+        cpl_j = (mean_t - lsl_t) / (3 * sd_t)
+        cpk_j = min(cpu_j, cpl_j)
+        result.update(
+            {
+                "cp": r(cp_j),
+                "cpk": r(cpk_j),
+                "cpu": r(cpu_j),
+                "cpl": r(cpl_j),
             }
         )
 
