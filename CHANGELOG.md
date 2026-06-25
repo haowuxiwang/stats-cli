@@ -2,6 +2,25 @@
 
 All notable changes to stats-cli-py will be documented in this file.
 
+## [1.3.0] - 2026-06-25
+
+### Added
+
+- **distribution**: Distribution fitting (MLE/MOM), goodness-of-fit tests (KS, Anderson-Darling, Chi-square), AIC/BIC distribution selection (normal, lognormal, exponential, gamma, weibull, beta, logistic, gumbel)
+- **bayesian**: Bayesian estimation with credible intervals, Bayes Factor t-test (JZS approximation), Beta-Binomial proportion test, Bayesian one-way ANOVA
+- **mining**: Classification (decision tree, random forest via sklearn), anomaly detection (Isolation Forest, LOF, Z-score, ensemble), association rules (Apriori algorithm)
+- **sensitivity**: Monte Carlo simulation, tornado diagrams (one-at-a-time sensitivity), Sobol sensitivity indices (first-order and total)
+- Added 4 new commands to discover.py with full metadata
+- Added handler integration, stress, and benchmark tests for all new modules
+- Added mock-based tests for defensive code (ImportError guards, platform-specific paths)
+
+### Improved
+
+- Test coverage: 94% → 98% (1466 tests, 0 failures)
+- All new modules ≥ 96% coverage
+- Updated SKILL.md with new trigger keywords and command examples
+- Updated README.md with new module descriptions
+
 ## [1.2.1] - 2026-06-15
 
 ### Fixed
