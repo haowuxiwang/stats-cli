@@ -173,10 +173,20 @@ COMMAND_REGISTRY = {
     "bayesian": ("stats_engine.bayesian", "bayesian"),
     "mining": ("stats_engine.mining", "mining"),
     "sensitivity": ("stats_engine.sensitivity", "sensitivity"),
+    "acceptance_sampling": ("stats_engine.acceptance_sampling", "acceptance_sampling"),
 }
 
 # Commands that don't need file-based data loading
-NO_DATA_COMMANDS = {"discover", "explore", "power", "multivariate", "run", "mining", "sensitivity"}
+NO_DATA_COMMANDS = {
+    "discover",
+    "explore",
+    "power",
+    "multivariate",
+    "run",
+    "mining",
+    "sensitivity",
+    "acceptance_sampling",
+}
 
 # Commands that need two-column file loading (x and y)
 TWO_COLUMN_COMMANDS = {"correlation", "regression"}

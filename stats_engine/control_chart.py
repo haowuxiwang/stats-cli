@@ -1,6 +1,7 @@
-"""SPC Control Charts: xbar, r, imr, p, np, c, u, ewma, cusum."""
+"""SPC Control Charts: xbar, r, imr, p, np, c, u, ewma, cusum, hotelling_t2, ewma_mv."""
 
 import numpy as np
+from scipy import stats
 
 from utils.output import r
 from utils.validators import to_array
@@ -11,22 +12,54 @@ D3 = {2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0.076, 8: 0.136, 9: 0.184, 10: 0.223}
 D4 = {2: 3.267, 3: 2.574, 4: 2.282, 5: 2.114, 6: 2.004, 7: 1.924, 8: 1.864, 9: 1.816, 10: 1.777}
 
 
-def control_chart(chart_type, values, subgroup_size=5, sample_size=None, target=None, lambda_=None, k=None, h=None):
+def control_chart(
+    chart_type, values, subgroup_size=5, sample_size=None, target=None, lambda_=None, k=None, h=None, alpha=None
+):
     """Generate control chart data.
 
     Args:
-        chart_type: 'xbar', 'r', 'imr', 'p', 'np', 'c', 'u', 'ewma', 'cusum'
-        values: Data values
+        chart_type: 'xbar', 'r', 'imr', 'p', 'np', 'c', 'u', 'ewma', 'cusum',
+                     'hotelling_t2', 'ewma_mv'
+        values: Data values (1D array for most charts, 2D for hotelling_t2/ewma_mv)
         subgroup_size: Subgroup size for xbar/r charts
         sample_size: Sample size for p/np/u charts
         target: Target value (for ewma/cusum)
         lambda_: EWMA smoothing parameter (0-1)
         k: CUSUM reference value (in sigma units)
         h: CUSUM decision interval (in sigma units)
+        alpha: Significance level for hotelling_t2/ewma_mv (default 0.0027)
 
     Returns:
         Dict with chart data
     """
+    # Multivariate charts need 2D data, handle separately
+    if chart_type in ("hotelling_t2", "ewma_mv"):
+        data_2d = np.array(values, dtype=float)
+        if data_2d.ndim != 2:
+            raise ValueError(f"{chart_type} requires 2D data (rows=observations, cols=variables)")
+        n, p = data_2d.shape
+        if n < 3:
+            raise ValueError("Need at least 3 observations for multivariate control chart")
+        if p < 2:
+            raise ValueError("Need at least 2 variables for multivariate control chart")
+
+        _warning_msg = None
+        if n < 20:
+            _warning_msg = (
+                f"n={n}: multivariate control chart conclusions are unreliable with fewer than 20 observations"
+            )
+
+        alpha_val = alpha if alpha is not None else 0.0027
+
+        if chart_type == "hotelling_t2":
+            result = _hotelling_t2_chart(data_2d, alpha_val)
+        else:
+            result = _ewma_mv_chart(data_2d, lambda_ if lambda_ is not None else 0.1, alpha_val)
+
+        if _warning_msg:
+            result["_warning"] = _warning_msg
+        return result
+
     values = to_array(values, min_n=2, name="values")
     n = len(values)
 
@@ -430,6 +463,164 @@ def _cusum_chart(values, target, k, h):
                 "No alarms detected - process appears stable"
                 if len(alarm_points) == 0
                 else f"{len(alarm_points)} alarm(s) detected - process may be out of control"
+            ),
+        },
+    }
+
+
+def _to_mv_array(values):
+    """Convert input to 2D numpy array for multivariate charts."""
+    data = np.array(values, dtype=float)
+    if data.ndim == 1:
+        # Treat as single variable - not useful for multivariate, but handle gracefully
+        raise ValueError("Multivariate charts require 2D data (rows=observations, cols=variables)")
+    return data
+
+
+def _hotelling_t2_chart(data, alpha):
+    """Hotelling T-squared control chart for multivariate process monitoring.
+
+    Phase I: Uses the exact beta-based UCL derived from the T² distribution.
+    T²_i = (x_i - x_bar)' * S^{-1} * (x_i - x_bar)
+    UCL = ((n-1)^2 / n) * Beta(1-alpha; p/2, (n-p-1)/2)
+
+    Args:
+        data: 2D numpy array (n observations x p variables)
+        alpha: significance level (default 0.0027 for 3-sigma equivalent)
+
+    Returns:
+        Dict with chart data
+    """
+    n, p = data.shape
+
+    if n <= p + 1:
+        raise ValueError(f"Need n > p+1 observations for Hotelling T² (got n={n}, p={p})")
+
+    # Sample mean vector and covariance matrix
+    x_bar = np.mean(data, axis=0)
+    S = np.cov(data, rowvar=False, ddof=1)
+    S_inv = np.linalg.inv(S)
+
+    # Compute T² for each observation
+    t2_values = np.zeros(n)
+    for i in range(n):
+        diff = data[i] - x_bar
+        t2_values[i] = float(diff @ S_inv @ diff)
+
+    # Control limits
+    # Phase I UCL (exact beta approximation)
+    ucl = ((n - 1) ** 2 / n) * stats.beta.ppf(1 - alpha, p / 2, (n - p - 1) / 2)
+    # LCL is always 0 for T² charts
+    lcl = 0.0
+    # Center line: expected value of T² = p(n-1)/(n-p) under H0
+    center = p * (n - 1) / (n - p)
+
+    # Out-of-control detection
+    in_control = t2_values <= ucl
+    out_of_control = [int(i) for i in range(n) if not in_control[i]]
+
+    chart = {
+        "points": [r(v) for v in t2_values],
+        "center": r(center),
+        "ucl": r(ucl),
+        "lcl": r(lcl),
+        "in_control": in_control.tolist(),
+        "out_of_control_points": out_of_control,
+        "title": "Hotelling T² Chart",
+        "n_variables": p,
+        "n_observations": n,
+        "alpha": alpha,
+    }
+
+    return {
+        "chart_type": "hotelling_t2",
+        "chart": chart,
+        "mean_vector": [r(v) for v in x_bar],
+        "covariance_matrix": [[r(v) for v in row] for row in S],
+        "summary": {
+            "stable": len(out_of_control) == 0,
+            "message": (
+                "Process is in statistical control"
+                if len(out_of_control) == 0
+                else f"Process has {len(out_of_control)} out-of-control point(s)"
+            ),
+        },
+    }
+
+
+def _ewma_mv_chart(data, lambda_, alpha):
+    """Multivariate EWMA (MEWMA) control chart.
+
+    Recursion: Z_i = lambda * x_i + (1 - lambda) * Z_{i-1}, Z_0 = mu_0
+    Statistic: T²_i = Z_i' * Sigma_Z^{-1} * Z_i
+    where Sigma_Z = (lambda / (2 - lambda)) * Sigma for large i.
+
+    UCL derived from chi-squared approximation for large n.
+
+    Args:
+        data: 2D numpy array (n observations x p variables)
+        lambda_: smoothing parameter (0 < lambda <= 1, default 0.1)
+        alpha: significance level (default 0.0027)
+
+    Returns:
+        Dict with chart data
+    """
+    n, p = data.shape
+
+    # Mean vector (target = sample mean)
+    mu = np.mean(data, axis=0)
+    # Covariance matrix of individual observations
+    S = np.cov(data, rowvar=False, ddof=1)
+
+    # MEWMA recursion
+    Z = np.zeros((n, p))
+    Z[0] = lambda_ * data[0] + (1 - lambda_) * mu
+    for i in range(1, n):
+        Z[i] = lambda_ * data[i] + (1 - lambda_) * Z[i - 1]
+
+    # Covariance of Z_i: Sigma_Z = (lambda / (2 - lambda)) * S
+    sigma_z_factor = lambda_ / (2 - lambda_)
+    Sigma_Z = sigma_z_factor * S
+    Sigma_Z_inv = np.linalg.inv(Sigma_Z)
+
+    # Compute T² statistic for each observation
+    t2_values = np.zeros(n)
+    for i in range(n):
+        diff = Z[i] - mu  # deviation of Z from target (mu)
+        t2_values[i] = float(diff @ Sigma_Z_inv @ diff)
+
+    # Control limit: chi-squared approximation
+    ucl = stats.chi2.ppf(1 - alpha, p)
+    lcl = 0.0
+    center = float(p)  # Expected value of chi-squared = p
+
+    in_control = t2_values <= ucl
+    out_of_control = [int(i) for i in range(n) if not in_control[i]]
+
+    chart = {
+        "points": [r(v) for v in t2_values],
+        "center": r(center),
+        "ucl": r(ucl),
+        "lcl": r(lcl),
+        "in_control": in_control.tolist(),
+        "out_of_control_points": out_of_control,
+        "title": "MEWMA Chart",
+        "n_variables": p,
+        "n_observations": n,
+        "lambda": lambda_,
+        "alpha": alpha,
+    }
+
+    return {
+        "chart_type": "ewma_mv",
+        "chart": chart,
+        "mean_vector": [r(v) for v in mu],
+        "summary": {
+            "stable": len(out_of_control) == 0,
+            "message": (
+                "Process is in statistical control"
+                if len(out_of_control) == 0
+                else f"Process has {len(out_of_control)} out-of-control point(s)"
             ),
         },
     }
