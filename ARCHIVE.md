@@ -1,53 +1,35 @@
-# Archive Notice
+# Project Status
 
-**This project is archived and no longer actively maintained.**
+**This project is actively maintained.**
 
-## Status
+## Current Status
 
-- **Version**: 1.2.2 (stable)
-- **Archive Date**: 2026-06-22
-- **Last Update**: 2026-06-22
+- **Version**: 1.3.0
+- **Last Update**: 2026-06-25
+- **Test Coverage**: 98% (1466 tests, 0 failures)
+- **CI/CD**: GitHub Actions (test + lint + PyPI publish)
 
-## What This Means
+## Installation
 
-- No new features will be added
-- No bug fixes will be provided
-- No security updates will be released
-- Issues and pull requests will not be monitored
+```bash
+pip install stats-cli-py
+```
 
-## Usage
-
-This project is still functional and can be used as-is. The code has been thoroughly tested and is considered stable for production use.
-
-### Installation
+Or from source:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Testing
+## Features (37 commands)
 
-```bash
-pip install -r requirements-test.txt
-pytest tests/
-```
-
-## Known Issues
-
-- scipy >= 1.18 changed the `kstest` function signature, which may cause issues with some normality tests. A workaround has been implemented.
-
-## Alternatives
-
-If you need active maintenance, consider:
-
-- [scipy](https://scipy.org/) - Scientific computing library
-- [statsmodels](https://www.statsmodels.org/) - Statistical modeling
-- [pingouin](https://pingouin-stats.org/) - Statistical package
+- Basic statistics, hypothesis testing, regression, correlation
+- SPC: control charts, process capability, trend analysis
+- MSA/Gage R&R, reliability (Weibull), DOE
+- Multivariate: PCA, clustering, discriminant
+- Time series: ARIMA, exponential smoothing
+- **v1.3.0**: Distribution fitting, Bayesian statistics, data mining, sensitivity analysis
 
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Contact
-
-For questions about this project, please contact the repository owner.
