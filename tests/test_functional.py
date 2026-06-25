@@ -371,3 +371,372 @@ class TestGuards:
     def test_basis_length_mismatch_array(self):
         with pytest.raises(ValueError, match="same length"):
             functional("basis", t=[0, 1, 2, 3, 4], values=[0, 1, 4], basis_type="polynomial")
+
+
+# ---------------------------------------------------------------------------
+# Functional regression tests
+# ---------------------------------------------------------------------------
+
+
+class TestRegression:
+    """Tests for functional regression (scalar_on_function, function_on_scalar)."""
+
+    def test_scalar_on_function_basic(self):
+        """Predict scalar from curves with a known linear relationship."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        n = 20
+        # y_i = integral of curve_i + noise
+        curves = np.zeros((n, len(t)))
+        y = np.zeros(n)
+        for i in range(n):
+            slope = rng.uniform(0.5, 3.0)
+            curves[i] = slope * t + rng.normal(0, 0.05, len(t))
+            y[i] = slope * 0.5 + rng.normal(0, 0.1)  # y ~ integral of curve
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="scalar_on_function",
+            y=y.tolist(),
+            n_basis=5,
+        )
+        assert result["analysis_type"] == "regression"
+        assert result["mode"] == "scalar_on_function"
+        assert result["n_basis"] == 5
+        assert "r_squared" in result
+        assert 0.0 <= result["r_squared"] <= 1.0
+        assert len(result["predictions"]) == n
+        assert len(result["residuals"]) == n
+        assert "interpretation" in result
+
+    def test_scalar_on_function_good_fit(self):
+        """Curves that strongly predict y should give high R-squared."""
+        rng = np.random.default_rng(123)
+        t = np.linspace(0, 1, 50)
+        n = 30
+        heights = rng.uniform(1, 5, n)
+        curves = np.zeros((n, len(t)))
+        for i in range(n):
+            curves[i] = heights[i] * np.sin(np.pi * t) + rng.normal(0, 0.02, len(t))
+        y = heights.tolist()  # y is just the height
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="scalar_on_function",
+            y=y,
+            n_basis=6,
+        )
+        assert result["r_squared"] > 0.8
+
+    def test_scalar_on_function_missing_y(self):
+        """Should raise error when y is not provided."""
+        curves = [[1, 2, 3], [4, 5, 6]]
+        with pytest.raises(ValueError, match="'y'"):
+            functional("regression", curves=curves, t=[0, 1, 2], mode="scalar_on_function")
+
+    def test_scalar_on_function_y_length_mismatch(self):
+        curves = [[1, 2, 3], [4, 5, 6]]
+        with pytest.raises(ValueError, match="'y' length"):
+            functional(
+                "regression",
+                curves=curves,
+                t=[0, 1, 2],
+                mode="scalar_on_function",
+                y=[1, 2, 3],
+            )
+
+    def test_function_on_scalar_basic(self):
+        """Predict curves from scalar predictors."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        n = 15
+        X = rng.uniform(0, 10, n)
+        curves = np.zeros((n, len(t)))
+        for i in range(n):
+            curves[i] = X[i] * t + rng.normal(0, 0.1, len(t))
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="function_on_scalar",
+            X=X.tolist(),
+        )
+        assert result["analysis_type"] == "regression"
+        assert result["mode"] == "function_on_scalar"
+        assert result["n_predictors"] == 1
+        assert len(result["r_squared_per_point"]) == len(t)
+        assert "mean_r_squared" in result
+        assert "coefficient_functions" in result
+        assert "intercept" in result["coefficient_functions"]
+        assert "predictor_1" in result["coefficient_functions"]
+
+    def test_function_on_scalar_multiple_predictors(self):
+        """Predict curves from multiple scalar predictors."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        n = 20
+        X1 = rng.uniform(0, 5, n)
+        X2 = rng.uniform(0, 3, n)
+        X = np.column_stack([X1, X2])
+        curves = np.zeros((n, len(t)))
+        for i in range(n):
+            curves[i] = X1[i] * t + X2[i] * t**2 + rng.normal(0, 0.1, len(t))
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="function_on_scalar",
+            X=X.tolist(),
+        )
+        assert result["n_predictors"] == 2
+        assert "predictor_1" in result["coefficient_functions"]
+        assert "predictor_2" in result["coefficient_functions"]
+
+    def test_function_on_scalar_missing_X(self):
+        curves = [[1, 2, 3], [4, 5, 6]]
+        with pytest.raises(ValueError, match="'X'"):
+            functional("regression", curves=curves, t=[0, 1, 2], mode="function_on_scalar")
+
+    def test_regression_unknown_mode(self):
+        with pytest.raises(ValueError, match="Unknown mode"):
+            functional("regression", curves=[[1, 2], [3, 4]], t=[0, 1], mode="invalid")
+
+
+# ---------------------------------------------------------------------------
+# FANOVA tests
+# ---------------------------------------------------------------------------
+
+
+class TestFANOVA:
+    """Tests for functional ANOVA."""
+
+    def test_fanova_different_groups(self):
+        """Groups with different means should produce significant results."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        n_per_group = 15
+        # Group 1: curves around y=0
+        g1 = np.zeros((n_per_group, len(t))) + rng.normal(0, 0.1, (n_per_group, len(t)))
+        # Group 2: curves around y=3
+        g2 = 3.0 + np.zeros((n_per_group, len(t))) + rng.normal(0, 0.1, (n_per_group, len(t)))
+        # Group 3: curves around y=6
+        g3 = 6.0 + np.zeros((n_per_group, len(t))) + rng.normal(0, 0.1, (n_per_group, len(t)))
+
+        result = functional(
+            "fanova",
+            groups=[g1.tolist(), g2.tolist(), g3.tolist()],
+            t=t.tolist(),
+            alpha=0.05,
+        )
+        assert result["analysis_type"] == "fanova"
+        assert result["n_groups"] == 3
+        assert result["f_statistic"] > 10  # should be very large
+        assert result["n_significant_points"] == len(t)  # all points significant
+        assert len(result["significant_regions"]) >= 1
+        assert result["alpha"] == 0.05
+
+    def test_fanova_same_groups(self):
+        """Groups drawn from same distribution should not be significant."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        n_per_group = 10
+        g1 = rng.normal(0, 1, (n_per_group, len(t)))
+        g2 = rng.normal(0, 1, (n_per_group, len(t)))
+
+        result = functional(
+            "fanova",
+            groups=[g1.tolist(), g2.tolist()],
+            t=t.tolist(),
+            alpha=0.05,
+        )
+        assert result["analysis_type"] == "fanova"
+        assert result["n_groups"] == 2
+        # With same distribution, most points should not be significant
+        assert result["n_significant_points"] < len(t) * 0.5
+
+    def test_fanova_two_groups(self):
+        t = np.linspace(0, 1, 20)
+        rng = np.random.default_rng(99)
+        g1 = 2.0 + rng.normal(0, 0.05, (10, len(t)))
+        g2 = -2.0 + rng.normal(0, 0.05, (10, len(t)))
+        result = functional("fanova", groups=[g1.tolist(), g2.tolist()], t=t.tolist())
+        assert result["f_statistic"] > 5
+        assert len(result["pointwise_p_values"]) == len(t)
+
+    def test_fanova_pointwise_stats_length(self):
+        t = np.linspace(0, 1, 15)
+        rng = np.random.default_rng(42)
+        g1 = rng.normal(0, 1, (8, 15))
+        g2 = rng.normal(0, 1, (8, 15))
+        result = functional("fanova", groups=[g1.tolist(), g2.tolist()], t=t.tolist())
+        assert len(result["pointwise_f_stats"]) == 15
+        assert len(result["pointwise_p_values"]) == 15
+        assert len(result["adjusted_p_values"]) == 15
+
+    def test_fanova_fewer_than_two_groups(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            functional("fanova", groups=[[[1, 2], [3, 4]]], t=[0, 1])
+
+    def test_fanova_significant_regions_format(self):
+        t = np.linspace(0, 1, 20)
+        rng = np.random.default_rng(42)
+        g1 = 5.0 + rng.normal(0, 0.01, (12, 20))
+        g2 = -5.0 + rng.normal(0, 0.01, (12, 20))
+        result = functional("fanova", groups=[g1.tolist(), g2.tolist()], t=t.tolist())
+        for region in result["significant_regions"]:
+            assert len(region) == 2
+            assert region[0] <= region[1]
+
+
+# ---------------------------------------------------------------------------
+# Functional clustering tests
+# ---------------------------------------------------------------------------
+
+
+class TestCluster:
+    """Tests for functional clustering."""
+
+    def test_cluster_kmeans_basic(self):
+        """Curves from 2 distinct patterns should cluster well."""
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        # Cluster 1: curves centered at y=0
+        c1 = np.zeros((10, 30)) + rng.normal(0, 0.05, (10, 30))
+        # Cluster 2: curves centered at y=5
+        c2 = 5.0 + np.zeros((10, 30)) + rng.normal(0, 0.05, (10, 30))
+        curves = np.vstack([c1, c2])
+
+        result = functional(
+            "cluster",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            n_clusters=2,
+            method="kmeans",
+        )
+        assert result["analysis_type"] == "cluster"
+        assert result["n_clusters"] == 2
+        assert result["n_curves"] == 20
+        assert len(result["cluster_labels"]) == 20
+        assert len(result["cluster_centers"]) == 2
+        assert result["silhouette_score"] > 0.5
+        assert sum(result["cluster_sizes"]) == 20
+
+    def test_cluster_hierarchical(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        c1 = np.zeros((8, 30)) + rng.normal(0, 0.05, (8, 30))
+        c2 = 5.0 + np.zeros((8, 30)) + rng.normal(0, 0.05, (8, 30))
+        curves = np.vstack([c1, c2])
+
+        result = functional(
+            "cluster",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            n_clusters=2,
+            method="hierarchical",
+        )
+        assert result["method"] == "hierarchical"
+        assert result["silhouette_score"] > 0.3
+
+    def test_cluster_three_groups(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 30)
+        c1 = rng.normal(0, 0.1, (8, 30))
+        c2 = 5.0 + rng.normal(0, 0.1, (8, 30))
+        c3 = 10.0 + rng.normal(0, 0.1, (8, 30))
+        curves = np.vstack([c1, c2, c3])
+
+        result = functional(
+            "cluster",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            n_clusters=3,
+            method="kmeans",
+        )
+        assert result["n_clusters"] == 3
+        assert sum(result["cluster_sizes"]) == 24
+        assert len(result["fpca_variance_explained"]) > 0
+
+    def test_cluster_labels_are_integers(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        curves = rng.normal(0, 1, (10, 20))
+        result = functional("cluster", curves=curves.tolist(), t=t.tolist(), n_clusters=2)
+        for label in result["cluster_labels"]:
+            assert isinstance(label, int)
+            assert 0 <= label < 2
+
+    def test_cluster_n_clusters_too_low(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            functional("cluster", curves=[[1, 2], [3, 4]], t=[0, 1], n_clusters=1)
+
+    def test_cluster_n_clusters_too_high(self):
+        with pytest.raises(ValueError, match="cannot exceed"):
+            functional("cluster", curves=[[1, 2], [3, 4]], t=[0, 1], n_clusters=5)
+
+    def test_cluster_unknown_method(self):
+        rng = np.random.default_rng(42)
+        curves = rng.normal(0, 1, (10, 20))
+        t = np.linspace(0, 1, 20)
+        with pytest.raises(ValueError, match="Unknown method"):
+            functional("cluster", curves=curves.tolist(), t=t.tolist(), method="invalid")
+
+
+# ---------------------------------------------------------------------------
+# JSON serializability for new types
+# ---------------------------------------------------------------------------
+
+
+class TestJSONNewTypes:
+    """JSON serializability tests for regression, fanova, cluster."""
+
+    def _assert_json_serializable(self, result):
+        json_str = json.dumps(result, ensure_ascii=False)
+        parsed = json.loads(json_str)
+        assert parsed["analysis_type"] == result["analysis_type"]
+
+    def test_scalar_on_function_json(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        curves = rng.normal(0, 1, (10, 20))
+        y = rng.normal(0, 1, 10).tolist()
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="scalar_on_function",
+            y=y,
+            n_basis=4,
+        )
+        self._assert_json_serializable(result)
+
+    def test_function_on_scalar_json(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        curves = rng.normal(0, 1, (10, 20))
+        X = rng.normal(0, 1, 10).tolist()
+        result = functional(
+            "regression",
+            curves=curves.tolist(),
+            t=t.tolist(),
+            mode="function_on_scalar",
+            X=X,
+        )
+        self._assert_json_serializable(result)
+
+    def test_fanova_json(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 15)
+        g1 = rng.normal(0, 1, (8, 15))
+        g2 = rng.normal(0, 1, (8, 15))
+        result = functional("fanova", groups=[g1.tolist(), g2.tolist()], t=t.tolist())
+        self._assert_json_serializable(result)
+
+    def test_cluster_json(self):
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 1, 20)
+        curves = rng.normal(0, 1, (10, 20))
+        result = functional("cluster", curves=curves.tolist(), t=t.tolist(), n_clusters=2)
+        self._assert_json_serializable(result)

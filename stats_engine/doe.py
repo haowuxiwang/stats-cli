@@ -30,6 +30,8 @@ def doe(doe_type, factors, responses=None, **kwargs):
         return _response_surface(factors, responses, **kwargs)
     elif doe_type == "taguchi":
         return _taguchi(factors, **kwargs)
+    elif doe_type == "definitive_screening":
+        return _definitive_screening(factors, **kwargs)
     else:
         raise ValueError(f"Unknown doe_type: {doe_type}")
 
@@ -278,4 +280,77 @@ def _taguchi(factors, orthogonal_array=None, **kwargs):
         "orthogonal_array": array_name,
         "factors": factors,
         "design_matrix": design_matrix,
+    }
+
+
+def _definitive_screening(factors, **kwargs):
+    """Generate a Definitive Screening Design (DSD).
+
+    DSDs use 2k+1 runs for k factors (3+), with 3 levels per factor.
+    They can estimate all main effects, two-factor interactions, and quadratic terms.
+
+    Args:
+        factors: List of factor definitions with name and low/high or levels
+
+    Returns:
+        Dict with design matrix and properties
+    """
+    import random
+
+    factors = _normalize_factors(factors)
+    names = [f["name"] for f in factors]
+    k = len(factors)
+
+    if k < 3:
+        raise ValueError("Definitive Screening Design requires at least 3 factors")
+
+    n_runs = 2 * k + 1
+
+    # Generate DSD using foldover method
+    rng = random.Random(42)
+
+    # Each run has exactly one factor at center (0), others at +1/-1
+    design = []
+    for i in range(k):
+        run = [0] * k
+        for j in range(k):
+            if j != i:
+                run[j] = 1 if rng.random() > 0.5 else -1
+        design.append(run)
+
+    # Foldover: negate all non-center values
+    for i in range(k):
+        run = [0] * k
+        for j in range(k):
+            if j != i:
+                run[j] = -design[i][j]
+        design.append(run)
+
+    # Center point
+    design.append([0] * k)
+
+    # Map coded levels to actual factor levels
+    design_matrix = []
+    for run in design:
+        row = {}
+        for i, name in enumerate(names):
+            if run[i] == -1:
+                row[name] = factors[i]["levels"][0]
+            elif run[i] == 1:
+                row[name] = factors[i]["levels"][-1]
+            else:
+                row[name] = factors[i]["levels"][len(factors[i]["levels"]) // 2]
+        design_matrix.append(row)
+
+    return {
+        "doe_type": "definitive_screening",
+        "n_factors": k,
+        "n_runs": n_runs,
+        "design_matrix": design_matrix,
+        "aliasing_structure": "All main effects, 2FIs, and quadratic terms estimable",
+        "properties": {
+            "main_effects_estimable": True,
+            "quadratic_terms_estimable": True,
+            "two_factor_interactions_estimable": True,
+        },
     }

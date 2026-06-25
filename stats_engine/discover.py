@@ -109,16 +109,16 @@ COMMANDS = {
         "example": '{"command": "capability", "params": {"values": [10.1, 10.2, 10.0, 10.3], "usl": 11.0, "lsl": 9.0}}',
     },
     "control_chart": {
-        "description": "Control charts: xbar, r, imr, p, np, c, u, ewma, cusum, hotelling_t2, ewma_mv",
+        "description": "Control charts: xbar, r, imr, p, np, c, u, ewma, cusum, hotelling_t2, ewma_mv, zmr",
         "category": "spc",
-        "input": ["values", "chart_type", "subgroup_size", "fir"],
+        "input": ["values", "chart_type", "subgroup_size", "fir", "target", "sigma"],
         "params": [
             {"name": "values", "required": True, "type": "array", "desc": "Process measurement data"},
             {
                 "name": "chart_type",
                 "required": True,
                 "type": "string",
-                "desc": "Chart type: xbar, r, imr, p, np, c, u, ewma, cusum, hotelling_t2, ewma_mv",
+                "desc": "Chart type: xbar, r, imr, p, np, c, u, ewma, cusum, hotelling_t2, ewma_mv, zmr",
             },
             {
                 "name": "subgroup_size",
@@ -131,6 +131,18 @@ COMMANDS = {
                 "required": False,
                 "type": "boolean",
                 "desc": "CUSUM fast initial response / head start (default false). When true, initial CUSUM values set to h/2",
+            },
+            {
+                "name": "target",
+                "required": False,
+                "type": "number",
+                "desc": "Target value for Z-MR chart (default: mean of values)",
+            },
+            {
+                "name": "sigma",
+                "required": False,
+                "type": "number",
+                "desc": "Historical standard deviation for Z-MR chart",
             },
         ],
         "output_fields": ["chart_type", "center", "ucl", "lcl", "points", "out_of_control_points", "summary"],
@@ -506,7 +518,7 @@ COMMANDS = {
         "example": '{"command": "trend", "params": {"values": [10.1, 10.2, 10.0, 10.3, 10.1], "test_type": "cusum"}}',
     },
     "doe": {
-        "description": "Design of Experiments: full_factorial, fractional_factorial, response_surface, taguchi",
+        "description": "Design of Experiments: full_factorial, fractional_factorial, response_surface, taguchi, definitive_screening",
         "category": "doe",
         "input": ["doe_type", "factors"],
         "params": [
@@ -514,7 +526,7 @@ COMMANDS = {
                 "name": "doe_type",
                 "required": True,
                 "type": "string",
-                "desc": "DOE type: full_factorial, fractional_factorial, response_surface, taguchi",
+                "desc": "DOE type: full_factorial, fractional_factorial, response_surface, taguchi, definitive_screening",
             },
             {
                 "name": "factors",
@@ -556,15 +568,26 @@ COMMANDS = {
         "example": '{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [[10,11,10],[11,12,11]], "parts": ["P1","P2"], "operators": ["A","A"]}}',
     },
     "reliability": {
-        "description": "Reliability and survival analysis: weibull, kaplan_meier, distribution, stability",
+        "description": "Reliability and survival analysis: weibull, kaplan_meier, distribution, stability, alt, crow",
         "category": "reliability",
-        "input": ["analysis_type", "times", "status", "values"],
+        "input": [
+            "analysis_type",
+            "times",
+            "status",
+            "values",
+            "stress_levels",
+            "failure_times",
+            "stress_model",
+            "use_stress",
+            "cumulative_times",
+            "cumulative_failures",
+        ],
         "params": [
             {
                 "name": "analysis_type",
                 "required": True,
                 "type": "string",
-                "desc": "Analysis type: weibull, kaplan_meier, distribution, stability",
+                "desc": "Analysis type: weibull, kaplan_meier, distribution, stability, alt, crow",
             },
             {
                 "name": "times",
@@ -584,8 +607,56 @@ COMMANDS = {
                 "type": "array",
                 "desc": "Data values (required for distribution, stability)",
             },
+            {
+                "name": "stress_levels",
+                "required": False,
+                "type": "array",
+                "desc": "Stress values for ALT (e.g., temperatures in Kelvin)",
+            },
+            {
+                "name": "failure_times",
+                "required": False,
+                "type": "array",
+                "desc": "Median failure times at each stress level for ALT",
+            },
+            {
+                "name": "stress_model",
+                "required": False,
+                "type": "string",
+                "desc": "ALT stress model (default arrhenius): arrhenius, inverse_power, log_linear",
+            },
+            {
+                "name": "use_stress",
+                "required": False,
+                "type": "number",
+                "desc": "Normal use-condition stress for ALT extrapolation",
+            },
+            {
+                "name": "cumulative_times",
+                "required": False,
+                "type": "array",
+                "desc": "Cumulative failure times for Crow-AMSAA analysis",
+            },
+            {
+                "name": "cumulative_failures",
+                "required": False,
+                "type": "array",
+                "desc": "Cumulative failure counts for Crow-AMSAA analysis",
+            },
         ],
-        "output_fields": ["parameters", "b_lives", "mttf", "shelf_life"],
+        "output_fields": [
+            "parameters",
+            "b_lives",
+            "mttf",
+            "shelf_life",
+            "model_params",
+            "median_life_at_use",
+            "acceleration_factor",
+            "beta",
+            "rho",
+            "current_mtbf",
+            "growth_rate",
+        ],
         "example": '{"command": "reliability", "params": {"analysis_type": "weibull", "times": [100, 200, 300], "status": [1, 1, 1]}}',
     },
     "multivariate": {
@@ -1304,7 +1375,7 @@ COMMANDS = {
         "example": '{"command": "acceptance_sampling", "params": {"analysis_type": "single_plan", "n": 50, "c": 2, "defect_rate": 0.05}}',
     },
     "functional": {
-        "description": "Functional Data Analysis: basis representation, smoothing, derivatives, FPCA",
+        "description": "Functional Data Analysis: basis representation, smoothing, derivatives, FPCA, regression, FANOVA, clustering",
         "category": "advanced",
         "input": [
             "analysis_type",
@@ -1317,13 +1388,19 @@ COMMANDS = {
             "order",
             "curves",
             "n_components",
+            "mode",
+            "y",
+            "X",
+            "groups",
+            "alpha",
+            "n_clusters",
         ],
         "params": [
             {
                 "name": "analysis_type",
                 "required": True,
                 "type": "string",
-                "desc": "Analysis type: basis, smooth, derivative, fpca",
+                "desc": "Analysis type: basis, smooth, derivative, fpca, regression, fanova, cluster",
             },
             {
                 "name": "t",
@@ -1354,7 +1431,8 @@ COMMANDS = {
                 "required": False,
                 "type": "string",
                 "desc": "Smoothing method for 'smooth' (default spline): spline, kernel, lowess. "
-                "Derivative method for 'derivative' (default finite_diff): finite_diff, spline",
+                "Derivative method for 'derivative' (default finite_diff): finite_diff, spline. "
+                "Clustering method for 'cluster' (default kmeans): kmeans, hierarchical",
             },
             {
                 "name": "smoothing_param",
@@ -1372,13 +1450,51 @@ COMMANDS = {
                 "name": "curves",
                 "required": False,
                 "type": "array",
-                "desc": "2D array of curves for FPCA (rows = curves, columns = grid points)",
+                "desc": "2D array of curves (rows = curves, columns = grid points). "
+                "For regression: functional predictor (scalar_on_function) or outcome (function_on_scalar)",
             },
             {
                 "name": "n_components",
                 "required": False,
                 "type": "integer",
                 "desc": "Number of FPCA components to extract (default: all)",
+            },
+            {
+                "name": "mode",
+                "required": False,
+                "type": "string",
+                "desc": "Regression mode for 'regression' (default scalar_on_function): "
+                "scalar_on_function (predict scalar from curves), function_on_scalar (predict curves from scalars)",
+            },
+            {
+                "name": "y",
+                "required": False,
+                "type": "array",
+                "desc": "Scalar outcomes for scalar_on_function regression (1-D array)",
+            },
+            {
+                "name": "X",
+                "required": False,
+                "type": "array",
+                "desc": "Scalar predictors for function_on_scalar regression (1-D or 2-D array)",
+            },
+            {
+                "name": "groups",
+                "required": False,
+                "type": "array",
+                "desc": "List of 2D arrays for FANOVA (each group is a set of curves)",
+            },
+            {
+                "name": "alpha",
+                "required": False,
+                "type": "number",
+                "desc": "Significance level for FANOVA (default 0.05)",
+            },
+            {
+                "name": "n_clusters",
+                "required": False,
+                "type": "integer",
+                "desc": "Number of clusters for 'cluster' (default 3)",
             },
         ],
         "output_fields": [
@@ -1396,6 +1512,16 @@ COMMANDS = {
             "eigenfunctions",
             "scores",
             "variance_explained",
+            "r_squared",
+            "predictions",
+            "coefficient_functions",
+            "r_squared_per_point",
+            "f_statistic",
+            "pointwise_p_values",
+            "significant_regions",
+            "cluster_labels",
+            "cluster_centers",
+            "silhouette_score",
         ],
         "example": '{"command": "functional", "params": {"analysis_type": "basis", "t": [0, 1, 2, 3, 4], "values": [0, 1, 4, 9, 16], "basis_type": "polynomial", "n_basis": 3}}',
     },

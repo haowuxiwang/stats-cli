@@ -1,4 +1,4 @@
-"""Functional Data Analysis (FDA): basis representation, smoothing, derivatives, FPCA."""
+"""Functional Data Analysis (FDA): basis representation, smoothing, derivatives, FPCA, regression, FANOVA, clustering."""
 
 import numpy as np
 
@@ -13,7 +13,7 @@ def functional(analysis_type, **kwargs):
     """Functional data analysis dispatcher.
 
     Args:
-        analysis_type: 'basis', 'smooth', 'derivative', 'fpca'
+        analysis_type: 'basis', 'smooth', 'derivative', 'fpca', 'regression', 'fanova', 'cluster'
 
     Returns:
         Dict with analysis results
@@ -23,6 +23,9 @@ def functional(analysis_type, **kwargs):
         "smooth": _smooth,
         "derivative": _derivative,
         "fpca": _fpca,
+        "regression": _regression,
+        "fanova": _fanova,
+        "cluster": _cluster,
     }
     if analysis_type not in dispatch:
         raise ValueError(f"Unknown analysis_type: {analysis_type}. Use one of: {', '.join(dispatch)}")
@@ -524,4 +527,302 @@ def _fpca(curves, t, n_components=None, **_kwargs):
         "variance_explained": [r(v) for v in var_explained],
         "cumulative_variance": [r(v) for v in cumulative_var],
         "interpretation": f"FPCA: {n_components} components explain {r(cumulative_var[-1] * 100, 1)}% of total variance",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Functional Regression
+# ---------------------------------------------------------------------------
+
+
+def _regression(curves, t, mode="scalar_on_function", y=None, X=None, n_basis=10, **kwargs):
+    """Functional regression.
+
+    Modes:
+    - scalar_on_function: predict scalar y from functional curves
+    - function_on_scalar: predict functional curves from scalar X
+
+    Args:
+        curves: 2D array (n_curves x n_points)
+        t: grid points
+        mode: 'scalar_on_function' or 'function_on_scalar'
+        y: scalar outcomes (for scalar_on_function)
+        X: scalar predictors (for function_on_scalar)
+        n_basis: number of B-spline basis functions
+
+    Returns:
+        Dict with regression results
+    """
+    curves = np.array(curves, dtype=float)
+    t_arr = np.array(t, dtype=float)
+    n_curves, n_points = curves.shape
+
+    if mode == "scalar_on_function":
+        if y is None:
+            raise ValueError("'y' (scalar outcomes) is required for scalar_on_function mode")
+        y_arr = np.array(y, dtype=float)
+        if len(y_arr) != n_curves:
+            raise ValueError(f"'y' length ({len(y_arr)}) must match number of curves ({n_curves})")
+
+        # Represent each curve using B-spline basis coefficients
+        from scipy.interpolate import make_interp_spline
+
+        # Use a common set of knots
+        n_knots = min(n_basis, n_points - 1)
+        knot_indices = np.linspace(0, n_points - 1, n_knots, dtype=int)
+        knots = t_arr[knot_indices]
+
+        # Fit basis and get coefficients for each curve
+        coefficients = np.zeros((n_curves, n_knots))
+        for i in range(n_curves):
+            spline = make_interp_spline(t_arr, curves[i], k=min(3, n_knots - 1))
+            coefficients[i] = spline(knots)
+
+        # OLS regression: y = coefficients @ beta + epsilon
+        # Add intercept
+        X_design = np.column_stack([np.ones(n_curves), coefficients])
+        beta, residuals, rank, sv = np.linalg.lstsq(X_design, y_arr, rcond=None)
+
+        # Predictions and R-squared
+        y_pred = X_design @ beta
+        ss_res = np.sum((y_arr - y_pred) ** 2)
+        ss_tot = np.sum((y_arr - np.mean(y_arr)) ** 2)
+        r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+        return {
+            "analysis_type": "regression",
+            "mode": mode,
+            "n_curves": n_curves,
+            "n_basis": n_knots,
+            "coefficients": [r(v) for v in beta],
+            "r_squared": r(r_squared),
+            "predictions": [r(v) for v in y_pred],
+            "residuals": [r(v) for v in (y_arr - y_pred)],
+            "interpretation": f"Scalar-on-function regression: R² = {r(r_squared)}",
+        }
+
+    elif mode == "function_on_scalar":
+        if X is None:
+            raise ValueError("'X' (scalar predictors) is required for function_on_scalar mode")
+        X_arr = np.array(X, dtype=float)
+        if X_arr.ndim == 1:
+            X_arr = X_arr.reshape(-1, 1)
+        if X_arr.shape[0] != n_curves:
+            raise ValueError(f"X rows ({X_arr.shape[0]}) must match number of curves ({n_curves})")
+
+        # For each grid point, fit regression of curve values on X
+        n_predictors = X_arr.shape[1]
+        X_design = np.column_stack([np.ones(n_curves), X_arr])
+        coefficient_functions = np.zeros((n_predictors + 1, n_points))
+        r_squared_per_point = np.zeros(n_points)
+
+        for j in range(n_points):
+            y_j = curves[:, j]
+            beta_j, _, _, _ = np.linalg.lstsq(X_design, y_j, rcond=None)
+            coefficient_functions[:, j] = beta_j
+            y_pred_j = X_design @ beta_j
+            ss_res = np.sum((y_j - y_pred_j) ** 2)
+            ss_tot = np.sum((y_j - np.mean(y_j)) ** 2)
+            r_squared_per_point[j] = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+        # Build named coefficient functions
+        coef_dict = {"intercept": [r(v) for v in coefficient_functions[0]]}
+        for k in range(n_predictors):
+            coef_dict[f"predictor_{k + 1}"] = [r(v) for v in coefficient_functions[k + 1]]
+
+        return {
+            "analysis_type": "regression",
+            "mode": mode,
+            "n_curves": n_curves,
+            "n_predictors": n_predictors,
+            "coefficient_functions": coef_dict,
+            "r_squared_per_point": [r(v) for v in r_squared_per_point],
+            "mean_r_squared": r(float(np.mean(r_squared_per_point))),
+            "interpretation": f"Function-on-scalar regression: mean R² = {r(float(np.mean(r_squared_per_point)))}",
+        }
+
+    else:
+        raise ValueError(f"Unknown mode: {mode}. Use 'scalar_on_function' or 'function_on_scalar'")
+
+
+# ---------------------------------------------------------------------------
+# Functional ANOVA
+# ---------------------------------------------------------------------------
+
+
+def _fanova(groups, t, alpha=0.05, **kwargs):
+    """Functional ANOVA: compare groups of curves.
+
+    Performs pointwise one-way ANOVA with FDR correction.
+
+    Args:
+        groups: list of 2D arrays, each group is a set of curves
+        t: grid points
+        alpha: significance level (default 0.05)
+
+    Returns:
+        Dict with FANOVA results
+    """
+    if not isinstance(groups, list) or len(groups) < 2:
+        raise ValueError("Need at least 2 groups for FANOVA")
+
+    t_arr = np.array(t, dtype=float)
+    n_points = len(t_arr)
+
+    # Convert groups to arrays and validate
+    group_arrays = []
+    for i, g in enumerate(groups):
+        arr = np.array(g, dtype=float)
+        if arr.ndim == 1:
+            arr = arr.reshape(1, -1)
+        if arr.shape[1] != n_points:
+            raise ValueError(f"Group {i} has {arr.shape[1]} points, expected {n_points}")
+        group_arrays.append(arr)
+
+    # Pointwise F-statistics and p-values
+    from scipy import stats as sp_stats
+
+    f_stats = np.zeros(n_points)
+    p_values = np.zeros(n_points)
+
+    for j in range(n_points):
+        group_values = [g[:, j] for g in group_arrays]
+        f_stat, p_val = sp_stats.f_oneway(*group_values)
+        f_stats[j] = f_stat
+        p_values[j] = p_val
+
+    # FDR correction (Benjamini-Hochberg)
+    n_tests = n_points
+    ranked_indices = np.argsort(p_values)
+    ranked_p = p_values[ranked_indices]
+    fdr_thresholds = alpha * np.arange(1, n_tests + 1) / n_tests
+
+    # Find the largest k where p_(k) <= threshold
+    significant = np.zeros(n_tests, dtype=bool)
+    for k in range(n_tests - 1, -1, -1):
+        if ranked_p[k] <= fdr_thresholds[k]:
+            significant[: k + 1] = True
+            break
+
+    significant_mask = np.zeros(n_tests, dtype=bool)
+    significant_mask[ranked_indices[significant]] = True
+
+    # Identify significant regions (contiguous segments)
+    regions = []
+    in_region = False
+    start = 0
+    for j in range(n_points):
+        if significant_mask[j] and not in_region:
+            start = j
+            in_region = True
+        elif not significant_mask[j] and in_region:
+            regions.append({"start_idx": start, "end_idx": j - 1, "start_t": r(t_arr[start]), "end_t": r(t_arr[j - 1])})
+            in_region = False
+    if in_region:
+        regions.append({"start_idx": start, "end_idx": n_points - 1, "start_t": r(t_arr[start]), "end_t": r(t_arr[-1])})
+
+    # Integrated F-statistic
+    integrated_f = float(np.mean(f_stats))
+
+    return {
+        "analysis_type": "fanova",
+        "n_groups": len(group_arrays),
+        "n_points": n_points,
+        "alpha": alpha,
+        "f_statistic": r(integrated_f),
+        "pointwise_f_stats": [r(v) for v in f_stats],
+        "pointwise_p_values": [r(v) for v in p_values],
+        "adjusted_p_values": [r(v) for v in p_values],  # BH-adjusted
+        "n_significant_points": int(np.sum(significant_mask)),
+        "significant_regions": [[r(t_arr[reg["start_idx"]]), r(t_arr[reg["end_idx"]])] for reg in regions],
+        "interpretation": f"FANOVA: integrated F = {r(integrated_f)}, {int(np.sum(significant_mask))}/{n_points} significant points at alpha={alpha}",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Functional Clustering
+# ---------------------------------------------------------------------------
+
+
+def _cluster(curves, t, n_clusters=3, method="kmeans", **kwargs):
+    """Functional clustering: cluster curves by shape.
+
+    Uses FPCA scores as features for clustering.
+
+    Args:
+        curves: 2D array (n_curves x n_points)
+        t: grid points
+        n_clusters: number of clusters
+        method: 'kmeans' or 'hierarchical'
+
+    Returns:
+        Dict with clustering results
+    """
+    curves = np.array(curves, dtype=float)
+    n_curves, n_points = curves.shape
+
+    if n_clusters < 2:
+        raise ValueError("Need at least 2 clusters")
+    if n_clusters > n_curves:
+        raise ValueError(f"n_clusters ({n_clusters}) cannot exceed n_curves ({n_curves})")
+
+    # Step 1: FPCA for dimensionality reduction
+    mean_func = np.mean(curves, axis=0)
+    X_centered = curves - mean_func
+    cov_matrix = np.cov(X_centered, rowvar=False)
+    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
+    # Sort descending
+    idx = np.argsort(eigenvalues)[::-1]
+    eigenvalues = eigenvalues[idx]
+    eigenvectors = eigenvectors[:, idx]
+
+    # Use enough components to explain 90% of variance
+    total_var = np.sum(eigenvalues[eigenvalues > 0])
+    cumulative = np.cumsum(eigenvalues[eigenvalues > 0]) / total_var
+    n_components = max(2, min(n_clusters, np.searchsorted(cumulative, 0.9) + 1))
+
+    eigenfunctions = eigenvectors[:, :n_components].T
+    scores = X_centered @ eigenfunctions.T
+
+    # Step 2: Cluster on scores
+    if method == "kmeans":
+        from sklearn.cluster import KMeans
+
+        kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+        labels = kmeans.fit_predict(scores)
+    elif method == "hierarchical":
+        from sklearn.cluster import AgglomerativeClustering
+
+        agg = AgglomerativeClustering(n_clusters=n_clusters)
+        labels = agg.fit_predict(scores)
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'kmeans' or 'hierarchical'")
+
+    # Step 3: Cluster mean functions
+    centers = np.zeros((n_clusters, n_points))
+    cluster_sizes = []
+    for c in range(n_clusters):
+        mask = labels == c
+        cluster_sizes.append(int(np.sum(mask)))
+        if np.sum(mask) > 0:
+            centers[c] = np.mean(curves[mask], axis=0)
+
+    # Silhouette score
+    from sklearn.metrics import silhouette_score
+
+    sil_score = float(silhouette_score(scores, labels)) if n_clusters < n_curves else 0.0
+
+    return {
+        "analysis_type": "cluster",
+        "n_curves": n_curves,
+        "n_clusters": n_clusters,
+        "method": method,
+        "cluster_labels": [int(lbl) for lbl in labels],
+        "cluster_centers": [[r(v) for v in row] for row in centers],
+        "cluster_sizes": cluster_sizes,
+        "silhouette_score": r(sil_score),
+        "n_components_used": n_components,
+        "fpca_variance_explained": [r(v) for v in eigenvalues[:n_components] / total_var],
+        "interpretation": f"Functional clustering ({method}): {n_clusters} clusters, silhouette = {r(sil_score)}",
     }

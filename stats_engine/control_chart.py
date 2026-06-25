@@ -23,12 +23,13 @@ def control_chart(
     h=None,
     alpha=None,
     fir=False,
+    sigma=None,
 ):
     """Generate control chart data.
 
     Args:
         chart_type: 'xbar', 'r', 'imr', 'p', 'np', 'c', 'u', 'ewma', 'cusum',
-                     'hotelling_t2', 'ewma_mv'
+                     'hotelling_t2', 'ewma_mv', 'zmr'
         values: Data values (1D array for most charts, 2D for hotelling_t2/ewma_mv)
         subgroup_size: Subgroup size for xbar/r charts
         sample_size: Sample size for p/np/u charts
@@ -99,6 +100,8 @@ def control_chart(
         result = _ewma_chart(values, target, lambda_ if lambda_ is not None else 0.2)
     elif chart_type == "cusum":
         result = _cusum_chart(values, target, k if k is not None else 0.5, h if h is not None else 5, fir)
+    elif chart_type == "zmr":
+        result = _zmr_chart(values, target, sigma if sigma is not None else float(np.std(values, ddof=1)))
     else:
         raise ValueError(f"Unknown chart type: {chart_type}")
 
@@ -649,4 +652,74 @@ def _ewma_mv_chart(data, lambda_, alpha):
                 else f"Process has {len(out_of_control)} out-of-control point(s)"
             ),
         },
+    }
+
+
+def _zmr_chart(values, target=None, sigma=None):
+    """Z-MR (Short-run) control chart.
+
+    Standardizes values by target and sigma, then applies IMR logic.
+
+    Args:
+        values: Data values
+        target: Target value (default: mean)
+        sigma: Historical standard deviation (default: estimated from data)
+
+    Returns:
+        Dict with Z-MR chart data
+    """
+    n = len(values)
+    if target is None:
+        target = float(np.mean(values))
+    if sigma is None:
+        sigma = float(np.std(values, ddof=1))
+    if sigma < 1e-10:
+        raise ValueError("sigma must be positive (data has zero variance)")
+
+    # Standardize: Z_i = (x_i - target) / sigma
+    z_values = (values - target) / sigma
+
+    # MR chart: moving range of Z values
+    mr_values = np.abs(np.diff(z_values))
+    mr_mean = float(np.mean(mr_values)) if len(mr_values) > 0 else 0.0
+    mr_ucl = 3.267 * mr_mean  # D4 for n=2
+
+    # Z chart: control limits at +/-3
+    ucl = 3.0
+    lcl = -3.0
+    center = 0.0
+
+    # Detect out-of-control points
+    z_out = [int(i) for i in range(n) if z_values[i] > ucl or z_values[i] < lcl]
+    mr_out = [int(i) for i in range(len(mr_values)) if mr_values[i] > mr_ucl]
+
+    stable = len(z_out) == 0 and len(mr_out) == 0
+
+    return {
+        "chart_type": "zmr",
+        "target": r(target),
+        "sigma": r(sigma),
+        "z_values": [r(v) for v in z_values],
+        "center": r(center),
+        "ucl": r(ucl),
+        "lcl": r(lcl),
+        "chart": {
+            "out_of_control_points": z_out,
+            "n_out_of_control": len(z_out),
+        },
+        "mr_chart": {
+            "values": [r(v) for v in mr_values],
+            "center": r(mr_mean),
+            "ucl": r(mr_ucl),
+            "out_of_control_points": mr_out,
+        },
+        "summary": {
+            "stable": stable,
+            "message": (
+                "Process is in statistical control"
+                if stable
+                else f"Process has {len(z_out) + len(mr_out)} out-of-control point(s)"
+            ),
+        },
+        "interpretation": f"Z-MR chart: target={r(target)}, sigma={r(sigma)}, {len(z_out)} Z-chart OOC points, {len(mr_out)} MR-chart OOC points",
     }
