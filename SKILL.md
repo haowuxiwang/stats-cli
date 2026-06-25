@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis for manufacturing/quality data. SPC: control charts, process capability (Cp/Cpk), trend. Hypothesis: t-test, ANOVA, chi-square, nonparametric, equivalence, power. Regression: linear, polynomial, logistic, nonlinear, correlation. Quality: MSA/Gage R&R, reliability (Weibull), DOE. Multivariate: PCA, cluster, discriminant. Time Series: ARIMA, exponential smoothing. Data: cleaning, transform (Box-Cox), outlier detection, workflow. NOT for: text, image, streaming, non-numeric data. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, SPC, 质量分析, 假设检验, MSA, 可靠性, 时间序列, Cp, Cpk, 正态性, 异常值, Box-Cox, Weibull, PCA, DOE, 实验设计, 测量系统分析, 功效分析, 样本量, 卡方检验."
+description: "Use when user needs statistical analysis for manufacturing/quality data. SPC: control charts, process capability (Cp/Cpk), trend. Hypothesis: t-test, ANOVA, chi-square, nonparametric, equivalence, power. Regression: linear, polynomial, logistic, nonlinear, correlation. Quality: MSA/Gage R&R, reliability (Weibull), DOE. Multivariate: PCA, cluster, discriminant. Time Series: ARIMA, exponential smoothing. Bayesian: estimation, Bayes Factor, credible intervals. Mining: classification, anomaly detection, association rules. Sensitivity: Monte Carlo, tornado, Sobol indices. Distribution: fitting, goodness-of-fit, selection. Data: cleaning, transform (Box-Cox), outlier detection, workflow. NOT for: text, image, streaming, non-numeric data. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, SPC, 质量分析, 假设检验, MSA, 可靠性, 时间序列, Cp, Cpk, 正态性, 异常值, Box-Cox, Weibull, PCA, DOE, 实验设计, 测量系统分析, 功效分析, 样本量, 卡方检验, 贝叶斯, Bayes Factor, 可信区间, 分布拟合, 正态分布, 蒙特卡洛, 敏感性分析, 龙卷风图, Sobol, 数据挖掘, 分类, 异常检测, 关联规则, Apriori, 决策树, 随机森林."
 ---
 
 # stats-cli-py
@@ -16,7 +16,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
-- [All Commands](#all-commands-33-commands)
+- [All Commands](#all-commands-37-commands)
 - [Output Format](#output-format)
 - [File Support](#file-support)
 - [Dependencies](#dependencies)
@@ -451,7 +451,7 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 
 ---
 
-## All Commands (33 commands)
+## All Commands (37 commands)
 
 ### Data Exploration
 ```python
@@ -590,6 +590,49 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "advanced", "params": {"analysis_type": "mcnemar", "observed": [[10, 5], [15, 20]]}}
 {"command": "advanced", "params": {"analysis_type": "cochran_q", "data": [[1,0,1,1,0], [1,1,0,1,1], [0,1,1,0,1]]}}
 {"command": "advanced", "params": {"analysis_type": "mixed_effects", "groups": [[10,11,10],[11,12,11],[10,11,10]], "group_ids": ["A","B","A"]}}
+```
+
+### Distribution Analysis
+```python
+# Fit a distribution to data
+{"command": "distribution", "params": {"analysis_type": "fit", "values": [1.2, 1.5, 1.3, 1.8, 2.1, 1.9], "dist_name": "normal"}}
+# Goodness-of-fit test
+{"command": "distribution", "params": {"analysis_type": "gof", "values": [1.2, 1.5, 1.3, 1.8, 2.1, 1.9], "dist_name": "normal"}}
+# Compare multiple distributions, rank by AIC/BIC
+{"command": "distribution", "params": {"analysis_type": "select", "values": [1.2, 1.5, 1.3, 1.8, 2.1, 1.9]}}
+# Supported distributions: normal, lognormal, exponential, gamma, weibull, beta, logistic, gumbel
+```
+
+### Bayesian Statistics
+```python
+# Bayesian estimation with conjugate normal prior
+{"command": "bayesian", "params": {"analysis_type": "estimate", "values": [10.2, 10.5, 10.3, 10.1, 10.4]}}
+# Bayesian t-test with Bayes Factor
+{"command": "bayesian", "params": {"analysis_type": "ttest", "values": [10.2, 10.5, 10.3], "values2": [11.3, 11.5, 11.1]}}
+# Bayesian proportion test (Beta-Binomial)
+{"command": "bayesian", "params": {"analysis_type": "proportion", "successes": 7, "n": 10}}
+# Bayesian one-way ANOVA
+{"command": "bayesian", "params": {"analysis_type": "anova", "groups": [[10, 11, 12], [20, 21, 22], [30, 31, 32]]}}
+```
+
+### Data Mining
+```python
+# Classification: decision_tree or random_forest
+{"command": "mining", "params": {"analysis_type": "classify", "features": [[1,2],[3,4],[5,6],[7,8]], "labels": [0,0,1,1], "method": "random_forest"}}
+# Anomaly detection: isolation_forest, lof, zscore, ensemble
+{"command": "mining", "params": {"analysis_type": "anomaly", "values": [10, 11, 10, 12, 100, 11, 10, 500]}}
+# Association rules (Apriori)
+{"command": "mining", "params": {"analysis_type": "associate", "transactions": [["bread","milk"],["bread","diapers","beer"],["milk","diapers","beer"]], "min_support": 0.3, "min_confidence": 0.5}}
+```
+
+### Sensitivity Analysis
+```python
+# Monte Carlo simulation
+{"command": "sensitivity", "params": {"analysis_type": "monte_carlo", "inputs": {"x1": {"dist": "normal", "params": {"mean": 10, "std": 1}}, "x2": {"dist": "uniform", "params": {"low": 5, "high": 15}}}, "formula": "x1 * x2", "n_simulations": 10000}}
+# Tornado diagram (one-at-a-time sensitivity)
+{"command": "sensitivity", "params": {"analysis_type": "tornado", "inputs": {"x1": {"dist": "normal", "params": {"mean": 10, "std": 1}}, "x2": {"dist": "normal", "params": {"mean": 5, "std": 0.5}}}, "formula": "x1 * x2"}}
+# Sobol sensitivity indices
+{"command": "sensitivity", "params": {"analysis_type": "sobol", "inputs": {"x1": {"dist": "uniform", "params": {"low": 0, "high": 1}}, "x2": {"dist": "uniform", "params": {"low": 0, "high": 1}}}, "formula": "x1 + x2", "n_simulations": 5000}}
 ```
 
 ### Data Processing

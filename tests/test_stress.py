@@ -355,3 +355,145 @@ class TestHandlerStress:
         assert r1["status"] == "success"
         assert r2["status"] == "success"
         assert r1["data"]["sample_size"] == r2["data"]["sample_size"]
+
+    def test_all_new_commands_discoverable(self):
+        """New commands should be listed in discover."""
+        result = handler({"command": "discover", "params": {}})
+        assert result["status"] == "success"
+        commands = result["data"]["commands"]
+        for cmd in ["distribution", "bayesian", "mining", "sensitivity"]:
+            assert cmd in commands, f"Missing new command: {cmd}"
+
+
+# ============================================================================
+# New Module Stress Tests
+# ============================================================================
+
+
+class TestNewModulesStress:
+    """Stress tests for distribution, bayesian, mining, sensitivity."""
+
+    def test_distribution_large_data(self):
+        """Distribution select with 10000 values."""
+        from stats_engine.distribution import distribution
+
+        np.random.seed(42)
+        values = np.random.normal(10, 2, 10000).tolist()
+        result = distribution("select", values=values)
+        assert result["n"] == 10000
+        assert result["best_distribution"] is not None
+
+    def test_bayesian_many_groups(self):
+        """Bayesian ANOVA with 20 groups."""
+        from stats_engine.bayesian import bayesian
+
+        np.random.seed(42)
+        groups = [np.random.normal(10 + i * 0.5, 1, 10).tolist() for i in range(20)]
+        result = bayesian("anova", groups=groups)
+        assert result["n_groups"] == 20
+        assert result["n_total"] == 200
+
+    def test_mining_large_classification(self):
+        """Random forest with 500 samples x 10 features."""
+        from stats_engine.mining import mining
+
+        np.random.seed(42)
+        features = np.random.randn(500, 10).tolist()
+        labels = [0] * 250 + [1] * 250
+        result = mining("classify", features=features, labels=labels)
+        assert result["n_samples"] == 500
+        assert result["n_features"] == 10
+
+    def test_sensitivity_many_inputs(self):
+        """Monte Carlo with 10 input variables."""
+        from stats_engine.sensitivity import sensitivity
+
+        inputs = {f"x{i}": {"dist": "normal", "params": {"mean": i, "std": 1}} for i in range(10)}
+        formula = " + ".join(f"x{i}" for i in range(10))
+        result = sensitivity("monte_carlo", inputs=inputs, formula=formula, n_simulations=1000)
+        assert result["n_valid"] == 1000
+
+    def test_distribution_edge_values(self):
+        """Distribution fit with extreme values."""
+        from stats_engine.distribution import distribution
+
+        np.random.seed(42)
+        values = [1e-10, 1e-5, 0.001, 0.1, 1.0, 10.0, 1e5, 1e10]
+        result = distribution("fit", values=values, dist_name="lognormal")
+        assert "parameters" in result
+
+    def test_bayesian_extreme_proportion(self):
+        """Proportion test with 0 and n successes."""
+        from stats_engine.bayesian import bayesian
+
+        r1 = bayesian("proportion", successes=0, n=10)
+        assert r1["successes"] == 0
+        assert r1["posterior_mean"] > 0
+
+        r2 = bayesian("proportion", successes=10, n=10)
+        assert r2["successes"] == 10
+        assert r2["posterior_mean"] < 1
+
+    def test_mining_single_anomaly(self):
+        """Anomaly detection with a single extreme outlier."""
+        from stats_engine.mining import mining
+
+        values = [10] * 20 + [1000]
+        result = mining("anomaly", values=values, method="isolation_forest")
+        assert result["n_anomalies"] >= 1
+
+    def test_sensitivity_constant_input(self):
+        """Monte Carlo with constant input should still work."""
+        from stats_engine.sensitivity import sensitivity
+
+        inputs = {"x": {"dist": "constant", "params": {"value": 5}}}
+        result = sensitivity("monte_carlo", inputs=inputs, formula="x", n_simulations=500)
+        assert result["mean"] == 5.0
+        assert result["std"] == 0.0
+
+
+class TestNewModulesValidation:
+    """Input validation tests for new modules."""
+
+    def test_distribution_bad_dist(self):
+        from stats_engine.distribution import distribution
+
+        with pytest.raises(ValueError, match="Unknown distribution"):
+            distribution("fit", values=[1, 2, 3, 4, 5], dist_name="unknown")
+
+    def test_distribution_bad_analysis_type(self):
+        from stats_engine.distribution import distribution
+
+        with pytest.raises(ValueError, match="Unknown analysis_type"):
+            distribution("unknown", values=[1, 2, 3, 4, 5])
+
+    def test_bayesian_bad_analysis_type(self):
+        from stats_engine.bayesian import bayesian
+
+        with pytest.raises(ValueError, match="Unknown analysis_type"):
+            bayesian("unknown", values=[1, 2, 3])
+
+    def test_mining_bad_analysis_type(self):
+        from stats_engine.mining import mining
+
+        with pytest.raises(ValueError, match="Unknown analysis_type"):
+            mining("unknown")
+
+    def test_sensitivity_bad_analysis_type(self):
+        from stats_engine.sensitivity import sensitivity
+
+        with pytest.raises(ValueError, match="Unknown analysis_type"):
+            sensitivity("unknown")
+
+    def test_mining_classify_too_few_samples(self):
+        from stats_engine.mining import mining
+
+        with pytest.raises(ValueError, match="at least 10"):
+            mining("classify", features=[[1], [2]], labels=[0, 1])
+
+    def test_sensitivity_bad_distribution(self):
+        from stats_engine.sensitivity import sensitivity
+
+        with pytest.raises(ValueError, match="Unknown distribution"):
+            inputs = {"x": {"dist": "unknown", "params": {}}}
+            sensitivity("monte_carlo", inputs=inputs, formula="x")

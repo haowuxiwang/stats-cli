@@ -8,7 +8,7 @@ from stats_engine.discover import COMMANDS
 class TestCommandsStructure:
     def test_commands_is_dict(self):
         assert isinstance(COMMANDS, dict)
-        assert len(COMMANDS) >= 26
+        assert len(COMMANDS) >= 30
 
     def test_all_commands_have_required_fields(self):
         required_fields = {"description", "category", "input", "output_fields", "example"}
@@ -72,6 +72,10 @@ class TestRequiredCommands:
         "discover",
         "advanced",
         "run",
+        "distribution",
+        "bayesian",
+        "mining",
+        "sensitivity",
     ]
 
     def test_all_required_commands_exist(self):
@@ -144,3 +148,10 @@ class TestCategoryCommands:
         assert "clean" in data
         assert "transform" in data
         assert "discover" in data
+
+    def test_advanced_commands(self):
+        advanced = [k for k, v in COMMANDS.items() if v["category"] == "advanced"]
+        assert "distribution" in advanced
+        assert "bayesian" in advanced
+        assert "mining" in advanced
+        assert "sensitivity" in advanced

@@ -169,10 +169,14 @@ COMMAND_REGISTRY = {
     "workflow_template": ("stats_engine.workflow", "workflow_template"),
     "export_excel": ("stats_engine.report", "export_excel"),
     "export_pdf": ("stats_engine.report", "export_pdf"),
+    "distribution": ("stats_engine.distribution", "distribution"),
+    "bayesian": ("stats_engine.bayesian", "bayesian"),
+    "mining": ("stats_engine.mining", "mining"),
+    "sensitivity": ("stats_engine.sensitivity", "sensitivity"),
 }
 
 # Commands that don't need file-based data loading
-NO_DATA_COMMANDS = {"discover", "explore", "power", "multivariate", "run"}
+NO_DATA_COMMANDS = {"discover", "explore", "power", "multivariate", "run", "mining", "sensitivity"}
 
 # Commands that need two-column file loading (x and y)
 TWO_COLUMN_COMMANDS = {"correlation", "regression"}

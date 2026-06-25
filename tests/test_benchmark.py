@@ -2287,3 +2287,123 @@ class TestPerformanceBenchmark:
             handler({"command": "correlation", "params": {"x": x, "y": y}})
         elapsed = (time.time() - start) / 10
         assert elapsed < 0.01, f"correlation took {elapsed * 1000:.0f}ms, expected <10ms"
+
+    def test_distribution_select_speed(self):
+        """Distribution select should handle 1000 values in <2000ms."""
+        import time
+
+        np.random.seed(42)
+        values = np.random.normal(10, 2, 1000).tolist()
+        start = time.time()
+        for _ in range(3):
+            handler({"command": "distribution", "params": {"analysis_type": "select", "values": values}})
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 2.0, f"distribution select took {elapsed * 1000:.0f}ms, expected <2000ms"
+
+    def test_bayesian_ttest_speed(self):
+        """Bayesian ttest should handle 500 pairs in <1000ms."""
+        import time
+
+        np.random.seed(42)
+        values = np.random.normal(10, 2, 500).tolist()
+        values2 = np.random.normal(11, 2, 500).tolist()
+        start = time.time()
+        for _ in range(5):
+            handler({"command": "bayesian", "params": {"analysis_type": "ttest", "values": values, "values2": values2}})
+        elapsed = (time.time() - start) / 5
+        assert elapsed < 1.0, f"bayesian ttest took {elapsed * 1000:.0f}ms, expected <1000ms"
+
+    def test_mining_classify_speed(self):
+        """Mining classify should handle 200x5 in <2000ms."""
+        import time
+
+        np.random.seed(42)
+        features = np.random.randn(200, 5).tolist()
+        labels = [0] * 100 + [1] * 100
+        start = time.time()
+        for _ in range(3):
+            handler({"command": "mining", "params": {"analysis_type": "classify", "features": features, "labels": labels}})
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 2.0, f"mining classify took {elapsed * 1000:.0f}ms, expected <2000ms"
+
+    def test_sensitivity_monte_carlo_speed(self):
+        """Monte Carlo 10000 simulations should complete in <3000ms."""
+        import time
+
+        inputs = {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}}
+        start = time.time()
+        for _ in range(3):
+            handler({
+                "command": "sensitivity",
+                "params": {"analysis_type": "monte_carlo", "inputs": inputs, "formula": "x * 2", "n_simulations": 10000},
+            })
+        elapsed = (time.time() - start) / 3
+        assert elapsed < 3.0, f"monte carlo took {elapsed * 1000:.0f}ms, expected <3000ms"
+
+
+# ============================================================================
+# New Module Numerical Accuracy Benchmarks
+# ============================================================================
+
+
+class TestNewModulesBenchmark:
+    """Numerical accuracy benchmarks for new modules."""
+
+    def test_distribution_normal_data_selects_normal(self):
+        """Normal data should select normal distribution as best fit."""
+        from stats_engine.distribution import distribution
+
+        np.random.seed(42)
+        values = np.random.normal(10, 2, 200).tolist()
+        result = distribution("select", values=values)
+        assert result["best_distribution"] == "normal"
+
+    def test_distribution_exponential_fit_params(self):
+        """Exponential data fitted params should be close to true values."""
+        from stats_engine.distribution import distribution
+
+        np.random.seed(42)
+        values = np.random.exponential(5, 500).tolist()
+        result = distribution("fit", values=values, dist_name="exponential")
+        # scale should be close to 5
+        assert 4.0 < result["parameters"]["scale"] < 6.0
+
+    def test_bayesian_estimate_posterior_near_sample_mean(self):
+        """Posterior mean should be close to sample mean with weak prior."""
+        from stats_engine.bayesian import bayesian
+
+        np.random.seed(42)
+        values = np.random.normal(10, 2, 50).tolist()
+        result = bayesian("estimate", values=values, prior_mean=0, prior_std=1000)
+        # With very weak prior, posterior should be near sample mean
+        assert abs(result["posterior_mean"] - np.mean(values)) < 0.1
+
+    def test_bayesian_ttest_large_effect_bf(self):
+        """Large effect size should give BF10 > 10."""
+        from stats_engine.bayesian import bayesian
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 1, 50).tolist()
+        g2 = np.random.normal(20, 1, 50).tolist()
+        result = bayesian("ttest", values=g1, values2=g2)
+        assert result["bayes_factor_10"] > 10
+
+    def test_sensitivity_sobol_additive_model(self):
+        """Additive model y=x1+x2 should have S1 sum close to 1."""
+        from stats_engine.sensitivity import sensitivity
+
+        inputs = {
+            "x1": {"dist": "uniform", "params": {"low": 0, "high": 1}},
+            "x2": {"dist": "uniform", "params": {"low": 0, "high": 1}},
+        }
+        result = sensitivity("sobol", inputs=inputs, formula="x1 + x2", n_simulations=5000)
+        s1_sum = sum(result["first_order"].values())
+        assert 0.85 < s1_sum < 1.15
+
+    def test_sensitivity_monte_carlo_known_mean(self):
+        """Monte Carlo of x~N(10,1) mean should be close to 10."""
+        from stats_engine.sensitivity import sensitivity
+
+        inputs = {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}}
+        result = sensitivity("monte_carlo", inputs=inputs, formula="x", n_simulations=10000)
+        assert 9.8 < result["mean"] < 10.2

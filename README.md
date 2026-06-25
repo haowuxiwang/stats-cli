@@ -4,9 +4,9 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.2.2
-**Commands**: 33
-**Test Coverage**: 96%
+**Version**: 1.3.0
+**Commands**: 37
+**Test Coverage**: 94%
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 ---
@@ -54,6 +54,18 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 
 ### DOE
 - **doe**: Full factorial, fractional factorial, response surface, Taguchi (supports int, list, and low/high factor formats)
+
+### Distribution Analysis
+- **distribution**: MLE/MOM distribution fitting, goodness-of-fit tests (KS, Anderson-Darling, Chi-square), AIC/BIC distribution selection (normal, lognormal, exponential, gamma, weibull, beta, logistic, gumbel)
+
+### Bayesian Statistics
+- **bayesian**: Bayesian estimation with credible intervals, Bayes Factor t-test, Beta-Binomial proportion test, Bayesian ANOVA
+
+### Data Mining
+- **mining**: Classification (decision tree, random forest), anomaly detection (Isolation Forest, LOF, Z-score, ensemble), association rules (Apriori)
+
+### Sensitivity Analysis
+- **sensitivity**: Monte Carlo simulation, tornado diagrams (one-at-a-time), Sobol sensitivity indices (first-order and total)
 
 ### Data Processing
 - **clean**: Drop, impute mean/median, winsorize, clip

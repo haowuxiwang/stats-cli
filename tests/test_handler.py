@@ -109,6 +109,30 @@ JSON_SERIALIZABLE_CASES = [
         "command": "workflow_template",
         "params": {"template_name": "manufacturing", "values": [10, 11, 12], "usl": 12, "lsl": 8},
     },
+    {
+        "command": "distribution",
+        "params": {"analysis_type": "fit", "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+    },
+    {
+        "command": "bayesian",
+        "params": {"analysis_type": "ttest", "values": [10, 11, 12], "values2": [13, 14, 15]},
+    },
+    {
+        "command": "mining",
+        "params": {
+            "analysis_type": "anomaly",
+            "values": [10, 11, 10, 12, 100, 11, 10, 500, 11, 10, 12, 10, 11, 10, 11],
+        },
+    },
+    {
+        "command": "sensitivity",
+        "params": {
+            "analysis_type": "monte_carlo",
+            "inputs": {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}},
+            "formula": "x * 2",
+            "n_simulations": 500,
+        },
+    },
 ]
 
 
