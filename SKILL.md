@@ -158,6 +158,14 @@ Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/i
 | 数据变换 | `transform` | log/sqrt/boxcox/johnson |
 | 不确定用什么 | `recommend` | 描述目标，工具推荐方法 |
 
+**When NOT to use this skill:**
+- Non-numeric data (text analysis, sentiment analysis) → use NLP tools
+- Real-time streaming data (millisecond-level SPC) → use streaming platforms
+- Deep learning / neural network training → use PyTorch/TensorFlow
+- Image/video analysis → use computer vision tools
+- Bayesian deep models (Gaussian processes, variational inference) → use PyMC/Stan
+- Large-scale distributed computing → use Spark/Dask
+
 **Follow this decision tree:**
 
 1. **用户描述模糊时** → 先用 `explore` 查看数据结构
