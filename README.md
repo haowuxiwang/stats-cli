@@ -2,10 +2,10 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.3.1
+**Version**: 1.4.0
 **Commands**: 43
 **Test Coverage**: 98%
-**Tests**: 1697 passed, 0 failed
+**Tests**: 1733 passed, 0 failed
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 [![CI](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml)
@@ -35,7 +35,7 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 - **power**: Sample size and power analysis (t-test, ANOVA, proportion)
 
 ### Regression & Correlation
-- **regression**: Linear, quadratic, polynomial, multiple, logistic, stepwise, **nonlinear** (exponential, power, logarithmic, sigmoid)
+- **regression**: Linear, quadratic, polynomial, multiple, logistic, stepwise, **nonlinear** (exponential, power, logarithmic, sigmoid), **PLS** (Partial Least Squares with VIP scores), **GLM** (Poisson, Gamma, Negative Binomial), **cross-validation** (k-fold for any regression type)
 - **correlation**: Pearson, Spearman, Kendall
 
 ### SPC / Quality Control
@@ -256,8 +256,8 @@ echo '{"command":"descriptive","params":{"file":"measurements.txt","header":0}}'
 | Hypothesis | `multiple_comparison` | Multiple comparison tests |
 | Hypothesis | `equivalence` | TOST equivalence test |
 | Hypothesis | `power` | Power and sample size analysis |
-| Hypothesis | `advanced` | Fisher's exact, McNemar, Cochran's Q, mixed effects |
-| Regression | `regression` | Regression analysis (linear, polynomial, nonlinear) |
+| Hypothesis | `advanced` | Fisher's exact, McNemar, Cochran's Q, mixed effects, bootstrap |
+| Regression | `regression` | Regression analysis (linear, polynomial, nonlinear, PLS, GLM, cross-validate) |
 | Regression | `correlation` | Correlation analysis |
 | SPC | `control_chart` | Control charts (X-bar, R, I-MR, etc.) |
 | SPC | `capability` | Process capability (Cp, Cpk, etc.) |
@@ -421,7 +421,7 @@ python -m pytest tests/test_nist_univariate_all.py tests/test_nist_nonlinear_all
 
 ## Testing
 
-1707 tests covering all commands, edge cases, and cross-validation.
+1733 tests covering all commands, edge cases, and cross-validation.
 
 ```bash
 # Run all tests

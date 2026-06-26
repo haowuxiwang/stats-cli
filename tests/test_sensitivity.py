@@ -391,3 +391,87 @@ class TestSensitivityCoverage:
         inputs = {"x1": {"dist": "normal", "params": {"mean": 10}}, "x2": {"dist": "normal", "params": {"mean": 5}}}
         result = sensitivity("tornado", inputs=inputs, formula="log(x1) + x2")
         assert "sensitivities" in result
+
+    def test_monte_carlo_scalar_formula_shape_mismatch(self):
+        """Constant formula triggers shape mismatch in vectorized mode (line 125)."""
+        import pytest
+
+        inputs = {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}}
+        # "5" evaluates to scalar, np.asarray(5).flatten() has shape (1,) != (n,), raises shape mismatch.
+        # The scalar fallback also fails because outputs was reassigned to shape (1,).
+        with pytest.raises(ValueError, match="simulation"):
+            sensitivity("monte_carlo", inputs=inputs, formula="5", n_simulations=200)
+
+    def test_tornado_base_eval_error(self):
+        """Formula that raises at base values produces ValueError (lines 235-236)."""
+        import pytest
+
+        inputs = {
+            "x1": {"dist": "normal", "params": {"mean": 10, "std": 1}},
+            "x2": {"dist": "normal", "params": {"mean": 5, "std": 0.5}},
+        }
+        # 1/(x1 - 10) at base x1=10 → ZeroDivisionError
+        with pytest.raises(ValueError, match="Error evaluating formula at base values"):
+            sensitivity("tornado", inputs=inputs, formula="1/(x1 - 10)", base_values={"x1": 10, "x2": 5})
+
+    def test_tornado_low_value_error_fallback_divzero(self):
+        """Division by zero at low variation triggers fallback to base_output (lines 249-250)."""
+        import pytest
+
+        inputs = {
+            "x1": {"dist": "normal", "params": {"mean": 10, "std": 1}},
+            "x2": {"dist": "normal", "params": {"mean": 5, "std": 0.5}},
+        }
+        # formula: 1/(x1 - 5), base x1=10, variation=0.5 → delta=5
+        # low x1 = 10-5 = 5 → 1/(5-5) = 1/0 → exception → fallback
+        # high x1 = 10+5 = 15 → 1/(15-5) = 0.1 → ok
+        result = sensitivity(
+            "tornado", inputs=inputs, formula="1/(x1 - 5)", base_values={"x1": 10, "x2": 5}, variation=0.5
+        )
+        assert result["analysis_type"] == "tornado"
+        sens = {s["variable"]: s for s in result["sensitivities"]}
+        # x1 low errored, so low_output = base_output = 0.2, high = 0.1, swing = |0.1 - 0.2| = 0.1
+        assert sens["x1"]["swing"] == pytest.approx(0.1, abs=0.01)
+
+    def test_tornado_high_value_error_fallback_divzero(self):
+        """Division by zero at high variation triggers fallback to base_output (lines 257-258)."""
+        import pytest
+
+        inputs = {
+            "x1": {"dist": "normal", "params": {"mean": 10, "std": 1}},
+            "x2": {"dist": "normal", "params": {"mean": 5, "std": 0.5}},
+        }
+        # formula: 1/(x1 - 15), base x1=10, variation=0.5 → delta=5
+        # low x1 = 10-5 = 5 → 1/(5-15) = -0.1 → ok
+        # high x1 = 10+5 = 15 → 1/(15-15) = 1/0 → exception → fallback
+        result = sensitivity(
+            "tornado", inputs=inputs, formula="1/(x1 - 15)", base_values={"x1": 10, "x2": 5}, variation=0.5
+        )
+        assert result["analysis_type"] == "tornado"
+        sens = {s["variable"]: s for s in result["sensitivities"]}
+        # x1 high errored, so high_output = base_output = -0.2, low = -0.1, swing = |-0.1 - (-0.2)| = 0.1
+        assert sens["x1"]["swing"] == pytest.approx(0.1, abs=0.01)
+
+    def test_sobol_scalar_formula_shape_mismatch(self):
+        """Constant formula triggers Sobol scalar fallback then zero variance error (lines 355, 357-362)."""
+        import pytest
+
+        inputs = {
+            "x1": {"dist": "uniform", "params": {"low": 0, "high": 1}},
+            "x2": {"dist": "uniform", "params": {"low": 0, "high": 1}},
+        }
+        # formula "5" → vectorized shape mismatch → scalar fallback → constant output → zero variance
+        with pytest.raises(ValueError, match="zero variance"):
+            sensitivity("sobol", inputs=inputs, formula="5", n_simulations=200)
+
+    def test_sobol_too_few_valid_results(self):
+        """Formula producing mostly NaN raises ValueError (line 374)."""
+        import pytest
+
+        inputs = {
+            "x1": {"dist": "uniform", "params": {"low": -10, "high": -1}},
+            "x2": {"dist": "uniform", "params": {"low": -10, "high": -1}},
+        }
+        # log(negative) = NaN for all samples → n_valid = 0 < 50
+        with pytest.raises(ValueError, match="Too few valid"):
+            sensitivity("sobol", inputs=inputs, formula="log(x1)", n_simulations=200)

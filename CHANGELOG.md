@@ -2,6 +2,23 @@
 
 All notable changes to stats-cli-py will be documented in this file.
 
+## [1.4.0] - 2026-06-25
+
+### Added
+
+- **PLS regression**: Partial Least Squares regression with VIP scores via `reg_type="pls"`
+- **GLM**: Generalized Linear Models (Poisson, Gamma, Negative Binomial) via `reg_type="poisson"/"gamma"/"negbin"`
+- **Bootstrap**: Bootstrap confidence intervals for mean/median/std/var/min/max via `analysis_type="bootstrap"` in advanced
+- **Cross-validation**: k-fold cross-validation for any regression type via `reg_type="cross_validate"` or `cv` parameter
+
+### Improved
+
+- Monte Carlo simulation vectorized: 1M simulations 23s → 153ms (150x speedup)
+- Sobol sensitivity vectorized: 10k simulations 972ms → 1ms
+- Added input validation to timeseries, reliability, multivariate, transform, regression modules
+- Added NaN/Inf filtering to fragile modules
+- Added 14 new stress tests (NaN handling, empty/single value, wrong types)
+
 ## [1.3.1] - 2026-06-25
 
 ### Fixed

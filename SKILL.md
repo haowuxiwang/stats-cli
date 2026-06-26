@@ -526,6 +526,11 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 {"command": "regression", "params": {"x": [1,2,3,4,5,6,7,8,9,10], "y": [0.1,0.1,0.2,0.5,0.8,0.9,0.95,0.98,0.99,1.0], "reg_type": "sigmoid"}}
 {"command": "regression", "params": {"x_columns": ["x1", "x2"], "y_column": "y", "reg_type": "multiple", "file": "data.csv"}}
 {"command": "regression", "params": {"x_columns": ["x1", "x2"], "y_column": "y", "reg_type": "stepwise", "file": "data.csv"}}
+{"command": "regression", "params": {"x_columns": ["x1", "x2"], "y_column": "y", "reg_type": "pls", "file": "data.csv"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 5, 4, 5], "reg_type": "poisson"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 5, 4, 5], "reg_type": "gamma"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 5, 4, 5], "reg_type": "negbin"}}
+{"command": "regression", "params": {"x": [1, 2, 3, 4, 5], "y": [2, 4, 6, 8, 10], "reg_type": "linear", "cv": 5}}
 {"command": "correlation", "params": {"x": [1, 2, 3], "y": [2, 4, 6]}}
 ```
 
@@ -590,6 +595,7 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "advanced", "params": {"analysis_type": "mcnemar", "observed": [[10, 5], [15, 20]]}}
 {"command": "advanced", "params": {"analysis_type": "cochran_q", "data": [[1,0,1,1,0], [1,1,0,1,1], [0,1,1,0,1]]}}
 {"command": "advanced", "params": {"analysis_type": "mixed_effects", "groups": [[10,11,10],[11,12,11],[10,11,10]], "group_ids": ["A","B","A"]}}
+{"command": "advanced", "params": {"analysis_type": "bootstrap", "values": [10.1, 10.2, 10.0, 10.3, 10.1], "statistic": "mean", "n_bootstrap": 10000}}
 ```
 
 ### Distribution Analysis
@@ -804,7 +810,7 @@ All commands return a standard JSON envelope:
 ```json
 {
   "status": "success",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "total": 103.5,
