@@ -641,6 +641,36 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "sensitivity", "params": {"analysis_type": "sobol", "inputs": {"x1": {"dist": "uniform", "params": {"low": 0, "high": 1}}, "x2": {"dist": "uniform", "params": {"low": 0, "high": 1}}}, "formula": "x1 + x2", "n_simulations": 5000}}
 ```
 
+### Acceptance Sampling
+```python
+# Single sampling plan
+{"command": "acceptance_sampling", "params": {"analysis_type": "single_plan", "n": 50, "c": 2, "defect_rate": 0.05}}
+# Double sampling plan
+{"command": "acceptance_sampling", "params": {"analysis_type": "double_plan", "n1": 30, "c1": 1, "d1": 4, "n2": 30, "c2": 3, "defect_rate": 0.05}}
+# Generate OC curve
+{"command": "acceptance_sampling", "params": {"analysis_type": "oc_curve", "n": 50, "c": 2}}
+# Find optimal plan given AQL/LTPD
+{"command": "acceptance_sampling", "params": {"analysis_type": "find_plan", "AQL": 0.01, "LTPD": 0.05, "alpha": 0.05, "beta": 0.10}}
+```
+
+### Functional Data Analysis (FDA)
+```python
+# Basis function representation (B-spline, Fourier, polynomial)
+{"command": "functional", "params": {"analysis_type": "basis", "t": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], "values": [0, 0.3, 0.6, 0.8, 1.0, 0.9, 0.7, 0.5, 0.3, 0.1, 0], "basis_type": "bspline", "n_basis": 5}}
+# Data smoothing (spline, kernel, lowess)
+{"command": "functional", "params": {"analysis_type": "smooth", "t": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], "values": [0.1, 0.35, 0.55, 0.85, 0.95, 1.05, 0.85, 0.55, 0.25, 0.15, -0.05], "method": "spline"}}
+# Derivative estimation
+{"command": "functional", "params": {"analysis_type": "derivative", "t": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], "values": [0, 0.3, 0.6, 0.8, 1.0, 0.9, 0.7, 0.5, 0.3, 0.1, 0], "order": 1}}
+# Functional PCA
+{"command": "functional", "params": {"analysis_type": "fpca", "curves": [[1,2,3,4,5], [2,3,4,5,6], [3,4,5,6,7]], "t": [0, 0.25, 0.5, 0.75, 1.0], "n_components": 2}}
+# Functional regression (scalar-on-function)
+{"command": "functional", "params": {"analysis_type": "regression", "curves": [[1,2,3,4,5], [2,3,4,5,6], [3,4,5,6,7]], "t": [0, 0.25, 0.5, 0.75, 1.0], "y": [10, 20, 30], "mode": "scalar_on_function"}}
+# Functional ANOVA
+{"command": "functional", "params": {"analysis_type": "fanova", "groups": [[[1,2,3,4,5],[2,3,4,5,6]], [[10,11,12,13,14],[11,12,13,14,15]]], "t": [0, 0.25, 0.5, 0.75, 1.0]}}
+# Functional clustering
+{"command": "functional", "params": {"analysis_type": "cluster", "curves": [[1,2,3,4,5],[2,3,4,5,6],[10,11,12,13,14],[11,12,13,14,15]], "t": [0, 0.25, 0.5, 0.75, 1.0], "n_clusters": 2}}
+```
+
 ### Data Processing
 ```python
 {"command": "clean", "params": {"values": [10.1, 10.2, null, 10.3, 10.1], "method": "impute_mean"}}
