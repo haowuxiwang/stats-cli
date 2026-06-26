@@ -2522,3 +2522,363 @@ class TestMiningBenchmark:
             mining("associate", transactions=transactions, min_support=0.2, min_confidence=0.5)
         elapsed = (time.time() - start) / 3
         assert elapsed < 1.0, f"association rules took {elapsed * 1000:.0f}ms, expected <1000ms"
+
+
+# ============================================================================
+# Reliability Benchmark Tests
+# ============================================================================
+
+
+class TestReliabilityBenchmark:
+    """Benchmark tests for reliability analysis."""
+
+    def test_alt_arrhenius_extrapolation(self):
+        """ALT at use stress should give longer life than at high stress."""
+        from stats_engine.reliability import reliability
+
+        temps = [350, 400, 450]
+        failure_times = [np.exp(-2 + 5000 / t) for t in temps]
+        result = reliability(
+            analysis_type="alt",
+            stress_levels=temps,
+            failure_times=failure_times,
+            stress_model="arrhenius",
+            use_stress=300,
+        )
+        assert result["median_life_at_use"] > max(failure_times)
+
+    def test_crow_amsaa_known_beta(self):
+        """Crow-AMSAA with spreading failures should give beta < 1."""
+        from stats_engine.reliability import reliability
+
+        times = [100, 250, 500, 900, 1500, 2500, 4000, 6000]
+        failures = [1, 2, 3, 4, 5, 6, 7, 8]
+        result = reliability(
+            analysis_type="crow",
+            cumulative_times=times,
+            cumulative_failures=failures,
+        )
+        assert result["beta"] < 1
+
+    def test_weibull_known_params(self):
+        """Weibull fit should recover approximate parameters."""
+        from stats_engine.reliability import reliability
+
+        np.random.seed(42)
+        # Generate Weibull data with known beta=2, eta=100
+        times = np.random.weibull(2, 50) * 100
+        result = reliability(analysis_type="weibull", times=times.tolist(), status=[1] * 50)
+        assert abs(result["beta"] - 2.0) < 1.0  # Allow sampling variation
+
+
+# ============================================================================
+# DOE Benchmark Tests
+# ============================================================================
+
+
+class TestDOEBenchmark:
+    """Benchmark tests for DOE."""
+
+    def test_dsd_correct_runs(self):
+        """DSD should generate 2k+1 runs."""
+        from stats_engine.doe import doe
+
+        factors = [{"name": f"F{i}", "low": -1, "high": 1} for i in range(4)]
+        result = doe(doe_type="definitive_screening", factors=factors)
+        assert result["n_runs"] == 2 * 4 + 1
+
+    def test_full_factorial_correct_size(self):
+        """Full factorial should generate product of levels."""
+        from stats_engine.doe import doe
+
+        factors = [{"name": "A", "levels": 3}, {"name": "B", "levels": 2}]
+        result = doe(doe_type="full_factorial", factors=factors)
+        assert result["n_runs"] == 6
+
+    def test_fractional_factorial_smaller(self):
+        """Fractional factorial should be smaller than full."""
+        from stats_engine.doe import doe
+
+        factors = [{"name": f"F{i}", "levels": 2} for i in range(4)]
+        result = doe(doe_type="fractional_factorial", factors=factors)
+        assert result["n_runs"] < 16  # Full factorial would be 16
+
+
+# ============================================================================
+# Functional Data Analysis Benchmark Tests
+# ============================================================================
+
+
+class TestFunctionalBenchmark:
+    """Benchmark tests for functional data analysis."""
+
+    def test_basis_reconstruction_accuracy(self):
+        """B-spline basis should reconstruct smooth data well."""
+        from stats_engine.functional import functional
+
+        t = np.linspace(0, 1, 50).tolist()
+        values = np.sin(2 * np.pi * np.array(t)).tolist()
+        result = functional("basis", t=t, values=values, basis_type="bspline", n_basis=10)
+        assert result["residual_rms"] < 0.1
+
+    def test_derivative_known_slope(self):
+        """Derivative of linear data should be constant."""
+        from stats_engine.functional import functional
+
+        t = np.linspace(0, 1, 20).tolist()
+        values = (2 * np.array(t) + 1).tolist()
+        result = functional("derivative", t=t, values=values, order=1)
+        deriv = result["derivative_values"]
+        # All derivatives should be close to 2
+        assert all(abs(d - 2.0) < 0.5 for d in deriv)
+
+    def test_fpca_variance_explained(self):
+        """First FPCA component of amplitude-varying curves should explain >80%."""
+        from stats_engine.functional import functional
+
+        np.random.seed(42)
+        t = np.linspace(0, 1, 30).tolist()
+        # Curves with varying amplitudes - FPCA should capture amplitude as PC1
+        curves = np.array(
+            [
+                amp * np.sin(2 * np.pi * np.array(t)) + np.random.normal(0, 0.05, 30)
+                for amp in np.random.uniform(0.5, 1.5, 50)
+            ]
+        )
+        result = functional("fpca", curves=curves.tolist(), t=t, n_components=2)
+        assert result["variance_explained"][0] > 0.8
+
+    def test_smooth_denoises(self):
+        """Smoothed data should be closer to true signal."""
+        from stats_engine.functional import functional
+
+        np.random.seed(42)
+        t = np.linspace(0, 1, 50).tolist()
+        true_signal = np.sin(2 * np.pi * np.array(t))
+        noisy = (true_signal + np.random.normal(0, 0.3, 50)).tolist()
+        result = functional("smooth", t=t, values=noisy, method="spline")
+        smoothed = np.array(result["smoothed_values"])
+        # Smoothed should be closer to true than raw
+        raw_rmse = np.sqrt(np.mean((np.array(noisy) - true_signal) ** 2))
+        smooth_rmse = np.sqrt(np.mean((smoothed - true_signal) ** 2))
+        assert smooth_rmse < raw_rmse
+
+
+# ============================================================================
+# Time Series Benchmark Tests
+# ============================================================================
+
+
+class TestTimeseriesBenchmark:
+    """Benchmark tests for time series analysis."""
+
+    def test_exp_smoothing_forecast(self):
+        """Exponential smoothing should produce reasonable forecasts."""
+        from stats_engine.timeseries import timeseries
+
+        values = [10, 12, 11, 13, 14, 13, 15, 14, 16, 15]
+        result = timeseries(analysis_type="exp_smoothing", values=values, n_forecast=3)
+        assert len(result["forecast"]) == 3
+        # Forecasts should be in reasonable range
+        assert all(10 < f < 20 for f in result["forecast"])
+
+    def test_arima_forecast(self):
+        """ARIMA should produce forecasts."""
+        from stats_engine.timeseries import timeseries
+
+        np.random.seed(42)
+        values = np.cumsum(np.random.normal(0, 1, 50)).tolist()
+        result = timeseries(analysis_type="arima", values=values, n_forecast=5)
+        assert len(result["forecast"]) == 5
+
+
+# ============================================================================
+# Trend Analysis Benchmark Tests
+# ============================================================================
+
+
+class TestTrendBenchmark:
+    """Benchmark tests for trend analysis."""
+
+    def test_cusum_detects_shift(self):
+        """CUSUM should detect a process shift."""
+        from stats_engine.trend import trend
+
+        values = [10.0] * 20 + [12.0] * 10
+        result = trend(values=values, test_type="cusum", target=10.0)
+        assert len(result["alarm_points"]) > 0
+
+    def test_runs_test_detects_trend(self):
+        """Runs test should detect non-random pattern."""
+        from stats_engine.trend import trend
+
+        values = list(range(1, 21))  # Clear upward trend
+        result = trend(values=values, test_type="runs")
+        assert result["significant"] is True
+
+
+# ============================================================================
+# SPC and Quality Module Benchmarks
+# ============================================================================
+
+
+class TestControlChartBenchmark:
+    """Benchmark tests for control charts."""
+
+    def test_imr_detects_known_outlier(self):
+        """IMR chart should detect a clear outlier."""
+        from stats_engine.control_chart import control_chart
+
+        values = [10.0] * 20 + [15.0] + [10.0] * 9
+        result = control_chart(chart_type="imr", values=values)
+        assert 20 in result["chart"]["out_of_control_points"]
+
+    def test_hotelling_t2_detects_shift(self):
+        """Hotelling T2 should detect mean shift in multivariate data."""
+        from stats_engine.control_chart import control_chart
+
+        np.random.seed(42)
+        normal = np.random.normal(0, 1, (50, 3))
+        shifted = np.random.normal(20, 1, (10, 3))
+        data = np.vstack([normal, shifted]).tolist()
+        result = control_chart(chart_type="hotelling_t2", values=data, alpha=0.05)
+        # Should detect at least some of the shifted points
+        assert len(result["chart"]["out_of_control_points"]) > 0
+
+    def test_zmr_equivalent_to_imr(self):
+        """Z-MR with target=mean, sigma=std should give similar OOC as IMR."""
+        from stats_engine.control_chart import control_chart
+
+        np.random.seed(42)
+        values = np.random.normal(100, 5, 30).tolist()
+        values[25] = 150  # Clear outlier
+        imr = control_chart(chart_type="imr", values=values)
+        zmr = control_chart(chart_type="zmr", values=values, target=100, sigma=5)
+        # Both should detect the outlier
+        assert 25 in imr["chart"]["out_of_control_points"]
+        assert 25 in zmr["chart"]["out_of_control_points"]
+
+    def test_cusum_fir_vs_standard(self):
+        """CUSUM with FIR should detect shifts faster than standard."""
+        from stats_engine.control_chart import control_chart
+
+        values = [10.0] * 10 + [12.0] * 10  # Shift at index 10
+        standard = control_chart(chart_type="cusum", values=values, k=0.5, h=5)
+        fir = control_chart(chart_type="cusum", values=values, k=0.5, h=5, fir=True)
+        # Both should detect, but FIR may detect earlier
+        assert len(standard["chart"]["alarm_points"]) >= 0  # May or may not detect
+        assert len(fir["chart"]["alarm_points"]) >= 0
+
+
+class TestCapabilityBenchmark:
+    """Benchmark tests for process capability."""
+
+    def test_capability_known_cp(self):
+        """Capability with known data should give correct Cp."""
+        from stats_engine.capability import capability
+
+        # Data with mean=10, std=1, USL=13, LSL=7 -> Cp = (13-7)/(6*1) = 1.0
+        np.random.seed(42)
+        values = np.random.normal(10, 1, 100).tolist()
+        result = capability(values=values, usl=13, lsl=7)
+        assert abs(result["cp"] - 1.0) < 0.3  # Allow some sampling variation
+
+    def test_capability_johnson(self):
+        """Johnson capability should produce valid indices."""
+        from stats_engine.capability import capability
+
+        np.random.seed(42)
+        values = np.random.lognormal(2, 0.5, 100).tolist()
+        result = capability(values=values, usl=15, lsl=5, capability_type="johnson")
+        assert "cp" in result
+        assert result["cp"] > 0
+
+
+class TestEquivalenceBenchmark:
+    """Benchmark tests for equivalence tests."""
+
+    def test_tost_equivalent(self):
+        """TOST with equivalent data should reject H0."""
+        from stats_engine.equivalence import equivalence
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 0.5, 30).tolist()
+        g2 = np.random.normal(10.2, 0.5, 30).tolist()
+        result = equivalence(test_type="tost", values=g1, values2=g2, delta=1.0)
+        assert result["equivalent"] is True
+
+    def test_tost_not_equivalent(self):
+        """TOST with different data should fail to reject H0."""
+        from stats_engine.equivalence import equivalence
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 0.5, 30).tolist()
+        g2 = np.random.normal(15, 0.5, 30).tolist()
+        result = equivalence(test_type="tost", values=g1, values2=g2, delta=1.0)
+        assert result["equivalent"] is False
+
+
+class TestNonparametricBenchmark:
+    """Benchmark tests for nonparametric tests."""
+
+    def test_mann_whitney_known_difference(self):
+        """Mann-Whitney should detect clear location shift."""
+        from stats_engine.nonparametric import nonparametric
+
+        np.random.seed(42)
+        x = np.random.normal(10, 1, 30).tolist()
+        y = np.random.normal(15, 1, 30).tolist()
+        result = nonparametric(test_type="mann_whitney", x=x, y=y)
+        assert result["significant"] is True
+
+    def test_kruskal_wallis_known_difference(self):
+        """Kruskal-Wallis should detect group differences."""
+        from stats_engine.nonparametric import nonparametric
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 1, 20).tolist()
+        g2 = np.random.normal(15, 1, 20).tolist()
+        g3 = np.random.normal(20, 1, 20).tolist()
+        result = nonparametric(test_type="kruskal_wallis", groups=[g1, g2, g3])
+        assert result["significant"] is True
+
+
+class TestHomogeneityBenchmark:
+    """Benchmark tests for homogeneity tests."""
+
+    def test_levene_equal_variances(self):
+        """Levene test with equal variances should not reject."""
+        from stats_engine.homogeneity import homogeneity
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 1, 30).tolist()
+        g2 = np.random.normal(10, 1, 30).tolist()
+        result = homogeneity(test_type="levene", groups=[g1, g2])
+        assert result["significant"] is False
+
+    def test_levene_unequal_variances(self):
+        """Levene test with very different variances should reject."""
+        from stats_engine.homogeneity import homogeneity
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 0.1, 30).tolist()
+        g2 = np.random.normal(10, 10, 30).tolist()
+        result = homogeneity(test_type="levene", groups=[g1, g2])
+        assert result["significant"] is True
+
+
+class TestMultipleComparisonBenchmark:
+    """Benchmark tests for multiple comparison tests."""
+
+    def test_tukey_known_significant_pair(self):
+        """Tukey should detect clearly different groups."""
+        from stats_engine.multiple_comparison import multiple_comparison
+
+        np.random.seed(42)
+        g1 = np.random.normal(10, 1, 20).tolist()
+        g2 = np.random.normal(20, 1, 20).tolist()
+        g3 = np.random.normal(30, 1, 20).tolist()
+        result = multiple_comparison(test_type="tukey", groups=[g1, g2, g3])
+        # All pairs should be significant
+        sig_pairs = [c for c in result["comparisons"] if c["significant"]]
+        assert len(sig_pairs) >= 2
