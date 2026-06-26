@@ -103,7 +103,7 @@ print(json.dumps(result, indent=2))
 
 ### Chart Generation
 
-Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands: `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`, `ttest`, `anova`, `homogeneity`, `multiple_comparison`, `equivalence`, `power`, `multivariate`, `trend`, `outlier`, `reliability`, `gage_rr`, `nonparametric`, `explore`, `doe`.
+Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands (29): `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`, `ttest`, `anova`, `homogeneity`, `multiple_comparison`, `equivalence`, `power`, `multivariate`, `trend`, `outlier`, `reliability`, `gage_rr`, `nonparametric`, `explore`, `doe`, `distribution`, `acceptance_sampling`, `sensitivity`, `advanced`, `bayesian`, `functional`, `mining`.
 
 ```python
 {"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5], "chart": true}}
