@@ -14,7 +14,7 @@ This document describes the validation methodology and results for stats-cli-py.
 
 ### 2. R Cross-Validation
 - **Source**: R statistical computing environment
-- **Coverage**: Core statistical methods (descriptive, t-test, ANOVA, regression, correlation, nonparametric, homogeneity, equivalence, capability, Bayesian, PLS, GLM, Bootstrap, factor analysis, MANOVA)
+- **Coverage**: Core statistical methods (descriptive, t-test, ANOVA, regression, correlation, nonparametric, homogeneity, capability, Bayesian, PLS, GLM, Bootstrap, factor analysis, MANOVA)
 - **Tolerance**: 1e-10 to 1e-2 absolute/relative tolerance
 - **Result**: 23/23 PASS
 
@@ -59,8 +59,8 @@ This document describes the validation methodology and results for stats-cli-py.
 
 | Metric | Value |
 |--------|-------|
-| Total tests | 1766 |
-| Passed | 1766 |
+| Total tests | 1778 |
+| Passed | 1778 |
 | Failed | 0 |
 | Skipped | 10 |
 | Coverage | 97% |

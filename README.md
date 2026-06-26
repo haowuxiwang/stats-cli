@@ -5,8 +5,8 @@ Pure Python statistical analysis CLI/library for manufacturing and quality engin
 **Version**: 1.4.0
 **Commands**: 39
 **Test Coverage**: 98%
-**Tests**: 1733 passed, 0 failed
-**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
+**Tests**: 1778 passed, 0 failed
+**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, matplotlib, fpdf2
 
 [![CI](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -139,6 +139,8 @@ pip install -r requirements.txt
 | numpy | Numerical computation |
 | scikit-learn | PCA, clustering, discriminant |
 | openpyxl | Excel file support |
+| matplotlib | Chart generation |
+| fpdf2 | PDF report export |
 
 ---
 
@@ -322,7 +324,7 @@ All commands return JSON with a standard envelope:
 ```json
 {
   "status": "success",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "n": 5,
@@ -368,12 +370,12 @@ CSV files are auto-detected in this order:
 
 Our calculations are validated against three independent sources:
 
-### 1. NIST Standard Reference Datasets (36 datasets)
+### 1. NIST Standard Reference Datasets (35 datasets)
 - 9 univariate datasets (certified mean/std to 15-digit precision)
-- 27 nonlinear regression datasets (certified coefficients)
+- 26 nonlinear regression datasets (certified coefficients)
 - Tolerances: 1e-4 to 0.1 depending on difficulty level
 
-### 2. R Cross-Validation (17 tests)
+### 2. R Cross-Validation (23 tests)
 All core methods verified against R 4.6.0 (the gold standard for statistical computing).
 Since JMP uses SAS internally, and R/SAS/scipy all implement the same standard algorithms,
 matching R means matching JMP.
@@ -421,7 +423,7 @@ python -m pytest tests/test_nist_univariate_all.py tests/test_nist_nonlinear_all
 
 ## Testing
 
-1733 tests covering all commands, edge cases, and cross-validation.
+1778 tests covering all commands, edge cases, and cross-validation.
 
 ```bash
 # Run all tests
@@ -492,7 +494,7 @@ stats-cli-py/
 │   ├── validators.py       # Input validation
 │   ├── data_loader.py      # File loading (Excel/CSV/JSON)
 │   └── data_cleaner.py     # NaN/Inf cleaning
-├── tests/                  # Pytest test suite (1038 tests)
+├── tests/                  # Pytest test suite (1778 tests)
 ├── .github/workflows/      # CI pipeline
 └── .gitignore
 ```

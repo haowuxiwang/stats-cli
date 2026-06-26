@@ -579,13 +579,15 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
 {"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "Temp", "low": 100, "high": 200}, {"name": "Time", "low": 30, "high": 60}]}}
 {"command": "doe", "params": {"doe_type": "fractional_factorial", "factors": [{"name": "A", "levels": 2}, {"name": "B", "levels": 2}, {"name": "C", "levels": 2}]}}
 {"command": "doe", "params": {"doe_type": "taguchi", "factors": [{"name": "A", "levels": 3}, {"name": "B", "levels": 3}]}}
+{"command": "doe", "params": {"doe_type": "response_surface", "factors": [{"name": "Temp", "low": 100, "high": 200}, {"name": "Time", "low": 30, "high": 60}]}}
+{"command": "doe", "params": {"doe_type": "definitive_screening", "factors": [{"name": "A", "low": -1, "high": 1}, {"name": "B", "low": -1, "high": 1}, {"name": "C", "low": -1, "high": 1}]}}
 ```
 
 ### MSA / Measurement System Analysis
 ```python
-{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [[10,11,10],[11,12,11],[10,11,10]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"], "tolerance": 10.0}}
-{"command": "gage_rr", "params": {"analysis_type": "nested", "measurements": [[10,11,10],[11,12,11],[10,11,10]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"]}}
-{"command": "gage_rr", "params": {"analysis_type": "attribute", "measurements": [[1,0,1],[0,1,0],[1,1,0]], "parts": ["P1","P2","P3"], "operators": ["A","B","A"]}}
+{"command": "gage_rr", "params": {"analysis_type": "crossed", "measurements": [10, 11, 10, 11, 12, 11, 10, 11, 10], "parts": ["P1", "P1", "P1", "P2", "P2", "P2", "P3", "P3", "P3"], "operators": ["A", "B", "A", "A", "B", "A", "A", "B", "A"], "tolerance": 10.0}}
+{"command": "gage_rr", "params": {"analysis_type": "nested", "measurements": [10, 11, 10, 11, 12, 11, 10, 11, 10], "parts": ["P1", "P1", "P1", "P2", "P2", "P2", "P3", "P3", "P3"], "operators": ["A", "B", "A", "A", "B", "A", "A", "B", "A"]}}
+{"command": "gage_rr", "params": {"analysis_type": "attribute", "measurements": [1, 0, 1, 0, 1, 0, 1, 1, 0], "parts": ["P1", "P1", "P1", "P2", "P2", "P2", "P3", "P3", "P3"], "operators": ["A", "B", "A", "A", "B", "A", "A", "B", "A"]}}
 ```
 
 ### Reliability / Survival Analysis
@@ -738,6 +740,7 @@ Factor formats: `levels: int` (number of levels), `levels: list` (explicit value
     "values": [10.2, 10.5, 10.3, 10.1, 10.4],
     "auto_check": true
 }}
+```
 
 **`auto_check` behavior:**
 - When `auto_check: true`, the tool checks statistical assumptions between steps
@@ -970,6 +973,8 @@ All file-based commands accept `file` + optional `column` and `sheet` params:
 | numpy | >= 1.23 | Numerical computation |
 | openpyxl | >= 3.0 | Excel file support (.xlsx) |
 | scikit-learn | >= 1.0 | Clustering, PCA, discriminant analysis |
+| matplotlib | >= 3.5 | Chart generation |
+| fpdf2 | >= 2.8 | PDF report export |
 
 Install all at once:
 ```bash
@@ -991,6 +996,8 @@ When a command returns `status: "error"`, check `error_type` for the cause:
 | `MISSING_DEPENDENCY` | Package not installed | `pip install -r requirements.txt` |
 | `MEMORY_ERROR` | Too much data | Reduce data size |
 | `INTERNAL_ERROR` | Bug | Report issue |
+| `INVALID_INPUT` | Input format wrong (e.g. non-numeric values) | Check input data types |
+| `MISSING_COMMAND` | Unknown command name | Use `discover` to list available commands |
 
 Example error response:
 ```json
