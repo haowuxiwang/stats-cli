@@ -40,6 +40,8 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
 - [All Commands](#all-commands-39-commands)
+- [Output Interpretation Guide](#output-interpretation-guide)
+- [Performance & Scale Guidance](#performance--scale-guidance)
 - [Output Format](#output-format)
 - [File Support](#file-support)
 - [Dependencies](#dependencies)
@@ -479,10 +481,34 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 ### Data Exploration
 ```python
 {"command": "explore", "params": {"file": "data.xlsx"}}
-{"command": "discover"}
-{"command": "discover", "params": {"command_name": "capability"}}
-{"command": "discover", "params": {"category": "spc"}}
 ```
+
+### Using `discover` for Command Exploration
+
+```python
+# List all commands
+{"command": "discover", "params": {}}
+
+# Filter by category
+{"command": "discover", "params": {"category": "spc"}}       # SPC 命令
+{"command": "discover", "params": {"category": "hypothesis"}} # 假设检验
+{"command": "discover", "params": {"category": "regression"}} # 回归分析
+
+# Get detailed parameter schema for a specific command
+{"command": "discover", "params": {"command_name": "regression"}}
+# Returns: params with required/type/desc, output_fields, example
+
+# Example: before calling regression, check what reg_type values are valid
+{"command": "discover", "params": {"command_name": "regression"}}
+# → reg_type desc includes: "linear, quadratic, polynomial, multiple, stepwise,
+#   logistic, exponential, power, logarithmic, sigmoid, lasso, ridge, elastic_net,
+#   robust, pls, poisson, gamma, negbin, cross_validate"
+```
+
+**When to use discover:**
+- Before first call to an unfamiliar command
+- When a command returns PARAM_ERROR — check required params
+- When exploring what analysis options are available for your data
 
 **Key Output Fields (explore):**
 - `sheets`: List of all sheet names in Excel file — use this to let user choose which sheet
@@ -983,6 +1009,100 @@ pip install -r requirements.txt
 
 ---
 
+## Output Interpretation Guide
+
+### Success Response Format
+Every command returns a JSON envelope:
+```json
+{
+  "status": "success",
+  "data": { /* command-specific results */ },
+  "version": "1.4.0"
+}
+```
+
+### Key Output Fields by Category
+
+**Descriptive Statistics:**
+```json
+{
+  "mean": 10.25,        // 中心趋势
+  "std": 0.5,           // 离散程度（越小越稳定）
+  "rsd_percent": 4.88,   // 相对标准偏差（<5% 优秀，5-10% 可接受，>10% 需调查）
+  "ci_95_lower": 10.0,   // 95% 置信区间下限
+  "ci_95_upper": 10.5    // 95% 置信区间上限
+}
+```
+
+**Hypothesis Tests (t-test, ANOVA, etc.):**
+```json
+{
+  "p_value": 0.003,      // p < 0.05 → 显著，p >= 0.05 → 不显著
+  "significant": true,    // 直接告诉你是否显著
+  "cohens_d": 0.8,       // 效应量（0.2 小，0.5 中，0.8 大）
+  "interpretation": "..." // 一句话结论
+}
+```
+
+**Process Capability:**
+```json
+{
+  "cp": 1.33,            // Cp >= 1.33 → 能力充足
+  "cpk": 1.21,           // Cpk >= 1.33 → 过程居中且有能力
+  "rating": "B",         // A(优秀) B(良好) C(勉强) D(不足)
+  "ppm": 6210            // 预期不良品率（越低越好）
+}
+```
+
+**Control Charts:**
+```json
+{
+  "out_of_control_points": [15, 23],  // 失控点索引（空数组 = 过程稳定）
+  "summary": {"stable": false, "message": "Process has 2 out-of-control point(s)"}
+}
+```
+
+**Bayesian Analysis:**
+```json
+{
+  "bayes_factor_10": 150.0,   // BF10 > 10 → 强证据支持 H1
+  "credible_interval": [0.2, 0.8],  // 95% 可信区间
+  "bf_interpretation": "strong evidence for H1"
+}
+```
+
+**Regression:**
+```json
+{
+  "r_squared": 0.95,     // R² 越接近 1 越好
+  "coefficients": {...},  // 回归系数
+  "interpretation": "..." // 一句话结论
+}
+```
+
+---
+
+## Performance & Scale Guidance
+
+| Command | Recommended Max N | Notes |
+|---|---|---|
+| descriptive | 1,000,000 | Linear O(n), very fast |
+| regression | 100,000 | O(n) for simple, O(n²) for polynomial |
+| anova | 10,000 per group | Fast, but very large groups add little value |
+| monte_carlo | 1,000,000 sims | Vectorized, ~150ms for 1M |
+| sobol | 50,000 sims | ~5s for 50k with 3 variables |
+| mining/classify | 100,000 samples | sklearn handles well |
+| functional/fpca | 1,000 curves × 100 points | Matrix operations, O(n·p²) |
+| bayesian | 10,000 | MLE optimization, fast |
+| bootstrap | 100,000 resamples | Vectorized, fast |
+
+**Tips:**
+- For very large datasets (>100k), consider sampling before analysis
+- Monte Carlo and Sobol are vectorized — use high simulation counts freely
+- PCA/FPCA scale with min(n_samples, n_features)²
+
+---
+
 ## Error Handling
 
 When a command returns `status: "error"`, check `error_type` for the cause:
@@ -1007,6 +1127,17 @@ Example error response:
   "message": "Unknown command: xxx. Use 'discover' to list available commands."
 }
 ```
+
+---
+
+## Documentation
+
+Additional documentation available in `docs/`:
+- `user-guide-cn.pdf` — 用户指南（中文）
+- `user-guide-cn-v2.pdf` — 用户指南 v2（中文）
+- `presentation-cn.pdf` — 产品介绍（中文）
+- `skill-architecture.pdf` — 技能架构设计
+- `skill-architecture-cn.pdf` — 技能架构设计（中文）
 
 ---
 
