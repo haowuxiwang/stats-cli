@@ -6,14 +6,15 @@ from scipy import stats as sp_stats
 from utils.output import r
 
 # Supported input distributions for Monte Carlo
+# Each rvs supports optional `size` parameter for batch generation
 INPUT_DISTRIBUTIONS = {
-    "normal": {"rvs": lambda p: np.random.normal(p["mean"], p["std"])},
-    "uniform": {"rvs": lambda p: np.random.uniform(p["low"], p["high"])},
-    "triangular": {"rvs": lambda p: np.random.triangular(p["left"], p["mode"], p["right"])},
-    "lognormal": {"rvs": lambda p: np.random.lognormal(p["mean"], p["std"])},
-    "exponential": {"rvs": lambda p: np.random.exponential(p["scale"])},
-    "beta": {"rvs": lambda p: np.random.beta(p["a"], p["b"])},
-    "constant": {"rvs": lambda p: p["value"]},
+    "normal": {"rvs": lambda p, size=None: np.random.normal(p["mean"], p["std"], size=size)},
+    "uniform": {"rvs": lambda p, size=None: np.random.uniform(p["low"], p["high"], size=size)},
+    "triangular": {"rvs": lambda p, size=None: np.random.triangular(p["left"], p["mode"], p["right"], size=size)},
+    "lognormal": {"rvs": lambda p, size=None: np.random.lognormal(p["mean"], p["std"], size=size)},
+    "exponential": {"rvs": lambda p, size=None: np.random.exponential(p["scale"], size=size)},
+    "beta": {"rvs": lambda p, size=None: np.random.beta(p["a"], p["b"], size=size)},
+    "constant": {"rvs": lambda p, size=None: np.full(size, p["value"]) if size is not None else p["value"]},
 }
 
 
@@ -46,13 +47,13 @@ def _safe_eval(formula, variables):
     Returns:
         Computed result
     """
-    # Only allow math operations
+    # Only allow math operations — use numpy versions for array compatibility
     safe_builtins = {
-        "abs": abs,
-        "min": min,
-        "max": max,
-        "round": round,
-        "pow": pow,
+        "abs": np.abs,
+        "min": np.minimum,
+        "max": np.maximum,
+        "round": np.round,
+        "pow": np.power,
         "sqrt": np.sqrt,
         "log": np.log,
         "exp": np.exp,
@@ -104,24 +105,32 @@ def _monte_carlo(inputs, formula, n_simulations=10000, seed=42, percentiles=None
                 f"Unknown distribution for '{name}': {dist_name}. Supported: {', '.join(INPUT_DISTRIBUTIONS)}"
             )
 
-    # Generate samples
+    # Generate samples (batch generation for speed)
     samples = {}
     for name, spec in inputs.items():
         dist_name = spec["dist"].lower()
         params = spec.get("params", {})
         try:
-            samples[name] = np.array([INPUT_DISTRIBUTIONS[dist_name]["rvs"](params) for _ in range(n_simulations)])
+            samples[name] = np.asarray(INPUT_DISTRIBUTIONS[dist_name]["rvs"](params, size=n_simulations), dtype=float)
         except Exception as e:
             raise ValueError(f"Error sampling '{name}' ({dist_name}): {e}")
 
-    # Evaluate formula for each simulation
+    # Evaluate formula — try vectorized first, fall back to scalar loop
     outputs = np.zeros(n_simulations)
-    for i in range(n_simulations):
-        variables = {name: samples[name][i] for name in samples}
-        try:
-            outputs[i] = _safe_eval(formula, variables)
-        except Exception as e:
-            raise ValueError(f"Error evaluating formula at simulation {i}: {e}")
+    try:
+        vectorized_vars = {name: samples[name] for name in samples}
+        outputs = _safe_eval(formula, vectorized_vars)
+        outputs = np.asarray(outputs, dtype=float).flatten()
+        if outputs.shape != (n_simulations,):
+            raise ValueError("Shape mismatch")
+    except Exception:
+        # Fallback: scalar evaluation (supports formulas with non-vectorizable functions)
+        for i in range(n_simulations):
+            variables = {name: samples[name][i] for name in samples}
+            try:
+                outputs[i] = _safe_eval(formula, variables)
+            except Exception as e:
+                raise ValueError(f"Error evaluating formula at simulation {i}: {e}")
 
     # Filter out NaN/Inf
     valid = outputs[np.isfinite(outputs)]
@@ -323,11 +332,11 @@ def _sobol(inputs, formula, n_simulations=10000, seed=42, **kwargs):
         if dist_name not in INPUT_DISTRIBUTIONS:
             raise ValueError(f"Unknown distribution for '{name}': {dist_name}")
 
-    # Generate sample matrices
+    # Generate sample matrices (batch generation)
     def _generate_samples(spec, size):
         dist_name = spec["dist"].lower()
         params = spec.get("params", {})
-        return np.array([INPUT_DISTRIBUTIONS[dist_name]["rvs"](params) for _ in range(size)])
+        return np.asarray(INPUT_DISTRIBUTIONS[dist_name]["rvs"](params, size=size), dtype=float)
 
     # Create two independent sample matrices A and B
     A = np.zeros((n, d))
@@ -336,13 +345,21 @@ def _sobol(inputs, formula, n_simulations=10000, seed=42, **kwargs):
         A[:, i] = _generate_samples(inputs[name], n)
         B[:, i] = _generate_samples(inputs[name], n)
 
-    # Evaluate f(A) and f(B)
+    # Evaluate f(A) and f(B) — vectorized with scalar fallback
     def _eval_matrix(matrix):
-        results = np.zeros(n)
-        for j in range(n):
-            variables = {var_names[k]: matrix[j, k] for k in range(d)}
-            results[j] = _safe_eval(formula, variables)
-        return results
+        try:
+            vectorized_vars = {var_names[k]: matrix[:, k] for k in range(d)}
+            results = _safe_eval(formula, vectorized_vars)
+            results = np.asarray(results, dtype=float).flatten()
+            if results.shape != (n,):
+                raise ValueError("Shape mismatch")
+            return results
+        except Exception:
+            results = np.zeros(n)
+            for j in range(n):
+                variables = {var_names[k]: matrix[j, k] for k in range(d)}
+                results[j] = _safe_eval(formula, variables)
+            return results
 
     fA = _eval_matrix(A)
     fB = _eval_matrix(B)

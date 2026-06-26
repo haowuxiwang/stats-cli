@@ -16,7 +16,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
-- [All Commands](#all-commands-37-commands)
+- [All Commands](#all-commands-43-commands)
 - [Output Format](#output-format)
 - [File Support](#file-support)
 - [Dependencies](#dependencies)
@@ -451,7 +451,7 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 
 ---
 
-## All Commands (37 commands)
+## All Commands (43 commands)
 
 ### Data Exploration
 ```python
@@ -804,7 +804,7 @@ All commands return a standard JSON envelope:
 ```json
 {
   "status": "success",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "total": 103.5,

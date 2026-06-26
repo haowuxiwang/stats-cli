@@ -3,9 +3,9 @@
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
 **Version**: 1.3.0
-**Commands**: 37
+**Commands**: 43
 **Test Coverage**: 98%
-**Tests**: 1466 passed, 0 failed
+**Tests**: 1697 passed, 0 failed
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
 
 [![CI](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml)
@@ -276,6 +276,12 @@ echo '{"command":"descriptive","params":{"file":"measurements.txt","header":0}}'
 | Workflow | `workflow` | Multi-step analysis with assumption checking |
 | Workflow | `workflow_template` | Predefined workflow templates |
 | Workflow | `check_assumptions` | Verify statistical assumptions |
+| Distribution | `distribution` | Distribution fitting (MLE/MOM), goodness-of-fit, AIC/BIC selection |
+| Bayesian | `bayesian` | Bayesian estimation, t-test (BF), proportion, ANOVA |
+| Mining | `mining` | Classification, anomaly detection, association rules |
+| Sensitivity | `sensitivity` | Monte Carlo, tornado, Sobol indices |
+| Functional | `functional` | FDA basis, smooth, derivative, FPCA, regression, FANOVA, cluster |
+| Acceptance | `acceptance_sampling` | Single/double plans, OC/AOQ/ATI curves |
 | Workflow | `recommend` | Get recommended statistical tests |
 
 ---
@@ -316,7 +322,7 @@ All commands return JSON with a standard envelope:
 ```json
 {
   "status": "success",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "timestamp": "2026-06-09T10:00:00Z",
   "data": {
     "n": 5,
@@ -415,7 +421,7 @@ python -m pytest tests/test_nist_univariate_all.py tests/test_nist_nonlinear_all
 
 ## Testing
 
-1050 tests covering all commands, edge cases, and cross-validation.
+1707 tests covering all commands, edge cases, and cross-validation.
 
 ```bash
 # Run all tests
@@ -466,7 +472,7 @@ stats-cli-py/
 ├── pyproject.toml          # Ruff config
 ├── SKILL.md                # Claude Code skill definition
 ├── install-skill.sh        # Skill installer
-├── stats_engine/           # 33 command modules
+├── stats_engine/           # 43 command modules
 │   ├── descriptive.py
 │   ├── normality.py
 │   ├── ttest.py
