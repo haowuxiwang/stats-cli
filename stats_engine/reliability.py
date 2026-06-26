@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats as sp_stats
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def reliability(analysis_type, **kwargs):
@@ -36,12 +37,16 @@ def reliability(analysis_type, **kwargs):
 
 def _weibull(times, status=None, **kwargs):
     """Weibull analysis."""
-    times = np.array(times, dtype=float)
+    times = to_array(times, min_n=2, name="times")
+    if np.any(times <= 0):
+        raise ValueError("All times must be positive for Weibull analysis")
     n = len(times)
 
     if status is None:
         status = np.ones(n)
     status = np.array(status, dtype=float)
+    if len(status) != n:
+        raise ValueError(f"status length ({len(status)}) must match times length ({n})")
 
     # Fit Weibull distribution using MLE
     # Weibull: f(t) = (beta/eta) * (t/eta)^(beta-1) * exp(-(t/eta)^beta)
@@ -93,10 +98,15 @@ def _weibull(times, status=None, **kwargs):
 
 def _kaplan_meier(times, status=None, **kwargs):
     """Kaplan-Meier survival analysis."""
-    times = np.array(times, dtype=float)
+    times = to_array(times, min_n=2, name="times")
+    if np.any(times < 0):
+        raise ValueError("Times must be non-negative for Kaplan-Meier analysis")
+    n = len(times)
     if status is None:
-        status = np.ones(len(times))
+        status = np.ones(n)
     status = np.array(status, dtype=float)
+    if len(status) != n:
+        raise ValueError(f"status length ({len(status)}) must match times length ({n})")
 
     # Sort by time
     order = np.argsort(times)
@@ -151,7 +161,7 @@ def _kaplan_meier(times, status=None, **kwargs):
 
 def _distribution_fit(times, status=None, **kwargs):
     """Fit multiple distributions and compare."""
-    times = np.array(times, dtype=float)
+    times = to_array(times, min_n=1, name="times")
     n = len(times)
 
     results = {}
@@ -274,13 +284,11 @@ def _alt(stress_levels, failure_times, stress_model="arrhenius", use_stress=None
     Returns:
         Dict with ALT results
     """
-    stress_levels = np.array(stress_levels, dtype=float)
-    failure_times = np.array(failure_times, dtype=float)
+    stress_levels = to_array(stress_levels, min_n=2, name="stress_levels")
+    failure_times = to_array(failure_times, min_n=2, name="failure_times")
 
     if len(stress_levels) != len(failure_times):
         raise ValueError("stress_levels and failure_times must have the same length")
-    if len(stress_levels) < 2:
-        raise ValueError("Need at least 2 stress levels for ALT analysis")
 
     # Transform stress and failure times based on model
     if stress_model == "arrhenius":
@@ -367,13 +375,13 @@ def _crow_amsaa(cumulative_times, cumulative_failures, **kwargs):
     Returns:
         Dict with Crow-AMSAA results
     """
-    cumulative_times = np.array(cumulative_times, dtype=float)
-    cumulative_failures = np.array(cumulative_failures, dtype=float)
+    cumulative_times = to_array(cumulative_times, min_n=2, name="cumulative_times")
+    cumulative_failures = to_array(cumulative_failures, min_n=2, name="cumulative_failures")
 
     if len(cumulative_times) != len(cumulative_failures):
         raise ValueError("cumulative_times and cumulative_failures must have the same length")
-    if len(cumulative_times) < 2:
-        raise ValueError("Need at least 2 data points for Crow-AMSAA analysis")
+    if not np.all(np.diff(cumulative_times) > 0):
+        raise ValueError("cumulative_times must be monotonically increasing")
 
     n = len(cumulative_times)
     T = cumulative_times[-1]  # total observation time

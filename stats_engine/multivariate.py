@@ -40,6 +40,10 @@ def _pca(values=None, file=None, columns=None, n_components=None, **kwargs):
         X = df.dropna().values
     elif values is not None:
         X = np.array(values, dtype=float)
+        # Filter rows with any NaN/Inf
+        X = X[np.all(np.isfinite(X), axis=1)]
+        if X.shape[0] < 2:
+            raise ValueError(f"After removing NaN/Inf, only {X.shape[0]} valid rows remain (need at least 2)")
     else:
         raise ValueError("Provide 'values' or 'file' + 'columns'")
 
@@ -94,8 +98,18 @@ def _cluster(values=None, file=None, columns=None, method="kmeans", n_clusters=3
         X = df.dropna().values
     elif values is not None:
         X = np.array(values, dtype=float)
+        # Filter rows with any NaN/Inf
+        X = X[np.all(np.isfinite(X), axis=1)]
+        if X.shape[0] < 2:
+            raise ValueError(f"After removing NaN/Inf, only {X.shape[0]} valid rows remain (need at least 2)")
     else:
         raise ValueError("Provide 'values' or 'file' + 'columns'")
+
+    if method not in ("kmeans", "hierarchical"):
+        raise ValueError(f"Unknown method: {method}. Use 'kmeans' or 'hierarchical'")
+
+    if n_clusters > X.shape[0]:
+        raise ValueError(f"n_clusters ({n_clusters}) cannot exceed number of samples ({X.shape[0]})")
 
     # Standardize
     X_std = (X - np.mean(X, axis=0)) / np.std(X, axis=0, ddof=1)
@@ -104,8 +118,6 @@ def _cluster(values=None, file=None, columns=None, method="kmeans", n_clusters=3
         return _kmeans(X_std, n_clusters)
     elif method == "hierarchical":
         return _hierarchical(X_std, n_clusters)
-    else:
-        raise ValueError(f"Unknown method: {method}. Use 'kmeans' or 'hierarchical'")
 
 
 def _kmeans(X, n_clusters):
@@ -344,6 +356,10 @@ def _factor_analysis(values=None, file=None, columns=None, n_factors=None, rotat
         X = df.dropna().values
     elif values is not None:
         X = np.array(values, dtype=float)
+        # Filter rows with any NaN/Inf
+        X = X[np.all(np.isfinite(X), axis=1)]
+        if X.shape[0] < 2:
+            raise ValueError(f"After removing NaN/Inf, only {X.shape[0]} valid rows remain (need at least 2)")
     else:
         raise ValueError("Provide 'values' or 'file' + 'columns'")
 
@@ -450,6 +466,12 @@ def _manova(groups=None, file=None, columns=None, group_column=None, **kwargs):
         group_data = [X[y == g] for g in unique_groups]
     elif groups is not None:
         group_data = [np.array(g, dtype=float) for g in groups]
+        # Filter NaN/Inf in each group
+        for i in range(len(group_data)):
+            if group_data[i].ndim == 1:
+                group_data[i] = group_data[i][np.isfinite(group_data[i])]
+            else:
+                group_data[i] = group_data[i][np.all(np.isfinite(group_data[i]), axis=1)]
         unique_groups = list(range(len(group_data)))
     else:
         raise ValueError("Provide 'groups' or 'file' + 'columns' + 'group_column'")

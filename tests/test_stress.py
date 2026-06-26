@@ -497,3 +497,126 @@ class TestNewModulesValidation:
         with pytest.raises(ValueError, match="Unknown distribution"):
             inputs = {"x": {"dist": "unknown", "params": {}}}
             sensitivity("monte_carlo", inputs=inputs, formula="x")
+
+
+# ============================================================================
+# NaN Handling Stress Tests
+# ============================================================================
+
+
+class TestNaNHandling:
+    """Test NaN handling across modules."""
+
+    def test_descriptive_with_nan(self):
+        from stats_engine.descriptive import descriptive
+
+        result = descriptive(values=[1, 2, float("nan"), 4, 5])
+        assert result["n"] == 4  # NaN filtered
+
+    def test_ttest_with_nan_in_values2(self):
+        from stats_engine.ttest import ttest
+
+        result = ttest(test_type="two_sample", values=[1, 2, 3], values2=[4, float("nan"), 6])
+        assert "t_statistic" in result
+
+    def test_anova_with_nan_in_group(self):
+        from stats_engine.anova import anova
+
+        result = anova(anova_type="one_way", groups=[[1, 2, float("nan")], [4, 5, 6]])
+        assert "f_statistic" in result
+
+    def test_correlation_with_nan(self):
+        from stats_engine.correlation import correlation
+
+        result = correlation(x=[1, 2, float("nan"), 4], y=[5, 6, 7, 8])
+        assert "correlation" in result
+
+    def test_regression_with_nan(self):
+        from stats_engine.regression import regression
+
+        result = regression(x=[1, 2, float("nan"), 4], y=[5, 6, 7, 8])
+        assert "r_squared" in result
+
+    def test_timeseries_with_nan(self):
+        from stats_engine.timeseries import timeseries
+
+        # Should either filter NaN or raise clear error
+        try:
+            result = timeseries(analysis_type="exp_smoothing", values=[1, 2, float("nan"), 4, 5])
+            assert "fitted_values" in result
+        except ValueError:
+            pass  # Also acceptable
+
+    def test_multivariate_pca_with_nan(self):
+        from stats_engine.multivariate import multivariate
+
+        # Should filter NaN rows or raise clear error
+        try:
+            result = multivariate(analysis_type="pca", values=[[1, 2], [float("nan"), 4], [5, 6]])
+            assert "eigenvalues" in result
+        except ValueError:
+            pass
+
+
+# ============================================================================
+# Empty and Single Value Stress Tests
+# ============================================================================
+
+
+class TestEmptyAndSingleValue:
+    """Test empty and single value handling."""
+
+    def test_descriptive_single_value(self):
+        from stats_engine.descriptive import descriptive
+
+        result = descriptive(values=[5.0])
+        assert result["n"] == 1
+        assert result["insufficient_for_stats"] is True
+
+    def test_ttest_single_value_raises(self):
+        from stats_engine.ttest import ttest
+
+        with pytest.raises(ValueError):
+            ttest(test_type="one_sample", values=[5.0], mu=5)
+
+    def test_correlation_single_pair_raises(self):
+        from stats_engine.correlation import correlation
+
+        with pytest.raises(ValueError):
+            correlation(x=[1.0], y=[2.0])
+
+    def test_transform_single_value(self):
+        from stats_engine.transform import transform
+
+        # Should either work or raise clear error
+        try:
+            transform(values=[5.0], method="standardize")
+        except ValueError:
+            pass
+
+
+# ============================================================================
+# Wrong Input Type Stress Tests
+# ============================================================================
+
+
+class TestWrongInputTypes:
+    """Test wrong input type handling."""
+
+    def test_descriptive_string_input(self):
+        from stats_engine.descriptive import descriptive
+
+        with pytest.raises((ValueError, TypeError)):
+            descriptive(values=["a", "b", "c"])
+
+    def test_ttest_dict_input(self):
+        from stats_engine.ttest import ttest
+
+        with pytest.raises((ValueError, TypeError)):
+            ttest(test_type="one_sample", values={"a": 1}, mu=5)
+
+    def test_anova_string_groups(self):
+        from stats_engine.anova import anova
+
+        with pytest.raises((ValueError, TypeError)):
+            anova(anova_type="one_way", groups=[["a", "b"], ["c", "d"]])

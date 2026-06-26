@@ -3,6 +3,7 @@
 import numpy as np
 
 from utils.output import r
+from utils.validators import to_array
 
 
 def timeseries(analysis_type, values=None, **kwargs):
@@ -16,7 +17,6 @@ def timeseries(analysis_type, values=None, **kwargs):
     """
     if values is None:
         raise ValueError("'values' parameter is required for time series analysis")
-    values = np.array(values, dtype=float)
 
     if analysis_type == "exp_smoothing":
         return _exp_smoothing(values, **kwargs)
@@ -32,6 +32,9 @@ def timeseries(analysis_type, values=None, **kwargs):
 
 def _exp_smoothing(values, alpha=None, frequency=None, n_forecast=0, **kwargs):
     """Exponential smoothing."""
+    values = to_array(values, min_n=3, name="values")
+    if n_forecast < 0:
+        raise ValueError(f"n_forecast must be >= 0, got {n_forecast}")
     n = len(values)
 
     if alpha is None:
@@ -78,6 +81,9 @@ def _simple_exp_smooth(values, alpha):
 
 def _arima(values, order=None, n_forecast=0, **kwargs):
     """ARIMA analysis (using statsmodels)."""
+    values = to_array(values, min_n=5, name="values")
+    if n_forecast < 0:
+        raise ValueError(f"n_forecast must be >= 0, got {n_forecast}")
     try:
         from statsmodels.tsa.arima.model import ARIMA
     except ImportError:
@@ -109,6 +115,7 @@ def _arima(values, order=None, n_forecast=0, **kwargs):
 
 def _decomposition(values, frequency=12, model="additive", **kwargs):
     """Time series decomposition."""
+    values = to_array(values, min_n=8, name="values")
     try:
         from statsmodels.tsa.seasonal import seasonal_decompose
     except ImportError:
@@ -129,6 +136,7 @@ def _decomposition(values, frequency=12, model="additive", **kwargs):
 
 def _acf(values, max_lag=None, **kwargs):
     """ACF and PACF analysis."""
+    values = to_array(values, min_n=3, name="values")
     try:
         from statsmodels.tsa.stattools import acf, pacf
     except ImportError:

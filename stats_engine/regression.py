@@ -220,6 +220,14 @@ def _multiple_regression(file, x_columns, y_column, reg_type, alpha):
 
     df = read_dataframe(file)
 
+    # Filter rows with any NaN/Inf in x or y columns
+    all_cols = list(x_columns) + [y_column]
+    mask = np.all(np.isfinite(df[all_cols].values), axis=1)
+    df = df[mask]
+
+    if len(df) < 2:
+        raise ValueError(f"After removing NaN/Inf, only {len(df)} valid rows remain (need at least 2)")
+
     y = df[y_column]
     X = df[x_columns]
 

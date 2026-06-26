@@ -121,7 +121,7 @@ class TestALT:
             reliability(
                 analysis_type="alt",
                 stress_levels=[100, 200],
-                failure_times=[1000],
+                failure_times=[1000, 2000, 3000],
                 stress_model="arrhenius",
             )
 

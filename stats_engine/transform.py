@@ -18,8 +18,14 @@ def transform(values, method="log", **kwargs):
     Returns:
         Dict with transformation results
     """
+    valid_methods = ("log", "sqrt", "boxcox", "johnson", "rank", "standardize", "recip")
+    if method not in valid_methods:
+        raise ValueError(f"Unknown method: {method}. Valid methods: {', '.join(valid_methods)}")
+
     arr = np.array(values, dtype=float)
     arr = arr[np.isfinite(arr)]
+    if len(arr) < 1:
+        raise ValueError("No valid values after removing NaN/Inf")
 
     before = {
         "mean": r(np.mean(arr)),
