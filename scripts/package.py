@@ -50,10 +50,7 @@ EXCLUDE_PATTERNS = [
 
 def should_exclude(path: str) -> bool:
     """Check if path should be excluded."""
-    for pattern in EXCLUDE_PATTERNS:
-        if pattern in path:
-            return True
-    return False
+    return any(pattern in path for pattern in EXCLUDE_PATTERNS)
 
 
 def main():
