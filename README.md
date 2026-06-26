@@ -3,7 +3,7 @@
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
 **Version**: 1.4.0
-**Commands**: 43
+**Commands**: 39
 **Test Coverage**: 98%
 **Tests**: 1733 passed, 0 failed
 **Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, fpdf2
@@ -472,7 +472,7 @@ stats-cli-py/
 ├── pyproject.toml          # Ruff config
 ├── SKILL.md                # Claude Code skill definition
 ├── install-skill.sh        # Skill installer
-├── stats_engine/           # 43 command modules
+├── stats_engine/           # 39 command modules
 │   ├── descriptive.py
 │   ├── normality.py
 │   ├── ttest.py

@@ -1,0 +1,1 @@
+{"command": "ttest", "params": {"test_type": "two_sample", "values": [10.2, 10.5, 10.3, 10.1, 10.4], "values2": [11.3, 11.5, 11.1, 11.4, 11.2]}}

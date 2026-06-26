@@ -1,7 +1,30 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis for manufacturing/quality data. SPC: control charts, process capability (Cp/Cpk), trend. Hypothesis: t-test, ANOVA, chi-square, nonparametric, equivalence, power. Regression: linear, polynomial, logistic, nonlinear, correlation. Quality: MSA/Gage R&R, reliability (Weibull), DOE. Multivariate: PCA, cluster, discriminant. Time Series: ARIMA, exponential smoothing. Bayesian: estimation, Bayes Factor, credible intervals. Mining: classification, anomaly detection, association rules. Sensitivity: Monte Carlo, tornado, Sobol indices. Distribution: fitting, goodness-of-fit, selection. Data: cleaning, transform (Box-Cox), outlier detection, workflow. NOT for: text, image, streaming, non-numeric data. Triggers: 统计分析, 控制图, 过程能力, t检验, ANOVA, 回归, SPC, 质量分析, 假设检验, MSA, 可靠性, 时间序列, Cp, Cpk, 正态性, 异常值, Box-Cox, Weibull, PCA, DOE, 实验设计, 测量系统分析, 功效分析, 样本量, 卡方检验, 贝叶斯, Bayes Factor, 可信区间, 分布拟合, 正态分布, 蒙特卡洛, 敏感性分析, 龙卷风图, Sobol, 数据挖掘, 分类, 异常检测, 关联规则, Apriori, 决策树, 随机森林."
+description: "Use when user needs statistical analysis for manufacturing/quality data. Covers: descriptive stats, hypothesis testing, regression, SPC, DOE, MSA, reliability, multivariate, Bayesian, FDA, data mining, sensitivity analysis, acceptance sampling. NOT for: text analysis, image recognition, streaming data."
 ---
+
+## Intent → Command Quick Lookup
+
+| User Intent | Command | Why |
+|---|---|---|
+| 看数据基本特征 | `descriptive` | 均值/中位数/标准差/分位数 |
+| 数据是否正态 | `normality` | Shapiro-Wilk/Anderson-Darling |
+| 两组有无差异 | `ttest` / `nonparametric` | 正态用 ttest，非正态用 Mann-Whitney |
+| 多组有无差异 | `anova` / `nonparametric` | 正态用 ANOVA，非正态用 Kruskal-Wallis |
+| 两变量有无关系 | `correlation` / `regression` | 相关用 correlation，因果用 regression |
+| 过程是否稳定 | `control_chart` | X-bar/R/IMR/EWMA/CUSUM/T² |
+| 过程能力如何 | `capability` | Cp/Cpk/Pp/Ppk/Johnson |
+| 测量系统可否接受 | `gage_rr` | 交叉/嵌套/属性/破坏性 |
+| 产品能用多久 | `reliability` | Weibull/KM/ALT/Crow-AMSAA |
+| 实验怎么设计 | `doe` | 全因子/分数因子/RSM/Taguchi/DSD |
+| 多变量降维 | `multivariate` | PCA/聚类/判别/因子/MANOVA |
+| 贝叶斯分析 | `bayesian` | 估计/t检验/比例/ANOVA |
+| 分布拟合 | `distribution` | MLE/MOM/AIC/BIC 选择 |
+| 异常值检测 | `outlier` | Grubbs/Dixon/IQR/Z-score/MAD |
+| 数据清洗变换 | `clean` / `transform` | 插补/裁剪/Box-Cox/Johnson |
+| 批量抽检方案 | `acceptance_sampling` | OC 曲线/AQL/LTPD |
+| 蒙特卡洛模拟 | `sensitivity` | Monte Carlo/Sobol/龙卷风图 |
+| 函数型数据 | `functional` | 基函数/平滑/导数/FPCA/FANOVA |
 
 # stats-cli-py
 
@@ -16,7 +39,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
-- [All Commands](#all-commands-43-commands)
+- [All Commands](#all-commands-39-commands)
 - [Output Format](#output-format)
 - [File Support](#file-support)
 - [Dependencies](#dependencies)
@@ -451,7 +474,7 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 
 ---
 
-## All Commands (43 commands)
+## All Commands (39 commands)
 
 ### Data Exploration
 ```python
@@ -951,4 +974,38 @@ All file-based commands accept `file` + optional `column` and `sheet` params:
 Install all at once:
 ```bash
 pip install -r requirements.txt
+```
+
+---
+
+## Error Handling
+
+When a command returns `status: "error"`, check `error_type` for the cause:
+
+| error_type | Meaning | Fix |
+|---|---|---|
+| `PARAM_ERROR` | Missing or wrong parameter | Use `discover` to check required params |
+| `DATA_ERROR` | Insufficient or bad data | Check data size, format, NaN values |
+| `COMPUTATION_ERROR` | Math error (zero variance, singular matrix) | Check data variability |
+| `FILE_NOT_FOUND` | File path wrong | Verify file path |
+| `MISSING_DEPENDENCY` | Package not installed | `pip install -r requirements.txt` |
+| `MEMORY_ERROR` | Too much data | Reduce data size |
+| `INTERNAL_ERROR` | Bug | Report issue |
+
+Example error response:
+```json
+{
+  "status": "error",
+  "error_type": "PARAM_ERROR",
+  "message": "Unknown command: xxx. Use 'discover' to list available commands."
+}
+```
+
+---
+
+## Testing
+
+```bash
+pip install -r requirements.txt -r requirements-test.txt
+pytest tests/ -v
 ```

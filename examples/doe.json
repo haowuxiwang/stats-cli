@@ -1,0 +1,1 @@
+{"command": "doe", "params": {"doe_type": "full_factorial", "factors": [{"name": "Temperature", "levels": [100, 150, 200]}, {"name": "Time", "levels": [30, 60]}]}}
