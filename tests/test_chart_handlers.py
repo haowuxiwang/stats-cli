@@ -8,8 +8,8 @@ from stats_engine.chart_handlers import CHART_HANDLERS
 
 
 class TestChartHandlersRegistry:
-    def test_registry_has_22_entries(self):
-        assert len(CHART_HANDLERS) == 22
+    def test_registry_has_25_entries(self):
+        assert len(CHART_HANDLERS) == 25
 
     def test_all_handlers_callable(self):
         for name, handler in CHART_HANDLERS.items():

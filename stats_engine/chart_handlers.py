@@ -245,6 +245,38 @@ def _doe_handler(result, params):
     return None
 
 
+def _distribution_handler(result, params):
+    """Chart for distribution fitting."""
+    from stats_engine.charts import histogram
+
+    values = result.get("_values") or params.get("values")
+    if values is None:
+        return None
+    return histogram(values, title=f"Distribution: {result.get('distribution', 'fitted')}", normal_curve=True)
+
+
+def _acceptance_sampling_handler(result, params):
+    """Chart for acceptance sampling OC curve."""
+    from stats_engine.charts import oc_curve_plot
+
+    if "oc_curve" in result:
+        curve = result["oc_curve"]
+        return oc_curve_plot(curve.get("defect_rates", []), curve.get("accept_probs", []))
+    return None
+
+
+def _sensitivity_handler(result, params):
+    """Chart for sensitivity analysis (tornado)."""
+    from stats_engine.charts import tornado_plot
+
+    if result.get("analysis_type") == "tornado" and "sensitivities" in result:
+        sens = result["sensitivities"]
+        variables = [s["variable"] for s in sens]
+        swings = [s["swing"] for s in sens]
+        return tornado_plot(variables, swings)
+    return None
+
+
 # Chart handler registry: command_name -> handler_function
 CHART_HANDLERS = {
     "descriptive": lambda r, p: _histogram_handler(r, p, "Distribution"),
@@ -269,4 +301,7 @@ CHART_HANDLERS = {
     "nonparametric": lambda r, p: _boxplot_handler(r, p, "Non-parametric - Group Comparison"),
     "explore": _explore_handler,
     "doe": _doe_handler,
+    "distribution": _distribution_handler,
+    "acceptance_sampling": _acceptance_sampling_handler,
+    "sensitivity": _sensitivity_handler,
 }

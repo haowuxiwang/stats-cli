@@ -455,6 +455,33 @@ def ttest_plot(group1, group2=None, p_value=None, ci=None, title="t-Test"):
     return _fig_to_base64(fig)
 
 
+def oc_curve_plot(defect_rates, accept_probs, title="Operating Characteristic Curve"):
+    """OC curve for acceptance sampling."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(defect_rates, accept_probs, "b-", linewidth=2)
+    ax.set_xlabel("Defect Rate")
+    ax.set_ylabel("Probability of Acceptance")
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    ax.set_xlim(0, max(defect_rates))
+    ax.set_ylim(0, 1.05)
+    return _fig_to_base64(fig)
+
+
+def tornado_plot(variables, sensitivities, title="Tornado Diagram"):
+    """Tornado diagram for sensitivity analysis."""
+    fig, ax = plt.subplots(figsize=(8, max(4, len(variables) * 0.5)))
+    y_pos = range(len(variables))
+    ax.barh(y_pos, sensitivities, color="steelblue")
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(variables)
+    ax.set_xlabel("Sensitivity (Swing)")
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3, axis="x")
+    plt.tight_layout()
+    return _fig_to_base64(fig)
+
+
 def missing_values_plot(columns, missing_counts, title="Missing Values"):
     """Generate bar chart showing missing values per column."""
     fig, ax = plt.subplots(figsize=(10, 5))

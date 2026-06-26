@@ -11,8 +11,7 @@ class TestChartHandlers:
         result = handler(
             {
                 "command": "descriptive",
-                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
-                "chart": True,
+                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "chart": True},
             }
         )
         assert result["status"] == "success"
@@ -24,8 +23,8 @@ class TestChartHandlers:
                 "command": "anova",
                 "params": {
                     "groups": [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15]],
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -39,8 +38,8 @@ class TestChartHandlers:
                     "values": [9.8, 10.0, 10.2, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.2] * 3,
                     "usl": 12,
                     "lsl": 8,
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -53,8 +52,8 @@ class TestChartHandlers:
                 "params": {
                     "x": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     "y": [2, 4, 5, 4, 5, 7, 8, 9, 10, 12],
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -68,8 +67,8 @@ class TestChartHandlers:
                     "x": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                     "y": [2, 4, 5, 4, 5, 7, 8, 9, 10, 12],
                     "reg_type": "linear",
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -82,8 +81,8 @@ class TestChartHandlers:
                 "params": {
                     "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100],
                     "method": "grubbs",
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -93,8 +92,7 @@ class TestChartHandlers:
         result = handler(
             {
                 "command": "normality",
-                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
-                "chart": True,
+                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "chart": True},
             }
         )
         assert result["status"] == "success"
@@ -107,8 +105,7 @@ class TestChartHandlers:
         result = handler(
             {
                 "command": "explore",
-                "params": {"file": str(csv_file)},
-                "chart": True,
+                "params": {"file": str(csv_file), "chart": True},
             }
         )
         assert result["status"] == "success"
@@ -121,8 +118,8 @@ class TestChartHandlers:
                 "params": {
                     "values": [10.1, 10.2, 10.0, 9.9, 10.3, 10.1, 10.0, 9.8, 10.2, 10.1],
                     "test_type": "cusum",
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -135,8 +132,8 @@ class TestChartHandlers:
                 "params": {
                     "times": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
                     "analysis_type": "weibull",
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
@@ -152,8 +149,8 @@ class TestChartHandlers:
                 "params": {
                     "analysis_type": "correlation_matrix",
                     "values": data,
+                    "chart": True,
                 },
-                "chart": True,
             }
         )
         assert result["status"] == "success"
