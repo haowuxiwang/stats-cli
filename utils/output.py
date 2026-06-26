@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timezone
 import numpy as np
 import pandas as pd
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 # Global precision for numeric output. All stat modules use r() instead of
 # hardcoding round(..., N). Change this single value to adjust all output.

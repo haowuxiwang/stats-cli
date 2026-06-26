@@ -40,7 +40,7 @@ def test_to_json():
 
 
 def test_version_string():
-    assert VERSION == "1.3.0"
+    assert VERSION == "1.3.1"
 
 
 def test_r_rounding():

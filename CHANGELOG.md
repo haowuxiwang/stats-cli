@@ -2,6 +2,23 @@
 
 All notable changes to stats-cli-py will be documented in this file.
 
+## [1.3.1] - 2026-06-25
+
+### Fixed
+
+- Aligned dependency version ranges between requirements.txt and pyproject.toml
+- Updated README.md test counts, command counts, and version numbers
+- Updated SKILL.md version in output example
+
+### Improved
+
+- Monte Carlo simulation vectorized: 1M simulations 23s → 153ms (150x speedup)
+- Sobol sensitivity vectorized: 10k simulations 972ms → 1ms
+- Batch sampling using numpy native size parameter
+- Added input validation to timeseries, reliability, multivariate, transform, regression modules
+- Added NaN/Inf filtering to fragile modules
+- Added 14 new stress tests (NaN handling, empty/single value, wrong types)
+
 ## [1.3.0] - 2026-06-25
 
 ### Added

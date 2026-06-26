@@ -2,7 +2,7 @@
 
 Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
 
-**Version**: 1.3.0
+**Version**: 1.3.1
 **Commands**: 43
 **Test Coverage**: 98%
 **Tests**: 1697 passed, 0 failed
