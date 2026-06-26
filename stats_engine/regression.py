@@ -1,4 +1,4 @@
-"""Regression analysis: linear, multiple, polynomial, stepwise, logistic, nonlinear."""
+"""Regression analysis: linear, multiple, polynomial, stepwise, logistic, nonlinear, PLS, GLM."""
 
 import numpy as np
 from scipy import stats as sp_stats
@@ -18,6 +18,10 @@ def regression(
     reg_alpha=None,
     l1_ratio=0.5,
     method="huber",
+    n_components=2,
+    family="poisson",
+    cv=None,
+    scoring="r2",
 ):
     """Perform regression analysis.
 
@@ -26,7 +30,8 @@ def regression(
         y: List of y values
         reg_type: 'linear', 'quadratic', 'polynomial', 'multiple', 'stepwise', 'logistic',
                  'exponential', 'power', 'logarithmic', 'sigmoid',
-                 'lasso', 'ridge', 'elastic_net', 'robust'
+                 'lasso', 'ridge', 'elastic_net', 'robust', 'pls',
+                 'poisson', 'gamma', 'negbin', 'cross_validate'
         degree: Polynomial degree (for polynomial type)
         file: Data file path (for multiple/stepwise)
         x_columns: Column names for x (for multiple/stepwise)
@@ -36,15 +41,38 @@ def regression(
                    None = automatic cross-validated selection.
         l1_ratio: Elastic net mixing parameter (0=ridge, 1=lasso, default 0.5)
         method: M-estimator for robust regression ('huber' or 'tukey')
+        n_components: Number of PLS components (default 2)
+        family: GLM family for poisson/gamma/negbin types
+        cv: Number of cross-validation folds (default 5). When provided with a
+            standard reg_type, wraps it in k-fold CV. Also usable via
+            reg_type='cross_validate'.
+        scoring: Scoring metric for cross-validation (default 'r2').
+                 Options: 'r2', 'neg_mean_squared_error', 'neg_mean_absolute_error'
 
     Returns:
         Dict with regression results
     """
     _scalar_types = ("linear", "quadratic", "polynomial", "logistic", "exponential", "power", "logarithmic", "sigmoid")
     _penalized_types = ("lasso", "ridge", "elastic_net", "robust")
+    _glm_types = ("poisson", "gamma", "negbin")
+
+    # Cross-validation mode: either explicit reg_type='cross_validate' or cv parameter
+    if reg_type == "cross_validate" or (cv is not None and reg_type != "cross_validate"):
+        inner_type = "linear" if reg_type == "cross_validate" else reg_type
+        x_arr = np.array(x, dtype=float)
+        y_arr = np.array(y, dtype=float)
+        # Filter NaN/Inf
+        if x_arr.ndim == 2:
+            mask = np.all(np.isfinite(x_arr), axis=1) & np.isfinite(y_arr)
+        else:
+            mask = np.isfinite(x_arr) & np.isfinite(y_arr)
+        if mask.sum() < len(y_arr):
+            x_arr = x_arr[mask]
+            y_arr = y_arr[mask]
+        return _cross_validate(x_arr, y_arr, reg_type=inner_type, cv=cv or 5, scoring=scoring)
 
     # Filter NaN/Inf from x and y together for array-based regression types
-    if reg_type in _scalar_types or reg_type in _penalized_types:
+    if reg_type in _scalar_types or reg_type in _penalized_types or reg_type == "pls" or reg_type in _glm_types:
         x_arr = np.array(x, dtype=float)
         y_arr = np.array(y, dtype=float)
         if x_arr.ndim == 2:
@@ -93,6 +121,10 @@ def regression(
         return _elastic_net(x_arr, y_arr, reg_alpha, l1_ratio)
     elif reg_type == "robust":
         return _robust(x_arr, y_arr, method)
+    elif reg_type == "pls":
+        return _pls(x_arr, y_arr, n_components)
+    elif reg_type in _glm_types:
+        return _glm(x_arr, y_arr, reg_type)
     else:
         raise ValueError(f"Unknown regression type: {reg_type}")
 
@@ -582,3 +614,209 @@ def _robust(x, y, method):
         "n_outliers": n_outliers,
         "residual_std": r(np.std(residuals, ddof=n_coefs + 1)),
     }
+
+
+def _pls(x, y, n_components):
+    """Partial Least Squares regression using sklearn."""
+    from sklearn.cross_decomposition import PLSRegression
+
+    X_2d, y_arr = _prepare_sklearn_xy(x, y)
+    n, p = X_2d.shape
+
+    # Ensure n_components does not exceed min(n, p)
+    max_comp = min(n, p, n_components)
+    if n_components > max_comp:
+        n_components = max_comp
+
+    model = PLSRegression(n_components=n_components)
+    model.fit(X_2d, y_arr)
+
+    y_pred = model.predict(X_2d)
+    if y_pred.ndim == 2:
+        y_pred = y_pred.ravel()
+
+    # R-squared
+    ss_res = np.sum((y_arr - y_pred) ** 2)
+    ss_tot = np.sum((y_arr - np.mean(y_arr)) ** 2)
+    r_sq = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+
+    # VIP scores: VIP_j = sqrt(p * sum(w_jk^2 * SSY_k) / sum(SSY_k))
+    # w = model.x_weights_ (p x n_components), SSY_k = sum of y_scores_k^2
+    w = model.x_weights_  # (p, n_components)
+    y_scores = model.y_scores_  # (n, n_components)
+    ssy_k = np.sum(y_scores**2, axis=0)  # (n_components,)
+    total_ssy = np.sum(ssy_k)
+
+    vip_scores = np.zeros(p)
+    for j in range(p):
+        vip_scores[j] = np.sqrt(p * np.sum(w[j, :] ** 2 * ssy_k) / total_ssy) if total_ssy > 0 else 0
+
+    # Coefficients -- sklearn PLSRegression.coef_ shape is (n_targets, p)
+    coefficients = {
+        "intercept": r(float(model.intercept_[0]))
+        if hasattr(model.intercept_, "__len__")
+        else r(float(model.intercept_))
+    }
+    for i in range(p):
+        coefficients[f"x{i + 1}"] = r(float(model.coef_[0, i])) if model.coef_.ndim == 2 else r(float(model.coef_[i]))
+
+    vip_dict = {}
+    for i in range(p):
+        vip_dict[f"x{i + 1}"] = r(float(vip_scores[i]))
+
+    return {
+        "regression_type": "pls",
+        "n": n,
+        "n_components": n_components,
+        "coefficients": coefficients,
+        "vip_scores": vip_dict,
+        "r_squared": r(r_sq),
+        "x_scores": [[r(float(v)) for v in row] for row in model.x_scores_],
+        "y_scores": [[r(float(v)) for v in row] for row in model.y_scores_],
+    }
+
+
+def _glm(x, y, family):
+    """Generalized Linear Model using statsmodels.
+
+    Args:
+        x: 2D array of predictors
+        y: 1D array of response
+        family: 'poisson', 'gamma', or 'negbin'
+    """
+    import statsmodels.api as sm
+
+    X_2d, y_arr = _prepare_sklearn_xy(x, y)
+    X_with_const = sm.add_constant(X_2d)
+
+    if family == "poisson":
+        fam = sm.families.Poisson()
+    elif family == "gamma":
+        fam = sm.families.Gamma()
+    elif family == "negbin":
+        fam = sm.families.NegativeBinomial()
+    else:
+        raise ValueError(f"Unknown GLM family: {family}. Use 'poisson', 'gamma', or 'negbin'")
+
+    model = sm.GLM(y_arr, X_with_const, family=fam).fit()
+
+    # Pseudo R-squared (McFadden): 1 - ll_model / ll_null
+    try:
+        null_model = sm.GLM(y_arr, np.ones(len(y_arr)), family=fam).fit()
+        pseudo_r_sq = 1 - (model.llf / null_model.llf) if null_model.llf != 0 else 0
+    except Exception:
+        pseudo_r_sq = None
+
+    n = len(y_arr)
+    p = X_2d.shape[1]
+
+    # Build coefficient dict
+    coefficients = {"intercept": r(model.params[0])}
+    for i in range(p):
+        coefficients[f"x{i + 1}"] = r(model.params[i + 1])
+
+    # Summary table as list of lists: [name, coef, std_err, z, p_value, ci_lower, ci_upper]
+    summary_table = [["name", "coef", "std_err", "z", "p_value", "ci_lower", "ci_upper"]]
+    param_names = ["const"] + [f"x{i + 1}" for i in range(p)]
+    ci = model.conf_int()
+    for i in range(len(model.params)):
+        name = param_names[i] if i < len(param_names) else f"param_{i}"
+        summary_table.append(
+            [
+                name,
+                r(model.params[i]),
+                r(model.bse[i]),
+                r(model.tvalues[i]),
+                r(model.pvalues[i]),
+                r(ci[i, 0]) if isinstance(ci, np.ndarray) else r(ci.iloc[i, 0]),
+                r(ci[i, 1]) if isinstance(ci, np.ndarray) else r(ci.iloc[i, 1]),
+            ]
+        )
+
+    return {
+        "regression_type": f"glm_{family}",
+        "n": n,
+        "family": family,
+        "coefficients": coefficients,
+        "deviance": r(model.deviance),
+        "aic": r(model.aic),
+        "bic": r(model.bic),
+        "pseudo_r_squared": r(pseudo_r_sq) if pseudo_r_sq is not None else None,
+        "summary_table": summary_table,
+    }
+
+
+# Map of supported inner regression types for cross-validation to sklearn estimators
+_CV_ESTIMATORS = {
+    "linear": lambda: __import__("sklearn.linear_model", fromlist=["LinearRegression"]).LinearRegression(),
+    "ridge": lambda: __import__("sklearn.linear_model", fromlist=["Ridge"]).Ridge(),
+    "lasso": lambda: __import__("sklearn.linear_model", fromlist=["Lasso"]).Lasso(max_iter=10000),
+    "elastic_net": lambda: __import__("sklearn.linear_model", fromlist=["ElasticNet"]).ElasticNet(max_iter=10000),
+    "robust": lambda: __import__("sklearn.linear_model", fromlist=["HuberRegressor"]).HuberRegressor(max_iter=10000),
+}
+
+_CV_SCORING_MAP = {
+    "r2": "r2",
+    "neg_mean_squared_error": "neg_mean_squared_error",
+    "neg_mean_absolute_error": "neg_mean_absolute_error",
+}
+
+
+def _cross_validate(x, y, reg_type="linear", cv=5, scoring="r2"):
+    """K-fold cross-validation for regression models.
+
+    Args:
+        x: 1D or 2D array of predictors
+        y: 1D array of response
+        reg_type: Inner regression type ('linear', 'ridge', 'lasso', 'elastic_net', 'robust')
+        cv: Number of folds (default 5)
+        scoring: Scoring metric ('r2', 'neg_mean_squared_error', 'neg_mean_absolute_error')
+    """
+    from sklearn.model_selection import KFold, cross_val_score
+
+    if reg_type not in _CV_ESTIMATORS:
+        raise ValueError(
+            f"Cross-validation not supported for '{reg_type}'. Supported types: {list(_CV_ESTIMATORS.keys())}"
+        )
+
+    X_2d, y_arr = _prepare_sklearn_xy(x, y)
+    n = len(y_arr)
+
+    if cv < 2:
+        raise ValueError(f"cv must be at least 2, got {cv}")
+    if cv > n:
+        raise ValueError(f"cv ({cv}) cannot exceed number of samples ({n})")
+
+    sk_scoring = _CV_SCORING_MAP.get(scoring)
+    if sk_scoring is None:
+        raise ValueError(f"Unknown scoring: {scoring}. Use one of {list(_CV_SCORING_MAP.keys())}")
+
+    estimator = _CV_ESTIMATORS[reg_type]()
+    kf = KFold(n_splits=cv, shuffle=True, random_state=42)
+    scores = cross_val_score(estimator, X_2d, y_arr, cv=kf, scoring=sk_scoring)
+
+    # For negative metrics, convert to positive for interpretability
+    scores_list = [r(float(s)) for s in scores]
+    mean_score = r(float(np.mean(scores)))
+    std_score = r(float(np.std(scores, ddof=1)))
+
+    result = {
+        "regression_type": "cross_validate",
+        "inner_type": reg_type,
+        "n": n,
+        "cv_folds": cv,
+        "scoring": scoring,
+        "scores": scores_list,
+        "mean_score": mean_score,
+        "std_score": std_score,
+        "min_score": r(float(np.min(scores))),
+        "max_score": r(float(np.max(scores))),
+    }
+
+    # Add interpretation
+    if scoring == "r2":
+        result["interpretation"] = f"{cv}-fold CV R^2 = {mean_score} +/- {std_score} (per-fold: {scores_list})"
+    else:
+        result["interpretation"] = f"{cv}-fold CV {scoring} = {mean_score} +/- {std_score} (per-fold: {scores_list})"
+
+    return result

@@ -1,4 +1,4 @@
-"""Advanced statistical methods: mixed effects, exact test, McNemar, Cochran's Q."""
+"""Advanced statistical methods: mixed effects, exact test, McNemar, Cochran's Q, bootstrap."""
 
 import numpy as np
 from scipy import stats as sp_stats
@@ -10,7 +10,7 @@ def advanced(analysis_type, **kwargs):
     """Perform advanced statistical analysis.
 
     Args:
-        analysis_type: 'mixed_effects', 'exact_test', 'mcnemar', 'cochran_q'
+        analysis_type: 'mixed_effects', 'exact_test', 'mcnemar', 'cochran_q', 'bootstrap'
 
     Returns:
         Dict with analysis results
@@ -23,9 +23,11 @@ def advanced(analysis_type, **kwargs):
         return _mcnemar(**kwargs)
     elif analysis_type == "cochran_q":
         return _cochran_q(**kwargs)
+    elif analysis_type == "bootstrap":
+        return _bootstrap(**kwargs)
     else:
         raise ValueError(
-            f"Unknown analysis_type: {analysis_type}. Use 'mixed_effects', 'exact_test', 'mcnemar', or 'cochran_q'"
+            f"Unknown analysis_type: {analysis_type}. Use 'mixed_effects', 'exact_test', 'mcnemar', 'cochran_q', or 'bootstrap'"
         )
 
 
@@ -224,3 +226,96 @@ def _cochran_q(data, alpha=0.05, **kwargs):
         ),
     }
     return p_value_context(result, p_value, alpha, n * k)
+
+
+# Map of supported bootstrap statistic names to numpy functions
+_BOOTSTRAP_STATS = {
+    "mean": np.mean,
+    "median": np.median,
+    "std": np.std,
+    "var": np.var,
+    "min": np.min,
+    "max": np.max,
+}
+
+
+def _bootstrap(
+    values,
+    statistic="mean",
+    n_bootstrap=10000,
+    confidence_level=0.95,
+    seed=42,
+    **kwargs,
+):
+    """Bootstrap resampling for confidence interval estimation.
+
+    Args:
+        values: 1D array of observed data
+        statistic: Name of statistic ('mean', 'median', 'std', 'var', 'min', 'max')
+                   or a callable that takes an array and returns a scalar
+        n_bootstrap: Number of bootstrap resamples (default 10000)
+        confidence_level: CI confidence level (default 0.95)
+        seed: Random seed for reproducibility (default 42)
+    """
+    data = np.array(values, dtype=float)
+    data = data[np.isfinite(data)]
+    if len(data) < 2:
+        raise ValueError("Bootstrap requires at least 2 valid (finite) data points")
+
+    if not 0 < confidence_level < 1:
+        raise ValueError(f"confidence_level must be between 0 and 1, got {confidence_level}")
+
+    if n_bootstrap < 100:
+        raise ValueError(f"n_bootstrap must be at least 100, got {n_bootstrap}")
+
+    # Resolve statistic function
+    if callable(statistic):
+        stat_func = statistic
+        stat_name = statistic.__name__ if hasattr(statistic, "__name__") else "custom"
+    elif isinstance(statistic, str) and statistic in _BOOTSTRAP_STATS:
+        stat_func = _BOOTSTRAP_STATS[statistic]
+        stat_name = statistic
+    else:
+        raise ValueError(f"Unknown statistic: {statistic}. Use one of {list(_BOOTSTRAP_STATS.keys())} or a callable")
+
+    # Original statistic
+    original_stat = float(stat_func(data))
+
+    # Bootstrap resampling
+    rng = np.random.RandomState(seed)
+    n = len(data)
+    boot_stats = np.empty(n_bootstrap)
+    for i in range(n_bootstrap):
+        resample = rng.choice(data, size=n, replace=True)
+        boot_stats[i] = stat_func(resample)
+
+    # Percentile CI
+    alpha = 1 - confidence_level
+    ci_lower = float(np.percentile(boot_stats, 100 * alpha / 2))
+    ci_upper = float(np.percentile(boot_stats, 100 * (1 - alpha / 2)))
+
+    # Distribution summary percentiles
+    pct_keys = [1, 2.5, 5, 10, 25, 50, 75, 90, 95, 97.5, 99]
+    pct_values = np.percentile(boot_stats, pct_keys)
+    distribution_summary = {f"p{p}": r(v) for p, v in zip(pct_keys, pct_values)}
+
+    return {
+        "analysis_type": "bootstrap",
+        "statistic": stat_name,
+        "original_statistic": r(original_stat),
+        "bootstrap_mean": r(float(np.mean(boot_stats))),
+        "bootstrap_std": r(float(np.std(boot_stats, ddof=1))),
+        "ci_lower": r(ci_lower),
+        "ci_upper": r(ci_upper),
+        "confidence_level": confidence_level,
+        "n_bootstrap": n_bootstrap,
+        "n_obs": n,
+        "seed": seed,
+        "bootstrap_distribution_summary": distribution_summary,
+        "bias": r(float(np.mean(boot_stats) - original_stat)),
+        "interpretation": (
+            f"Bootstrap {stat_name} = {r(original_stat)}, "
+            f"{confidence_level * 100}% CI = [{r(ci_lower)}, {r(ci_upper)}] "
+            f"({n_bootstrap} resamples)"
+        ),
+    }
