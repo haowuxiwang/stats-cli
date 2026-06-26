@@ -569,6 +569,83 @@ def tost_plot(observed_diff, ci_lower, ci_upper, delta, title="TOST Equivalence 
     return _fig_to_base64(fig)
 
 
+def bootstrap_plot(original_stat, ci_lower, ci_upper, bootstrap_mean, title="Bootstrap Distribution"):
+    """Bootstrap confidence interval plot."""
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.axvline(original_stat, color="blue", linewidth=2, label=f"Original: {original_stat:.4f}")
+    ax.axvline(
+        bootstrap_mean, color="green", linewidth=1, linestyle="--", label=f"Bootstrap Mean: {bootstrap_mean:.4f}"
+    )
+    ax.axvspan(ci_lower, ci_upper, alpha=0.3, color="orange", label=f"95% CI: [{ci_lower:.4f}, {ci_upper:.4f}]")
+    ax.set_xlabel("Statistic Value")
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return _fig_to_base64(fig)
+
+
+def posterior_plot(prior_mean, prior_std, posterior_mean, posterior_std, credible_interval, title="Bayesian Posterior"):
+    """Prior vs posterior distribution plot."""
+    from scipy import stats as sp_stats
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    x_min = min(prior_mean - 3 * prior_std, posterior_mean - 3 * posterior_std)
+    x_max = max(prior_mean + 3 * prior_std, posterior_mean + 3 * posterior_std)
+    x = np.linspace(x_min, x_max, 200)
+    ax.plot(x, sp_stats.norm.pdf(x, prior_mean, prior_std), "b--", label="Prior", alpha=0.7)
+    ax.plot(x, sp_stats.norm.pdf(x, posterior_mean, posterior_std), "r-", linewidth=2, label="Posterior")
+    ax.axvline(credible_interval[0], color="gray", linestyle=":", alpha=0.5)
+    ax.axvline(credible_interval[1], color="gray", linestyle=":", alpha=0.5)
+    ax.fill_between(
+        x,
+        0,
+        sp_stats.norm.pdf(x, posterior_mean, posterior_std),
+        where=(x >= credible_interval[0]) & (x <= credible_interval[1]),
+        alpha=0.2,
+        color="red",
+        label=f"{credible_interval[0]:.2f}–{credible_interval[1]:.2f}",
+    )
+    ax.set_xlabel("Value")
+    ax.set_ylabel("Density")
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return _fig_to_base64(fig)
+
+
+def functional_plot(t, curves, mean_curve=None, title="Functional Data"):
+    """Plot multiple functional curves with optional mean."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for _i, curve in enumerate(curves):
+        ax.plot(t, curve, alpha=0.3, color="blue", linewidth=0.5)
+    if mean_curve is not None:
+        ax.plot(t, mean_curve, "r-", linewidth=2, label="Mean Function")
+        ax.legend()
+    ax.set_xlabel("t")
+    ax.set_ylabel("Value")
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    return _fig_to_base64(fig)
+
+
+def cluster_scatter_2d(points, labels, centers=None, title="Cluster Visualization"):
+    """2D scatter plot of clusters (use PCA if >2D)."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+    unique_labels = sorted(set(labels))
+    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_labels)))
+    for i, label in enumerate(unique_labels):
+        mask = np.array(labels) == label
+        ax.scatter(points[mask, 0], points[mask, 1], c=[colors[i]], label=f"Cluster {label}", alpha=0.6)
+    if centers is not None:
+        ax.scatter(centers[:, 0], centers[:, 1], c="red", marker="x", s=200, linewidths=3, label="Centers")
+    ax.set_xlabel("Component 1")
+    ax.set_ylabel("Component 2")
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    return _fig_to_base64(fig)
+
+
 def power_curve(effect_size, n_values, target_power=0.8, title="Power Curve"):
     """Generate power curve showing power vs sample size."""
     from scipy import stats as sp_stats

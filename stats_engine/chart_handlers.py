@@ -3,17 +3,23 @@
 Each handler takes (result, params) and returns a base64 PNG string or None.
 """
 
+import numpy as np
+
 from stats_engine.charts import (
     acf_plot,
+    bootstrap_plot,
     boxplot,
     capability_plot,
+    cluster_scatter_2d,
     control_chart_plot,
+    functional_plot,
     heatmap,
     histogram,
     means_comparison_plot,
     missing_values_plot,
     outlier_plot,
     pareto_plot,
+    posterior_plot,
     power_curve,
     qq_plot,
     residual_plot,
@@ -277,6 +283,54 @@ def _sensitivity_handler(result, params):
     return None
 
 
+def _advanced_handler(result, params):
+    """Chart for advanced analysis (bootstrap CI)."""
+    if result.get("analysis_type") == "bootstrap":
+        return bootstrap_plot(
+            result.get("original_statistic", 0),
+            result.get("ci_lower", 0),
+            result.get("ci_upper", 0),
+            result.get("bootstrap_mean", 0),
+        )
+    return None
+
+
+def _bayesian_handler(result, params):
+    """Chart for bayesian estimation."""
+    if result.get("analysis_type") == "estimate":
+        return posterior_plot(
+            result.get("prior_mean", 0),
+            result.get("prior_std", 1),
+            result.get("posterior_mean", 0),
+            result.get("posterior_std", 1),
+            result.get("credible_interval", [0, 0]),
+        )
+    return None
+
+
+def _functional_handler(result, params):
+    """Chart for functional data analysis."""
+    t = params.get("t")
+    curves = params.get("curves")
+    if t and curves:
+        mean_curve = result.get("mean_function")
+        return functional_plot(t, curves, mean_curve)
+    return None
+
+
+def _mining_handler(result, params):
+    """Chart for mining results."""
+    if result.get("analysis_type") == "cluster" and "cluster_labels" in result:
+        labels = result["cluster_labels"]
+        centers = None
+        if "cluster_centers" in result:
+            centers = np.array(result["cluster_centers"])
+            if centers.shape[1] > 2:
+                centers = centers[:, :2]
+        return cluster_scatter_2d(np.zeros((len(labels), 2)), labels, centers)
+    return None
+
+
 # Chart handler registry: command_name -> handler_function
 CHART_HANDLERS = {
     "descriptive": lambda r, p: _histogram_handler(r, p, "Distribution"),
@@ -304,4 +358,8 @@ CHART_HANDLERS = {
     "distribution": _distribution_handler,
     "acceptance_sampling": _acceptance_sampling_handler,
     "sensitivity": _sensitivity_handler,
+    "advanced": _advanced_handler,
+    "bayesian": _bayesian_handler,
+    "functional": _functional_handler,
+    "mining": _mining_handler,
 }

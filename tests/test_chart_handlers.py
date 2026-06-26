@@ -8,8 +8,8 @@ from stats_engine.chart_handlers import CHART_HANDLERS
 
 
 class TestChartHandlersRegistry:
-    def test_registry_has_25_entries(self):
-        assert len(CHART_HANDLERS) == 25
+    def test_registry_has_29_entries(self):
+        assert len(CHART_HANDLERS) == 29
 
     def test_all_handlers_callable(self):
         for name, handler in CHART_HANDLERS.items():
@@ -39,6 +39,10 @@ class TestChartHandlersRegistry:
             "nonparametric",
             "explore",
             "doe",
+            "advanced",
+            "bayesian",
+            "functional",
+            "mining",
         ]
         for cmd in expected:
             assert cmd in CHART_HANDLERS, f"Missing handler for '{cmd}'"
