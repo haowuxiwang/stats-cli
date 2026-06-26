@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis for manufacturing/quality data. Covers: descriptive stats, hypothesis testing, regression, SPC, DOE, MSA, reliability, multivariate, Bayesian, FDA, data mining, sensitivity analysis, acceptance sampling. NOT for: text analysis, image recognition, streaming data."
+description: "Use when user needs statistical analysis for manufacturing/quality data. Covers: descriptive stats, hypothesis testing, regression, SPC, DOE, MSA, reliability, multivariate, Bayesian, FDA, data mining, sensitivity analysis, acceptance sampling. Scenarios: pharmaceutical process validation, GMP quality analysis, batch-to-batch variation, stability testing, process capability, acceptance sampling. NOT for: text analysis, image recognition, streaming data."
 ---
 
 ## Intent → Command Quick Lookup
@@ -125,6 +125,11 @@ Parameters: `file` (path), `column` (name or index), `sheet` (Excel sheet name/i
 ---
 
 ## Quick Start: Don't Know What Analysis to Use?
+
+**Cold start verification (run this first to confirm setup):**
+```bash
+echo '{"command":"discover"}' | python main.py
+```
 
 **不确定用什么命令？先调用 `discover` 获取帮助：**
 
