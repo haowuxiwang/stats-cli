@@ -28,8 +28,9 @@ def normality(values):
     if n >= 3:
         if n > 5000:
             # Shapiro-Wilk has a limit; use a subsample
-            sample = np.random.choice(arr, 5000, replace=False)
-            stat, p = sp_stats.shapiro(sample)
+            rng = np.random.default_rng(42)
+            arr_sub = rng.choice(arr, 5000, replace=False)
+            stat, p = sp_stats.shapiro(arr_sub)
         else:
             stat, p = sp_stats.shapiro(arr)
         result["shapiro_wilk"] = {

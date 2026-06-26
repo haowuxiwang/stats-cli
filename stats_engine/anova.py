@@ -151,4 +151,13 @@ def _two_way_anova(groups, alpha, data=None):
     results["alpha"] = alpha
     results["r_squared"] = r(model.rsquared)
 
+    # Build interpretation from significant sources
+    sig_sources = [s["source"] for s in results["sources"] if s.get("significant")]
+    if sig_sources:
+        results["interpretation"] = (
+            f"Two-way ANOVA: significant effects for {', '.join(sig_sources)}, R² = {r(model.rsquared)}"
+        )
+    else:
+        results["interpretation"] = f"Two-way ANOVA: no significant effects, R² = {r(model.rsquared)}"
+
     return results

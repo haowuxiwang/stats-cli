@@ -241,11 +241,11 @@ def pipeline(data, steps):
 
         # Update current_data for next step
         if result.get("status") == "success":
-            data = result.get("data", {})
-            if "clean_data" in data:
-                current_data = data["clean_data"]
-            elif "values" in data:
-                current_data = data["values"]
+            result_data = result.get("data", {})
+            if "clean_data" in result_data:
+                current_data = result_data["clean_data"]
+            elif "values" in result_data:
+                current_data = result_data["values"]
 
     return results
 

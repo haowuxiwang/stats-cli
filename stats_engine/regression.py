@@ -238,6 +238,7 @@ def _polynomial(x, y, degree, alpha):
         "adj_r_squared": r(adj_r_sq),
         "residual_std": r(np.std(residuals, ddof=degree + 1)),
         "equation": "y = " + " + ".join(f"{r(c)}*x^{degree - i}" for i, c in enumerate(coeffs)),
+        "interpretation": f"Polynomial regression (degree={degree}): R² = {r(r_sq)}",
     }
 
 
@@ -425,6 +426,7 @@ def _nonlinear(x, y, model, alpha):
         "adj_r_squared": r(adj_r_sq),
         "residual_std": r(np.std(residuals, ddof=k)),
         "equation": equation,
+        "interpretation": f"Nonlinear regression ({model}): R² = {r(r_sq)}",
     }
     if convergence_warning:
         result["_warning"] = "OptimizeWarning: curve_fit may not have converged"
@@ -479,6 +481,7 @@ def _lasso(x, y, reg_alpha):
         "adj_r_squared": r(adj_r_sq),
         "n_nonzero_coefs": n_nonzero,
         "residual_std": r(np.std(residuals, ddof=n_coefs + 1)),
+        "interpretation": f"LASSO regression: R² = {r(r_sq)}, alpha = {r(chosen_alpha)}",
     }
 
 
@@ -521,6 +524,7 @@ def _ridge(x, y, reg_alpha):
         "r_squared": r(r_sq),
         "adj_r_squared": r(adj_r_sq),
         "residual_std": r(np.std(residuals, ddof=n_coefs + 1)),
+        "interpretation": f"Ridge regression: R² = {r(r_sq)}, alpha = {r(chosen_alpha)}",
     }
 
 
@@ -566,6 +570,7 @@ def _elastic_net(x, y, reg_alpha, l1_ratio):
         "r_squared": r(r_sq),
         "adj_r_squared": r(adj_r_sq),
         "residual_std": r(np.std(residuals, ddof=n_coefs + 1)),
+        "interpretation": f"Elastic Net: R² = {r(r_sq)}, alpha = {r(chosen_alpha)}, l1_ratio = {r(chosen_l1_ratio)}",
     }
 
 
@@ -613,6 +618,7 @@ def _robust(x, y, method):
         "adj_r_squared": r(adj_r_sq),
         "n_outliers": n_outliers,
         "residual_std": r(np.std(residuals, ddof=n_coefs + 1)),
+        "interpretation": f"Robust regression: R² = {r(r_sq)}, n_outliers = {n_outliers}",
     }
 
 
@@ -673,6 +679,7 @@ def _pls(x, y, n_components):
         "r_squared": r(r_sq),
         "x_scores": [[r(float(v)) for v in row] for row in model.x_scores_],
         "y_scores": [[r(float(v)) for v in row] for row in model.y_scores_],
+        "interpretation": f"PLS regression: R² = {r(r_sq)}, n_components = {n_components}",
     }
 
 
@@ -743,6 +750,7 @@ def _glm(x, y, family):
         "bic": r(model.bic),
         "pseudo_r_squared": r(pseudo_r_sq) if pseudo_r_sq is not None else None,
         "summary_table": summary_table,
+        "interpretation": f"GLM ({family}): deviance = {r(model.deviance)}, pseudo R² = {r(pseudo_r_sq) if pseudo_r_sq is not None else None}",
     }
 
 

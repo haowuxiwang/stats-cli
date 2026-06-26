@@ -57,6 +57,7 @@ def _exp_smoothing(values, alpha=None, frequency=None, n_forecast=0, **kwargs):
         "alpha": r(alpha),
         "fitted_values": [r(v) for v in fitted],
         "residuals": [r(values[i] - fitted[i]) for i in range(n)],
+        "interpretation": f"Exponential smoothing: alpha = {r(alpha)}",
     }
 
     if n_forecast > 0:
@@ -103,6 +104,7 @@ def _arima(values, order=None, n_forecast=0, **kwargs):
         "bic": r(fitted.bic),
         "parameters": {k: r(v) for k, v in zip(fitted.param_names, fitted.params)},
         "fitted_values": [r(v) for v in fitted.fittedvalues],
+        "interpretation": f"ARIMA({','.join(str(o) for o in order)}): {n_forecast}-step forecast",
     }
 
     if n_forecast > 0:
@@ -131,6 +133,7 @@ def _decomposition(values, frequency=12, model="additive", **kwargs):
         "trend": [r(v) if not np.isnan(v) else None for v in result_decomp.trend],
         "seasonal": [r(v) for v in result_decomp.seasonal],
         "residual": [r(v) if not np.isnan(v) else None for v in result_decomp.resid],
+        "interpretation": f"Time series decomposition: {frequency}-period seasonality",
     }
 
 
@@ -152,6 +155,8 @@ def _acf(values, max_lag=None, **kwargs):
     # Confidence interval (95%)
     ci = 1.96 / np.sqrt(n)
 
+    n_significant = sum(1 for i in range(1, len(acf_vals)) if abs(acf_vals[i]) > ci)
+
     return {
         "analysis_type": "acf",
         "n": n,
@@ -161,4 +166,5 @@ def _acf(values, max_lag=None, **kwargs):
         "confidence_interval": r(ci),
         "significant_lags_acf": [int(i) for i in range(1, len(acf_vals)) if abs(acf_vals[i]) > ci],
         "significant_lags_pacf": [int(i) for i in range(1, len(pacf_vals)) if abs(pacf_vals[i]) > ci],
+        "interpretation": f"ACF: {n_significant} significant lags",
     }

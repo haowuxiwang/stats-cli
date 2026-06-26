@@ -50,6 +50,9 @@ def _estimate(values, prior_mean=None, prior_std=None, credible_level=0.95, **kw
     sample_mean = np.mean(arr)
     sample_std = np.std(arr, ddof=1)
 
+    if sample_std < 1e-12:
+        raise ValueError("Cannot perform Bayesian estimation: data has zero variance (all values identical)")
+
     # Default prior: weakly informative
     if prior_mean is None:
         prior_mean = sample_mean

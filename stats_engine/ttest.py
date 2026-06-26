@@ -27,12 +27,12 @@ def ttest(test_type, values, values2=None, mu=0, alpha=0.05):
     elif test_type == "two_sample":
         if values2 is None:
             raise ValueError("values2 is required for two_sample t-test")
-        arr2 = np.array(values2, dtype=float)
+        arr2 = to_array(values2, min_n=2, name="values2")
         return _two_sample_ttest(arr1, arr2, alpha)
     elif test_type == "paired":
         if values2 is None:
             raise ValueError("values2 is required for paired t-test")
-        arr2 = np.array(values2, dtype=float)
+        arr2 = to_array(values2, min_n=2, name="values2")
         return _paired_ttest(arr1, arr2, alpha)
     else:
         raise ValueError(f"Unknown test_type: {test_type}. Use 'one_sample', 'two_sample', or 'paired'")
