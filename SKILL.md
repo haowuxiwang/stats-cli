@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user needs statistical analysis for manufacturing/quality data. Covers: descriptive stats, hypothesis testing, regression, SPC, DOE, MSA, reliability, multivariate, Bayesian, FDA, data mining, sensitivity analysis, acceptance sampling. Scenarios: pharmaceutical process validation, GMP quality analysis, batch-to-batch variation, stability testing, process capability, acceptance sampling. NOT for: text analysis, image recognition, streaming data."
+description: "Use when user requests statistics: SPC, process capability, DOE, MSA, reliability, hypothesis testing, regression, or manufacturing quality data. Triggered by analyzing numeric data, comparing groups, monitoring stability, fitting distributions. NOT for text, images, or streaming data."
 ---
 
 ## Intent → Command Quick Lookup
@@ -12,6 +12,8 @@ description: "Use when user needs statistical analysis for manufacturing/quality
 | 两组有无差异 | `ttest` / `nonparametric` | 正态用 ttest，非正态用 Mann-Whitney |
 | 多组有无差异 | `anova` / `nonparametric` | 正态用 ANOVA，非正态用 Kruskal-Wallis |
 | 两变量有无关系 | `correlation` / `regression` | 相关用 correlation，因果用 regression |
+| 趋势检测 | `trend` | CUSUM/EWMA/Runs 检验 |
+| 时间序列预测 | `timeseries` | 指数平滑/ARIMA/季节分解 |
 | 过程是否稳定 | `control_chart` | X-bar/R/IMR/EWMA/CUSUM/T² |
 | 过程能力如何 | `capability` | Cp/Cpk/Pp/Ppk/Johnson |
 | 测量系统可否接受 | `gage_rr` | 交叉/嵌套/属性/破坏性 |
@@ -36,6 +38,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 
 - [Installation](#installation)
 - [Quick Start](#quick-start-dont-know-what-analysis-to-use)
+- [Industry Scenarios](#industry-scenarios-常见场景命令组合)
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
@@ -44,6 +47,9 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [Performance & Scale Guidance](#performance--scale-guidance)
 - [Output Format](#output-format)
 - [File Support](#file-support)
+- [Error Handling](#error-handling)
+- [Documentation](#documentation)
+- [Testing](#testing)
 - [Dependencies](#dependencies)
 
 ## Installation
@@ -105,6 +111,8 @@ print(json.dumps(result, indent=2))
 
 Add `"chart": true` to params to get a base64 PNG chart in the response. Supported commands (29): `descriptive`, `normality`, `control_chart`, `capability`, `correlation`, `regression`, `timeseries`, `report`, `ttest`, `anova`, `homogeneity`, `multiple_comparison`, `equivalence`, `power`, `multivariate`, `trend`, `outlier`, `reliability`, `gage_rr`, `nonparametric`, `explore`, `doe`, `distribution`, `acceptance_sampling`, `sensitivity`, `advanced`, `bayesian`, `functional`, `mining`.
 
+Commands without chart support (10): `discover`, `run`, `clean`, `transform`, `workflow`, `workflow_template`, `check_assumptions`, `recommend`, `export_excel`, `export_pdf`.
+
 ```python
 {"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5], "chart": true}}
 # Response includes: "chart_base64": "iVBORw0KGgo..."
@@ -139,36 +147,29 @@ echo '{"command":"discover"}' | python main.py
 {"command": "discover", "params": {"command_name": "ttest"}}  # 查看参数详情（含 required/type）
 ```
 
-**Intent-to-Command 快速查找：**
+## Industry Scenarios (常见场景 → 命令组合)
 
-| 用户意图 | 推荐命令 | 备注 |
-|----------|----------|------|
-| 描述数据特征 | `descriptive` | 均值、中位数、标准差、置信区间 |
-| 检查是否正态 | `normality` | Shapiro-Wilk, Anderson-Darling |
-| 比较两组数据 | `ttest` / `nonparametric` | 正态用 ttest，非正态用 nonparametric |
-| 比较多组数据 | `anova` | 正态+等方差用 anova，否则用 nonparametric |
-| 检查过程能力 | `capability` | 需要 USL/LSL |
-| 监控过程稳定性 | `control_chart` | imr/xbar/r/p/np/c/u/ewma/cusum |
-| 检测异常值 | `outlier` | grubbs/dixon/iqr/zscore |
-| 分析相关性 | `correlation` | pearson/spearman/kendall |
-| 回归/预测 | `regression` | linear/polynomial/logistic 等 10 种 |
-| 时间序列分析 | `timeseries` | exp_smoothing/arima/decomposition |
-| 趋势检测 | `trend` | cusum/ewma/runs |
-| 测量系统分析 | `gage_rr` | crossed/nested/attribute |
-| 可靠性分析 | `reliability` | weibull/kaplan_meier |
-| 实验设计 | `doe` | full_factorial/fractional/taguchi |
-| 多变量分析 | `multivariate` | pca/cluster/discriminant |
-| 功效/样本量 | `power` | t_test/anova/proportion |
-| 数据清洗 | `clean` | drop/impute/winsorize/clip |
-| 数据变换 | `transform` | log/sqrt/boxcox/johnson |
-| 不确定用什么 | `recommend` | 描述目标，工具推荐方法 |
+GMP/制药领域典型问题与推荐分析流程：
+
+| 行业场景 | 推荐命令组合 | 说明 |
+|----------|-------------|------|
+| 溶出度批间比较 | `descriptive` → `normality` → `ttest` / `anova` | 先看数据特征，验证正态性，再比较 |
+| 含量均匀性 | `descriptive` → `capability` | 描述统计 + 过程能力（需 USL/LSL） |
+| 过程稳定性监控 | `control_chart` → `capability` → `trend` | 控制图 + 能力 + 趋势检测 |
+| 测量系统评估 | `gage_rr` | 交叉/嵌套/属性/破坏性分析 |
+| 稳定性研究/有效期 | `regression` → `reliability` (weibull) | 回归趋势 + 可靠性寿命分析 |
+| 环境监测 OOS | `outlier` → `normality` → `capability` | 异常值检测 + 正态性 + 能力 |
+| 工艺验证批次放行 | `descriptive` → `normality` → `capability` → `report` | 全流程：描述→验证→能力→报告 |
+| 加速稳定性/效期预测 | `reliability` (alt) → `regression` | Arrhenius/IPL 加速模型 + 回归 |
+| AQL 抽样方案 | `acceptance_sampling` (find_plan → oc_curve) | 查找抽样计划 + OC 曲线验证 |
+| 多变量工艺理解 | `multivariate` (pca) → `correlation` | PCA 降维 + 相关性分析 |
+| 配方/工艺优化 | `doe` → `regression` → `multivariate` | 实验设计 + 回归建模 + 多变量 |
 
 **When NOT to use this skill:**
 - Non-numeric data (text analysis, sentiment analysis) → use NLP tools
 - Real-time streaming data (millisecond-level SPC) → use streaming platforms
 - Deep learning / neural network training → use PyTorch/TensorFlow
 - Image/video analysis → use computer vision tools
-- Bayesian deep models (Gaussian processes, variational inference) → use PyMC/Stan
 - Large-scale distributed computing → use Spark/Dask
 
 **Follow this decision tree:**
@@ -1024,15 +1025,7 @@ pip install -r requirements.txt
 
 ## Output Interpretation Guide
 
-### Success Response Format
-Every command returns a JSON envelope:
-```json
-{
-  "status": "success",
-  "data": { /* command-specific results */ },
-  "version": "1.4.0"
-}
-```
+See [Output Format](#output-format) for the standard JSON envelope. Below are key output fields for interpreting results:
 
 ### Key Output Fields by Category
 
@@ -1105,9 +1098,14 @@ Every command returns a JSON envelope:
 | monte_carlo | 1,000,000 sims | Vectorized, ~150ms for 1M |
 | sobol | 50,000 sims | ~5s for 50k with 3 variables |
 | mining/classify | 100,000 samples | sklearn handles well |
-| functional/fpca | 1,000 curves × 100 points | Matrix operations, O(n·p²) |
+| functional/fpca | 1,000 curves × 100 points | Matrix operations, O(n p²) |
 | bayesian | 10,000 | MLE optimization, fast |
 | bootstrap | 100,000 resamples | Vectorized, fast |
+| sensitivity/tornado | 50 variables | 1D perturbation, very fast |
+| acceptance_sampling | N/A | Lookup-based, instant |
+| distribution/fit | 100,000 | MLE optimization, moderate |
+| timeseries/arima | 10,000 | Iterative optimization |
+| advanced/mixed_effects | 50,000 | Likelihood optimization |
 
 **Tips:**
 - For very large datasets (>100k), consider sampling before analysis
@@ -1118,28 +1116,7 @@ Every command returns a JSON envelope:
 
 ## Error Handling
 
-When a command returns `status: "error"`, check `error_type` for the cause:
-
-| error_type | Meaning | Fix |
-|---|---|---|
-| `PARAM_ERROR` | Missing or wrong parameter | Use `discover` to check required params |
-| `DATA_ERROR` | Insufficient or bad data | Check data size, format, NaN values |
-| `COMPUTATION_ERROR` | Math error (zero variance, singular matrix) | Check data variability |
-| `FILE_NOT_FOUND` | File path wrong | Verify file path |
-| `MISSING_DEPENDENCY` | Package not installed | `pip install -r requirements.txt` |
-| `MEMORY_ERROR` | Too much data | Reduce data size |
-| `INTERNAL_ERROR` | Bug | Report issue |
-| `INVALID_INPUT` | Input format wrong (e.g. non-numeric values) | Check input data types |
-| `MISSING_COMMAND` | Unknown command name | Use `discover` to list available commands |
-
-Example error response:
-```json
-{
-  "status": "error",
-  "error_type": "PARAM_ERROR",
-  "message": "Unknown command: xxx. Use 'discover' to list available commands."
-}
-```
+See [Output Format](#output-format) for the full error type table, recovery workflows, and example error response. Every error includes `status: "error"`, `error_type`, `message`, and `suggestion`.
 
 ---
 

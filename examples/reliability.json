@@ -1,0 +1,1 @@
+{"command": "reliability", "params": {"analysis_type": "weibull", "times": [120, 250, 380, 510, 640, 770, 900, 1030, 1160, 1300], "status": [1, 1, 1, 1, 0, 1, 1, 1, 0, 1]}}

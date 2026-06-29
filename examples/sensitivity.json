@@ -1,0 +1,1 @@
+{"command": "sensitivity", "params": {"analysis_type": "monte_carlo", "inputs": {"x": {"dist": "normal", "params": {"mean": 10, "std": 1}}, "y": {"dist": "uniform", "params": {"low": 0, "high": 5}}}, "formula": "x + y * 2", "n_simulations": 10000}}
