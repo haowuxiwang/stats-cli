@@ -94,7 +94,7 @@ class TestTwoColumnFileLoading:
 
 
 class TestRunScriptSecurity:
-    """Test _run_script security checks."""
+    """Test _run_script security checks (AST-based)."""
 
     def test_run_script_blocked_dunder(self):
         """Script with dunder access is blocked."""
@@ -105,7 +105,7 @@ class TestRunScriptSecurity:
             }
         )
         assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert "dunder" in result["message"].lower()
 
     def test_run_script_blocked_import(self):
         """Script with import statement is blocked."""
@@ -116,62 +116,54 @@ class TestRunScriptSecurity:
             }
         )
         assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert "import" in result["message"].lower()
 
-    def test_run_script_blocked_open(self):
-        """Script with open() is blocked."""
+    def test_run_script_blocked_from_import(self):
+        """Script with 'from X import Y' is blocked."""
         result = handler(
             {
                 "command": "run",
-                "params": {"script": "f = open('test.txt')"},
+                "params": {"script": "from os import listdir"},
             }
         )
         assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert "import" in result["message"].lower()
 
-    def test_run_script_blocked_exec(self):
-        """Script with exec() is blocked."""
+    def test_run_script_blocked_dunder_name(self):
+        """Script with __builtins__ reference is blocked."""
         result = handler(
             {
                 "command": "run",
-                "params": {"script": "exec('print(1)')"},
+                "params": {"script": "x = __builtins__"},
             }
         )
         assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert "dunder" in result["message"].lower()
 
-    def test_run_script_blocked_eval(self):
-        """Script with eval() is blocked."""
+    def test_run_script_safe_arithmetic(self):
+        """Safe arithmetic script works."""
         result = handler(
             {
                 "command": "run",
-                "params": {"script": "eval('1+1')"},
+                "params": {
+                    "script": 'result = sum(data["values"]) / len(data["values"])',
+                    "data": {"values": [1, 2, 3, 4, 5]},
+                },
             }
         )
-        assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert result["status"] == "success"
+        assert result["data"] == 3.0
 
-    def test_run_script_blocked_os(self):
-        """Script with os module is blocked."""
+    def test_run_script_safe_list_comp(self):
+        """Safe list comprehension works."""
         result = handler(
             {
                 "command": "run",
-                "params": {"script": "os.listdir('.')"},
+                "params": {"script": 'result = [x**2 for x in data["values"]]', "data": {"values": [1, 2, 3]}},
             }
         )
-        assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
-
-    def test_run_script_blocked_sys(self):
-        """Script with sys module is blocked."""
-        result = handler(
-            {
-                "command": "run",
-                "params": {"script": "sys.exit(0)"},
-            }
-        )
-        assert result["status"] == "error"
-        assert "blocked pattern" in result["message"].lower()
+        assert result["status"] == "success"
+        assert result["data"] == [1, 4, 9]
 
 
 class TestRunScriptExecution:

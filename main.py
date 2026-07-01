@@ -4,11 +4,45 @@ Entry point for Aily skill invocation.
 Accepts JSON input, routes to statistical modules, returns JSON output.
 """
 
+import copy
 import json
 import logging
 import sys
 
 from utils.output import ErrorType, error, success, to_json, warning
+
+# Maximum input size for in-memory arrays (prevents OOM from accidental large input)
+MAX_VALUES_SIZE = 100_000
+
+
+def _validate_input_size(params):
+    """Check input data size limits. Returns error dict or None."""
+    values = params.get("values")
+    if values and isinstance(values, list) and len(values) > MAX_VALUES_SIZE:
+        return error(
+            f"Input 'values' exceeds maximum size ({len(values)} > {MAX_VALUES_SIZE}). "
+            "Use file-based input or sample your data.",
+            ErrorType.DATA_ERROR,
+            suggestion=f"Reduce to <={MAX_VALUES_SIZE} points or use 'file' parameter",
+        )
+    groups = params.get("groups")
+    if groups and isinstance(groups, list):
+        total = sum(len(g) for g in groups if isinstance(g, list))
+        if total > MAX_VALUES_SIZE:
+            return error(
+                f"Input 'groups' total size ({total}) exceeds maximum ({MAX_VALUES_SIZE}).",
+                ErrorType.DATA_ERROR,
+                suggestion="Reduce data size or use file-based input",
+            )
+    for key in ("x", "y", "times", "measurements"):
+        arr = params.get(key)
+        if arr and isinstance(arr, list) and len(arr) > MAX_VALUES_SIZE:
+            return error(
+                f"Input '{key}' exceeds maximum size ({len(arr)} > {MAX_VALUES_SIZE}).",
+                ErrorType.DATA_ERROR,
+                suggestion=f"Reduce to <={MAX_VALUES_SIZE} points or use 'file' parameter",
+            )
+    return None
 
 
 def handler(input_data):
@@ -28,9 +62,10 @@ def handler(input_data):
             return error(f"Invalid JSON input / 无效的JSON输入: {e}", ErrorType.INVALID_INPUT)
 
     command = input_data.get("command")
-    params = input_data.get("params", {})
-    # Protect caller's dict from mutation
-    params = dict(params or {})
+    # Deep copy to protect caller's nested structures from mutation
+    params = copy.deepcopy(input_data.get("params", {}))
+    if not isinstance(params, dict):
+        params = {}
 
     if not command:
         return error(
@@ -39,22 +74,39 @@ def handler(input_data):
             suggestion="使用 'discover' 命令查看所有可用命令",
         )
 
+    # Validate input size limits
+    size_error = _validate_input_size(params)
+    if size_error:
+        return size_error
+
     # Route to command handler
     want_chart = params.pop("chart", False)
     try:
         result = _route(command, params)
+        # _route may return error dict for unknown commands
+        if isinstance(result, dict) and result.get("status") == "error":
+            return result
         # Generate chart if requested
+        chart_error = None
         if want_chart and isinstance(result, dict):
             # Inject raw values for chart generation
             if "values" in params and "_values" not in result:
                 result["_values"] = params["values"]
-            result["chart_base64"] = _generate_chart(command, result, params)
+            try:
+                result["chart_base64"] = _generate_chart(command, result, params)
+            except Exception as chart_exc:
+                chart_error = f"Chart generation failed: {chart_exc}"
+                logging.warning("Chart generation failed for %s: %s", command, chart_exc)
             result.pop("_values", None)  # Clean up temp field
         # Check for warning marker from module
-        warning_msg = result.pop("_warning", None) if isinstance(result, dict) else None
-        suggestion = result.pop("_warning_suggestion", None) if isinstance(result, dict) else None
-        if warning_msg:
-            return warning(result, warning_msg, suggestion)
+        if isinstance(result, dict):
+            warning_msg = result.pop("_warning", None)
+            warning_suggestion = result.pop("_warning_suggestion", None)
+            # Add chart error as warning if present
+            if chart_error and "chart_error" not in result:
+                result["chart_error"] = chart_error
+            if warning_msg:
+                return warning(result, warning_msg, warning_suggestion)
         return success(result)
     except ValueError as e:
         return error(str(e), _classify_value_error(str(e)))
@@ -206,7 +258,11 @@ def _route(command, params):
 
     # Lookup command in registry
     if command not in COMMAND_REGISTRY:
-        raise ValueError(f"Unknown command: {command}. Use 'discover' to list available commands.")
+        return error(
+            f"Unknown command: '{command}'. Use 'discover' to list available commands.",
+            ErrorType.UNKNOWN_COMMAND,
+            suggestion=f"Did you mean one of: {', '.join(sorted(COMMAND_REGISTRY.keys())[:5])}...?",
+        )
 
     # Two-column file loading for correlation/regression
     if command in TWO_COLUMN_COMMANDS and "file" in params and "x" not in params:
@@ -291,38 +347,96 @@ def _run_script(params):
     if not script:
         raise ValueError("'script' parameter is required")
 
-    # Security: block dangerous patterns
-    _DANGEROUS_PATTERNS = [
-        "__",  # dunder access (class, subclasses, builtins, import)
-        "import ",  # import statements
-        "open(",  # file operations
-        "exec(",  # nested exec
-        "eval(",  # eval
-        "compile(",  # compile
-        "globals(",  # globals/locals access
-        "locals(",
-        "getattr(",  # attribute access
-        "setattr(",
-        "delattr(",
-        "os.",  # os module
-        "sys.",  # sys module
-        "subprocess",  # subprocess
-        "shutil",  # file operations
-        "pathlib",  # path operations
-        "socket",  # network
-        "urllib",  # network
-        "requests",  # network
-    ]
-    script_lower = script.lower()
-    for pattern in _DANGEROUS_PATTERNS:
-        if pattern in script_lower:
-            raise ValueError(
-                f"Script contains blocked pattern: '{pattern}'. "
-                "The run command supports simple data transformations only. "
-                "Blocked: dunder access, imports, file/network operations."
-            )
+    # Security: AST-based analysis (more robust than string blacklist)
+    import ast
 
-    # Restricted namespace - no imports, no file access
+    try:
+        tree = ast.parse(script, mode="exec")
+    except SyntaxError as e:
+        raise ValueError(f"Script syntax error: {e}")
+
+    # Walk AST to block dangerous constructs
+    _ALLOWED_NODES = (
+        ast.Module,
+        ast.Expr,
+        ast.Assign,
+        ast.AugAssign,
+        ast.AnnAssign,
+        ast.Name,
+        ast.Constant,
+        ast.Load,
+        ast.Store,
+        ast.Del,
+        ast.BinOp,
+        ast.UnaryOp,
+        ast.BoolOp,
+        ast.Compare,
+        ast.IfExp,
+        ast.Add,
+        ast.Sub,
+        ast.Mult,
+        ast.Div,
+        ast.FloorDiv,
+        ast.Mod,
+        ast.Pow,
+        ast.USub,
+        ast.UAdd,
+        ast.Not,
+        ast.And,
+        ast.Or,
+        ast.Eq,
+        ast.NotEq,
+        ast.Lt,
+        ast.LtE,
+        ast.Gt,
+        ast.GtE,
+        ast.Call,
+        ast.keyword,
+        ast.Attribute,
+        ast.Subscript,
+        ast.Index,
+        ast.Slice,
+        ast.List,
+        ast.Tuple,
+        ast.Set,
+        ast.Dict,
+        ast.For,
+        ast.While,
+        ast.If,
+        ast.Break,
+        ast.Continue,
+        ast.Pass,
+        ast.Try,
+        ast.ExceptHandler,
+        ast.With,
+        ast.withitem,
+        ast.ListComp,
+        ast.SetComp,
+        ast.GeneratorExp,
+        ast.comprehension,
+        ast.Return,
+        ast.Yield,
+        ast.Lambda,
+        ast.FormattedValue,
+        ast.JoinedStr,
+        ast.IfExp,
+        ast.Starred,
+        ast.NamedExpr,
+    )
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            raise ValueError("Script contains import statement. The run command does not support imports.")
+        if isinstance(node, ast.ImportFrom):
+            raise ValueError("Script contains 'from ... import' statement. The run command does not support imports.")
+        # Block dunder attribute access (e.g., __class__, __bases__)
+        if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
+            raise ValueError(f"Script accesses dunder attribute '{node.attr}'. Dunder access is blocked for security.")
+        # Block __builtins__ access via Name node
+        if isinstance(node, ast.Name) and node.id.startswith("__"):
+            raise ValueError(f"Script references '{node.id}'. Dunder names are blocked for security.")
+
+    # Restricted namespace - no print (prevents stdout pollution)
     safe_builtins = {
         "abs": abs,
         "all": all,
@@ -342,7 +456,6 @@ def _run_script(params):
         "max": max,
         "min": min,
         "pow": pow,
-        "print": print,
         "range": range,
         "repr": repr,
         "reversed": reversed,

@@ -37,7 +37,7 @@ def test_handler_missing_command():
 def test_handler_unknown_command():
     result = handler({"command": "nonexistent"})
     assert result["status"] == "error"
-    assert result["error_type"] == "PARAM_ERROR"
+    assert result["error_type"] == "UNKNOWN_COMMAND"
 
 
 def test_handler_validation_error():

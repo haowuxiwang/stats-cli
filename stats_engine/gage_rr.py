@@ -81,13 +81,32 @@ def _variance_ci(variance, df, alpha=0.05):
 
 
 def _crossed(measurements, parts, operators, tolerance=None, **kwargs):
-    """Crossed Gage R&R (ANOVA method)."""
+    """Crossed Gage R&R (ANOVA method).
+
+    Accepts measurements as flat array (with parts/operators arrays) or 2D array
+    (rows=parts, cols=operators, values=replicates).
+    """
     try:
         import pandas as pd
         import statsmodels.api as sm
         from statsmodels.formula.api import ols
     except ImportError:
         raise ImportError("statsmodels required for Gage R&R")
+
+    # Auto-detect 2D array format and flatten
+    if measurements and isinstance(measurements[0], (list, tuple, np.ndarray)):
+        # 2D format: [[rep1_op1, rep1_op2], [rep2_op1, rep2_op2], ...]
+        flat = []
+        flat_parts = []
+        flat_ops = []
+        for i, row in enumerate(measurements):
+            for j, val in enumerate(row):
+                flat.append(val)
+                flat_parts.append(parts[i] if i < len(parts) else f"P{i + 1}")
+                flat_ops.append(operators[j] if j < len(operators) else f"O{j + 1}")
+        measurements = flat
+        parts = flat_parts
+        operators = flat_ops
 
     measurements = np.array(measurements, dtype=float)
     parts = np.array(parts)
@@ -326,13 +345,30 @@ def _crossed(measurements, parts, operators, tolerance=None, **kwargs):
 
 
 def _nested(measurements, parts, operators, **kwargs):
-    """Nested Gage R&R."""
+    """Nested Gage R&R.
+
+    Accepts measurements as flat array (with parts/operators arrays) or 2D array.
+    """
     try:
         import pandas as pd
         import statsmodels.api as sm
         from statsmodels.formula.api import ols
     except ImportError:
         raise ImportError("statsmodels required for Gage R&R")
+
+    # Auto-detect 2D array format and flatten
+    if measurements and isinstance(measurements[0], (list, tuple, np.ndarray)):
+        flat = []
+        flat_parts = []
+        flat_ops = []
+        for i, row in enumerate(measurements):
+            for j, val in enumerate(row):
+                flat.append(val)
+                flat_parts.append(parts[i] if i < len(parts) else f"P{i + 1}")
+                flat_ops.append(operators[j] if j < len(operators) else f"O{j + 1}")
+        measurements = flat
+        parts = flat_parts
+        operators = flat_ops
 
     measurements = np.array(measurements, dtype=float)
     df = pd.DataFrame(

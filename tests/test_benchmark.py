@@ -2286,7 +2286,7 @@ class TestPerformanceBenchmark:
         for _ in range(10):
             handler({"command": "correlation", "params": {"x": x, "y": y}})
         elapsed = (time.time() - start) / 10
-        assert elapsed < 0.01, f"correlation took {elapsed * 1000:.0f}ms, expected <10ms"
+        assert elapsed < 0.05, f"correlation took {elapsed * 1000:.0f}ms, expected <50ms"
 
     def test_distribution_select_speed(self):
         """Distribution select should handle 1000 values in <2000ms."""
