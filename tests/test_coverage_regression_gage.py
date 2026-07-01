@@ -18,14 +18,18 @@ class TestRegressionEdgeCases:
 
     def test_polynomial_too_few_points(self):
         """Line 214: polynomial with insufficient data."""
-        result = handler({"command": "regression", "params": {"x": [1, 2], "y": [1, 4], "reg_type": "polynomial", "degree": 3}})
+        result = handler(
+            {"command": "regression", "params": {"x": [1, 2], "y": [1, 4], "reg_type": "polynomial", "degree": 3}}
+        )
         assert result["status"] == "error"
 
     def test_logistic_regression(self):
         """Line 325-326: logistic path."""
         x = np.linspace(0, 10, 50)
         y = (x > 5).astype(float)
-        result = handler({"command": "regression", "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "logistic"}})
+        result = handler(
+            {"command": "regression", "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "logistic"}}
+        )
         assert result["status"] == "success"
 
     def test_nonlinear_regression(self):
@@ -56,7 +60,10 @@ class TestRegressionEdgeCases:
         x = np.random.randn(50, 3)
         y = 2 * x[:, 0] + 0.5 * x[:, 1] + np.random.normal(0, 0.1, 50)
         result = handler(
-            {"command": "regression", "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "ridge", "reg_alpha": 1.0}}
+            {
+                "command": "regression",
+                "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "ridge", "reg_alpha": 1.0},
+            }
         )
         assert result["status"] == "success"
 
@@ -68,7 +75,13 @@ class TestRegressionEdgeCases:
         result = handler(
             {
                 "command": "regression",
-                "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "elastic_net", "reg_alpha": 0.1, "l1_ratio": 0.5},
+                "params": {
+                    "x": x.tolist(),
+                    "y": y.tolist(),
+                    "reg_type": "elastic_net",
+                    "reg_alpha": 0.1,
+                    "l1_ratio": 0.5,
+                },
             }
         )
         assert result["status"] == "success"
@@ -79,7 +92,10 @@ class TestRegressionEdgeCases:
         x = np.linspace(0, 10, 30)
         y = 2 * x + 1 + np.random.normal(0, 1, 30)
         result = handler(
-            {"command": "regression", "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "robust", "method": "huber"}}
+            {
+                "command": "regression",
+                "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "robust", "method": "huber"},
+            }
         )
         assert result["status"] == "success"
 
@@ -89,7 +105,10 @@ class TestRegressionEdgeCases:
         x = np.random.randn(50, 5)
         y = x[:, 0] + 2 * x[:, 1] + np.random.normal(0, 0.1, 50)
         result = handler(
-            {"command": "regression", "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "pls", "n_components": 2}}
+            {
+                "command": "regression",
+                "params": {"x": x.tolist(), "y": y.tolist(), "reg_type": "pls", "n_components": 2},
+            }
         )
         assert result["status"] == "success"
 

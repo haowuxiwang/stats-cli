@@ -70,7 +70,12 @@ class TestWorkflowEdgeCases:
         result = handler(
             {
                 "command": "workflow_template",
-                "params": {"template_name": "capability", "values": [10, 11, 12, 10, 11, 12, 10, 11, 12, 10], "usl": 15, "lsl": 5},
+                "params": {
+                    "template_name": "capability",
+                    "values": [10, 11, 12, 10, 11, 12, 10, 11, 12, 10],
+                    "usl": 15,
+                    "lsl": 5,
+                },
             }
         )
         assert result["status"] == "success"
