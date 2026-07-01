@@ -40,6 +40,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 
 - [Installation](#installation)
 - [Quick Start](#quick-start-dont-know-what-analysis-to-use)
+- [Decision Guide](#decision-guide-scenario--command)
 - [Industry Scenarios](#industry-scenarios-常见场景命令组合)
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
@@ -55,6 +56,8 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [Documentation](#documentation)
 - [Testing](#testing)
 - [Dependencies](#dependencies)
+
+> **Output interpretation:** See [OUTPUT.md](OUTPUT.md) for a complete guide to interpreting key metrics (p-values, Cpk, R², NDC, Weibull parameters, etc.).
 
 ## Installation
 
@@ -117,10 +120,52 @@ Add `"chart": true` to params to get a base64 PNG chart in the response. Support
 
 Commands without chart support (10): `discover`, `run`, `clean`, `transform`, `workflow`, `workflow_template`, `check_assumptions`, `recommend`, `export_excel`, `export_pdf`.
 
-```python
-{"command": "descriptive", "params": {"values": [1, 2, 3, 4, 5], "chart": true}}
-# Response includes: "chart_base64": "iVBORw0KGgo..."
+**CLI example:**
+```bash
+echo '{"command":"control_chart","params":{"chart_type":"imr","values":[10.1,10.2,10.0,10.3,10.1],"chart":true}}' | python main.py
 ```
+
+**Python handler example:**
+```python
+from main import handler
+
+# Generate chart
+result = handler({
+    "command": "capability",
+    "params": {
+        "values": [9.8, 10.0, 10.2, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.2] * 3,
+        "usl": 12, "lsl": 8,
+        "chart": True
+    }
+})
+
+if result["status"] == "success":
+    chart_b64 = result["data"]["chart_base64"]
+    # Embed in HTML
+    html = f'<img src="data:image/png;base64,{chart_b64}">'
+    # Or save to file
+    import base64
+    with open("chart.png", "wb") as f:
+        f.write(base64.b64decode(chart_b64))
+```
+
+**Chart types by command:**
+
+| Command | Chart Type | What it shows |
+|---------|-----------|---------------|
+| `descriptive` | Histogram + normal curve | Data distribution |
+| `control_chart` | Control chart (X-bar/R/IMR/EWMA/CUSUM/T²) | Process stability with UCL/LCL |
+| `capability` | Histogram + spec limits | Cp/Cpk visualization |
+| `regression` | Scatter + regression line | Fit diagnostics |
+| `correlation` | Scatter matrix | Variable relationships |
+| `ttest` | Boxplot with p-value | Group comparison |
+| `anova` | Boxplot with significance | Multi-group comparison |
+| `reliability` | Weibull/KM plot | Failure distribution |
+| `distribution` | Distribution fit | PDF/CDF with data |
+| `outlier` | Index plot with markers | Outlier positions |
+| `timeseries` | Time series + forecast | Trend and prediction |
+| `doe` | Pareto chart | Factor effects |
+| `gage_rr` | Variance components | R&R breakdown |
 
 ### File-Based Input
 
@@ -149,6 +194,60 @@ echo '{"command":"discover"}' | python main.py
 {"command": "discover"}                                    # 列出所有命令
 {"command": "discover", "params": {"category": "spc"}}     # 按类别筛选
 {"command": "discover", "params": {"command_name": "ttest"}}  # 查看参数详情（含 required/type）
+```
+
+## Decision Guide: Scenario → Command
+
+**Start with what you want to achieve, then pick the command:**
+
+| I want to... | Use this command | Required params | Key output |
+|---|---|---|---|
+| Summarize data (mean, spread, shape) | `descriptive` | `values` | mean, std, median, skewness, kurtosis |
+| Check if data is normal | `normality` | `values` | shapiro_wilk, anderson_darling, is_normal |
+| Compare two groups | `ttest` | `values`, `values2` or `mu` | t_statistic, p_value, significant |
+| Compare 3+ groups | `anova` + `multiple_comparison` | `groups` | F_statistic, p_value, post-hoc pairs |
+| Measure correlation | `correlation` | `x`, `y` | pearson_r, spearman_r, p_value |
+| Predict Y from X | `regression` | `x`, `y`, `reg_type` | slope, intercept, r_squared, equation |
+| Detect trends over time | `trend` | `values` | CUSUM/EWMA/Runs result, is_stable |
+| Forecast future values | `timeseries` | `values`, `analysis_type` | forecast, fitted_values |
+| Monitor process stability | `control_chart` | `values`, `chart_type` | ucl, lcl, out_of_control_points |
+| Assess process capability | `capability` | `values`, `usl`, `lsl` | cp, cpk, pp, ppm, rating |
+| Evaluate measurement system | `gage_rr` | `analysis_type`, `measurements`, `parts`, `operators` | contribution, study_variation, ndc, rating |
+| Analyze product lifetime | `reliability` | `times`, `analysis_type` | shape, scale, mtbf, failure_rate |
+| Design an experiment | `doe` | `factors`, `responses` | design_table, anova, effects |
+| Reduce dimensionality | `multivariate` | `values` or `variables`, `analysis_type` | loadings, variance_explained |
+| Fit a distribution | `distribution` | `values`, `distribution` | params, aic, bic, ks_statistic |
+| Detect outliers | `outlier` | `values`, `method` | outlier_indices, cleaned_data |
+| Clean messy data | `clean` | `values` or `file` | cleaned, removed_count, imputed_count |
+| Transform non-normal data | `transform` | `values`, `method` | transformed, lambda, j_statistic |
+| Sample inspection plan | `acceptance_sampling` | `lot_size`, `inspection_level` | n, ac, re, oc_curve |
+| Run sensitivity analysis | `sensitivity` | `inputs`, `method` | tornado, sobol_indices |
+| Functional data analysis | `functional` | `curves`, `analysis_type` | mean_curve, fpc_scores |
+| Bayesian estimation | `bayesian` | `data`, `model` | posterior_mean, credible_interval |
+| Acceptance/reject decision | `equivalence` | `values`, `values2`, `delta` | ci_90, is_equivalent |
+
+**Decision tree (text version):**
+
+```
+Data type?
+├── Single variable
+│   ├── Distribution shape? → descriptive → normality
+│   ├── Outliers? → outlier
+│   ├── Trend over time? → trend → control_chart
+│   ├── Against spec? → capability
+│   └── Lifetime data? → reliability
+├── Two variables
+│   ├── Relationship? → correlation → regression
+│   └── Group comparison? → ttest / nonparametric
+├── 3+ variables
+│   ├── Group comparison? → anova → multiple_comparison
+│   ├── Reduce dimensions? → multivariate (pca)
+│   └── Predict one from others? → regression (multiple)
+└── Process / system
+    ├── Stability? → control_chart
+    ├── Measurement system? → gage_rr
+    ├── Design experiment? → doe
+    └── Sampling plan? → acceptance_sampling
 ```
 
 ## Industry Scenarios (常见场景 → 命令组合)
