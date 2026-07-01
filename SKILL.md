@@ -1,6 +1,6 @@
 ---
 name: stats-cli-py
-description: "Use when user requests statistics: SPC, process capability, DOE, MSA, reliability, hypothesis testing, regression, or manufacturing quality data. Triggered by analyzing numeric data, comparing groups, monitoring stability, fitting distributions. NOT for text, images, or streaming data."
+description: "Use this skill when the user needs statistical analysis of numerical data (SPC, DOE, MSA, capability, reliability). Triggers: analyze numeric data, compare groups, monitor stability, fit distributions, design experiments. NOT for text, images, streaming, deep learning, causal inference."
 ---
 
 ## Intent → Command Quick Lookup
@@ -32,6 +32,8 @@ description: "Use when user requests statistics: SPC, process capability, DOE, M
 
 Pure Python statistical analysis tool for manufacturing and quality engineering, powered by scipy + statsmodels. All I/O is JSON — designed to be called as an AI-agent skill.
 
+> **Note:** The authoritative command count is returned by `discover`. This document references 39 commands as of v1.4.0, but always use `discover` to get the current list — code is the source of truth.
+
 **For AI Agents:** Not sure which command to use? Call `discover` first — it returns all available commands with their parameters and examples. Use `discover {"command_name": "xxx"}` to get required/optional parameter details before constructing your request.
 
 ## Table of Contents
@@ -42,12 +44,14 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
-- [All Commands](#all-commands-39-commands)
+- [All Commands (39)](#all-commands-39-commands)
 - [Output Interpretation Guide](#output-interpretation-guide)
 - [Performance & Scale Guidance](#performance--scale-guidance)
 - [Output Format](#output-format)
 - [File Support](#file-support)
 - [Error Handling](#error-handling)
+- [Aily Integration](#aily-integration)
+- [Limitations / 不适用场景](#limitations--不适用场景)
 - [Documentation](#documentation)
 - [Testing](#testing)
 - [Dependencies](#dependencies)
@@ -1116,7 +1120,119 @@ See [Output Format](#output-format) for the standard JSON envelope. Below are ke
 
 ## Error Handling
 
-See [Output Format](#output-format) for the full error type table, recovery workflows, and example error response. Every error includes `status: "error"`, `error_type`, `message`, and `suggestion`.
+Every error response includes `status: "error"`, `error_type`, `message`, and `suggestion`. See [Output Format](#output-format) for the full error type table.
+
+### Error Recovery Guide
+
+When calling `handler()` programmatically, handle these errors in your integration layer:
+
+| error_type | Trigger | Recovery |
+|---|---|---|
+| `INVALID_INPUT` | Malformed JSON or non-dict input | Validate JSON before calling; ensure input is a dict or JSON string |
+| `MISSING_COMMAND` | No `command` field in input | Call `discover` first to get available commands |
+| `PARAM_ERROR` | Missing/invalid parameter or unknown command | Call `discover {"command_name": "xxx"}` to see required params |
+| `DATA_ERROR` | Insufficient data, non-numeric values, empty dataset | Pre-validate with `explore` or `clean`; check `n` in output |
+| `COMPUTATION_ERROR` | Zero variance, singular matrix, convergence failure | Check data variance; add noise or remove constant columns |
+| `FILE_NOT_FOUND` | Specified file path does not exist | Verify path; use `explore` to check file contents first |
+| `MISSING_DEPENDENCY` | scipy/statsmodels/etc not installed | Run `pip install -r requirements.txt` |
+| `MEMORY_ERROR` | Data too large for RAM | Use `file` input instead of `values`; reduce sample size |
+| `INTERNAL_ERROR` | Unexpected bug | Retry once; report if persistent |
+
+**Defensive call pattern for Aily/batch integration:**
+
+```python
+from main import handler
+
+result = handler({"command": "descriptive", "params": {"values": data}})
+
+if result["status"] == "error":
+    if result["error_type"] == "PARAM_ERROR":
+        # Auto-recover: fetch schema and retry
+        schema = handler({"command": "discover", "params": {"command_name": "descriptive"}})
+        print(f"Required params: {schema}")
+    elif result["error_type"] == "DATA_ERROR":
+        # Auto-recover: clean data and retry
+        clean_result = handler({"command": "clean", "params": {"values": data}})
+        result = handler({"command": "descriptive", "params": {"values": clean_result["data"]["cleaned"]}})
+```
+
+---
+
+## Aily Integration
+
+This skill is designed for programmatic use via `handler()` — the primary entry point for Aily and other AI-agent platforms.
+
+### Quick Start
+
+```python
+from main import handler
+
+# Basic call — pass a dict directly
+result = handler({
+    "command": "descriptive",
+    "params": {"values": [10.1, 10.2, 10.0, 10.3, 10.1]}
+})
+
+# With chart generation (returns base64 PNG)
+result = handler({
+    "command": "control_chart",
+    "params": {"chart_type": "imr", "values": [10.1, 10.2, 10.0, 10.3], "chart": True}
+})
+# result["data"]["chart_base64"] contains the PNG
+```
+
+### Input Format
+
+`handler()` accepts:
+- **Dict** (recommended): `{"command": "ttest", "params": {"test_type": "two_sample", "values": [1,2], "values2": [3,4]}}`
+- **JSON string** (auto-parsed): `'{"command": "ttest", "params": {...}}'`
+
+Internally, `handler()` makes a defensive copy of `params` — the caller's dict is never mutated.
+
+### Output Format
+
+All returns use the standard envelope:
+- `status: "success"` → result in `data`
+- `status: "warning"` → result in `data` + `warning` message (low power, borderline p-value)
+- `status: "error"` → `error_type` + `message` + `suggestion`
+
+### Discover at Startup
+
+Call `discover` once at integration startup to cache available commands:
+
+```python
+# Cache command list
+all_commands = handler({"command": "discover", "params": {}})
+command_names = list(all_commands["data"]["commands"].keys())
+
+# Cache schema for a specific command
+ttest_schema = handler({"command": "discover", "params": {"command_name": "ttest"}})
+```
+
+### Chart Generation
+
+Add `"chart": true` to any supported command's params to get a `chart_base64` field in the response. Supported: `descriptive`, `normality`, `control_chart`, `capability`, `regression`, `distribution`, `reliability`, `anova`, `correlation`, `histogram` (via descriptive).
+
+---
+
+## Limitations / 不适用场景
+
+This skill does **not** cover:
+
+| Category | Not Supported | Alternative |
+|---|---|---|
+| **Time series forecasting** | LSTM, Prophet, Transformer-based forecasting | Use `timeseries` for ARIMA/ETS only |
+| **High-dimensional sparse data** | t-SNE, UMAP, LDA topic modeling | Use `multivariate` for PCA/clustering |
+| **Survival analysis** | Cox PH, competing risks, frailty models | Use `reliability` for KM/ALT only |
+| **Causal inference** | Instrumental variables, RDD, DiD, synthetic control | Use `regression` for basic linear models |
+| **Deep learning** | Neural networks, CNNs, RNNs, transformers | Not applicable — use PyTorch/TensorFlow |
+| **NLP / text analysis** | Tokenization, sentiment, NER, embeddings | Not applicable |
+| **Image analysis** | OCR, object detection, segmentation | Not applicable |
+| **Streaming data** | Online learning, real-time inference | Batch analysis only |
+| **Big data** | Out-of-core / distributed (Spark/Dask) | Max ~100k samples in-memory |
+| **Bayesian advanced** | Hierarchical models, GP, VI beyond basic | Use `bayesian` for estimation/t-test/ANOVA only |
+
+When user requests fall outside these boundaries, suggest dedicated libraries (statsmodels, lifelines, scikit-learn, PyTorch) instead of attempting workarounds.
 
 ---
 
