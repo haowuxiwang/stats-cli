@@ -20,6 +20,7 @@ INCLUDE = [
     "LICENSE",
     "CHANGELOG.md",
     "VALIDATION.md",
+    "OUTPUT.md",
     "pyproject.toml",
     "requirements.txt",
     "examples/",
