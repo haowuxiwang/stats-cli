@@ -31,6 +31,8 @@ def reliability(analysis_type, **kwargs):
         return _alt(**kwargs)
     elif analysis_type == "crow":
         return _crow_amsaa(**kwargs)
+    elif analysis_type == "cox_ph":
+        return _cox_ph(**kwargs)
     else:
         raise ValueError(f"Unknown analysis_type: {analysis_type}")
 
@@ -441,3 +443,112 @@ def _crow_amsaa(cumulative_times, cumulative_failures, **kwargs):
         "gof_p_value": r(gof_p_value) if gof_p_value is not None else None,
         "interpretation": interp,
     }
+
+
+def _cox_ph(times, event, covariates=None, alpha=0.05):
+    """Cox Proportional Hazards regression.
+
+    Args:
+        times: List of observation times (duration)
+        event: List of event indicators (1=event occurred, 0=censored)
+        covariates: 2D list/array of shape (n_samples, n_features)
+        alpha: Significance level
+
+    Returns:
+        Dict with Cox PH results
+    """
+    try:
+        import pandas as pd
+        from lifelines import CoxPHFitter
+    except ImportError:
+        raise ImportError("lifelines is required for Cox PH analysis. Install with: pip install lifelines")
+
+    times = np.array(times, dtype=float)
+    event = np.array(event, dtype=float)
+
+    if len(times) != len(event):
+        raise ValueError("times and event must have the same length")
+
+    # Build DataFrame
+    data = {"time": times, "event": event}
+    covariate_names = []
+    if covariates is not None:
+        cov_arr = np.array(covariates)
+        if cov_arr.ndim == 1:
+            cov_arr = cov_arr.reshape(-1, 1)
+        cov_arr = cov_arr.astype(float)
+        # Pad or truncate to match times length
+        if len(cov_arr) != len(times):
+            raise ValueError(f"covariates length ({len(cov_arr)}) must match times ({len(times)})")
+        for i in range(cov_arr.shape[1]):
+            name = f"x{i + 1}"
+            data[name] = cov_arr[:, i]
+            covariate_names.append(name)
+
+    df = pd.DataFrame(data)
+
+    if not covariate_names:
+        raise ValueError("Cox PH requires at least one covariate")
+
+    # Fit Cox PH model
+    cph = CoxPHFitter()
+    cph.fit(df, duration_col="time", event_col="event", show_progress=False)
+    summary = cph.summary
+
+    # Extract results
+    results = {
+        "analysis_type": "cox_ph",
+        "n_observations": len(df),
+        "n_events": int(df["event"].sum()),
+        "n_censored": int((1 - df["event"]).sum()),
+        "n_covariates": len(covariate_names),
+        "covariate_names": covariate_names,
+        "pseudo_r_squared": r(cph.concordance_index_),
+        "concordance_index": r(cph.concordance_index_),
+        "log_likelihood": r(cph.log_likelihood_),
+        "aic": r(cph.AIC_partial_),
+        "coefficients": [],
+    }
+
+    for name in covariate_names:
+        row = summary.loc[name]
+        coef = row["coef"]
+        se = row["se(coef)"]
+        z = row["z"]
+        p = row["p"]
+        hr = np.exp(coef)
+        hr_ci_low = np.exp(row["exp(coef) lower 95%"])
+        hr_ci_high = np.exp(row["exp(coef) upper 95%"])
+
+        results["coefficients"].append(
+            {
+                "covariate": name,
+                "coefficient": r(coef),
+                "std_error": r(se),
+                "z_statistic": r(z),
+                "p_value": r(p),
+                "significant": bool(p < alpha) if not np.isnan(p) else None,
+                "hazard_ratio": r(hr),
+                "hr_ci_95_low": r(hr_ci_low),
+                "hr_ci_95_high": r(hr_ci_high),
+            }
+        )
+
+    results["ph_assumption_note"] = "Cox PH model fitted. Use Schoenfeld residuals for formal PH test."
+
+    results["alpha"] = alpha
+
+    # Build interpretation
+    sig_covs = [c for c in results["coefficients"] if c.get("significant")]
+    if sig_covs:
+        parts = []
+        for c in sig_covs:
+            direction = "increases" if c["hazard_ratio"] > 1 else "decreases"
+            parts.append(f"{c['covariate']} {direction} hazard (HR={c['hazard_ratio']:.2f})")
+        results["interpretation"] = (
+            f"Cox PH: significant covariates: {'; '.join(parts)}, C-index={r(cph.concordance_index_)}"
+        )
+    else:
+        results["interpretation"] = f"Cox PH: no significant covariates, C-index={r(cph.concordance_index_)}"
+
+    return results

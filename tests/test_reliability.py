@@ -189,3 +189,136 @@ def test_distribution_fit_extreme_values():
     result = reliability(analysis_type="distribution", times=[1e10, 2e10, 3e10, 4e10, 5e10])
     assert "distributions" in result
     assert result["best_fit"] is not None
+
+
+class TestCoxPH:
+    """Tests for Cox Proportional Hazards regression."""
+
+    def test_cox_ph_basic(self):
+        """Cox PH with single covariate."""
+        np.random.seed(42)
+        n = 50
+        time = np.random.exponential(100, n).tolist()
+        event = np.random.binomial(1, 0.8, n).tolist()
+        age = np.random.normal(60, 10, n).reshape(-1, 1).tolist()
+
+        result = reliability(
+            analysis_type="cox_ph",
+            times=time,
+            event=event,
+            covariates=age,
+        )
+        assert result["analysis_type"] == "cox_ph"
+        assert result["n_observations"] == n
+        assert len(result["coefficients"]) == 1
+        assert "hazard_ratio" in result["coefficients"][0]
+        assert "hr_ci_95_low" in result["coefficients"][0]
+        assert "concordance_index" in result
+        assert "interpretation" in result
+
+    def test_cox_ph_multiple_covariates(self):
+        """Cox PH with multiple covariates."""
+        np.random.seed(42)
+        n = 60
+        time = np.random.exponential(100, n).tolist()
+        event = np.random.binomial(1, 0.8, n).tolist()
+        cov1 = np.random.normal(60, 10, n).tolist()
+        cov2 = np.random.binomial(1, 0.5, n).tolist()
+        covariates = [[c1, c2] for c1, c2 in zip(cov1, cov2)]
+
+        result = reliability(
+            analysis_type="cox_ph",
+            times=time,
+            event=event,
+            covariates=covariates,
+        )
+        assert result["analysis_type"] == "cox_ph"
+        assert result["n_covariates"] == 2
+        assert len(result["coefficients"]) == 2
+
+    def test_cox_ph_significant_effect(self):
+        """Cox PH detects strong covariate effect."""
+        np.random.seed(42)
+        n = 80
+        # Strong age effect: older patients have shorter survival
+        age = np.random.normal(60, 15, n)
+        hazard = np.exp(0.05 * (age - 60))  # HR per year = e^0.05 ≈ 1.05
+        time = np.random.exponential(100 / hazard).tolist()
+        event = [1] * n  # All events observed
+
+        result = reliability(
+            analysis_type="cox_ph",
+            times=time,
+            event=event,
+            covariates=age.reshape(-1, 1).tolist(),
+        )
+        assert result["analysis_type"] == "cox_ph"
+        # Age should be significant
+        age_coef = result["coefficients"][0]
+        assert age_coef["significant"] is True
+        assert age_coef["hazard_ratio"] > 1.0  # Older = higher hazard
+
+    def test_cox_ph_via_handler(self):
+        """Cox PH works through handler()."""
+        from main import handler
+
+        np.random.seed(42)
+        n = 40
+        time = np.random.exponential(100, n).tolist()
+        event = np.random.binomial(1, 0.8, n).tolist()
+        treatment = np.random.binomial(1, 0.5, n).reshape(-1, 1).tolist()
+
+        result = handler(
+            {
+                "command": "reliability",
+                "params": {
+                    "analysis_type": "cox_ph",
+                    "times": time,
+                    "event": event,
+                    "covariates": treatment,
+                },
+            }
+        )
+        assert result["status"] == "success"
+        assert result["data"]["analysis_type"] == "cox_ph"
+        assert "concordance_index" in result["data"]
+
+    def test_cox_ph_no_covariates_raises(self):
+        """Cox PH without covariates raises error."""
+        import pytest
+
+        with pytest.raises(ValueError, match="covariate"):
+            reliability(analysis_type="cox_ph", times=[1, 2, 3], event=[1, 1, 0])
+
+    def test_calt_life_test(self):
+        """Accelerated Life Test (ALT) analysis."""
+        result = reliability(
+            analysis_type="alt",
+            stress_levels=[373, 393, 413],
+            failure_times=[500, 200, 80],
+            use_stress=298,
+        )
+        assert result["analysis_type"] == "alt" or "model_params" in result
+
+    def test_crow_amsaa(self):
+        """Crow-AMSAA reliability growth model."""
+        result = reliability(
+            analysis_type="crow",
+            cumulative_times=[100, 200, 500, 1000, 2000],
+            cumulative_failures=[1, 2, 4, 7, 10],
+        )
+        assert result["analysis_type"] == "crow_amsaa"
+        assert "beta" in result
+        assert "growth_rate" in result
+
+    def test_cox_ph_length_mismatch_raises(self):
+        """Mismatched times/event lengths raise error."""
+        import pytest
+
+        with pytest.raises(ValueError, match="same length"):
+            reliability(
+                analysis_type="cox_ph",
+                times=[1, 2, 3],
+                event=[1, 0],
+                covariates=[[1], [2], [3]],
+            )

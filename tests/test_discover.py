@@ -30,6 +30,7 @@ class TestCommandsStructure:
             "data",
             "report",
             "workflow",
+            "measurement",
         }
         for name, cmd in COMMANDS.items():
             assert cmd["category"] in valid_categories, f"{name}: invalid category '{cmd['category']}'"

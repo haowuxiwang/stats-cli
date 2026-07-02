@@ -227,6 +227,7 @@ COMMAND_REGISTRY = {
     "sensitivity": ("stats_engine.sensitivity", "sensitivity"),
     "acceptance_sampling": ("stats_engine.acceptance_sampling", "acceptance_sampling"),
     "functional": ("stats_engine.functional", "functional"),
+    "measurement_uncertainty": ("stats_engine.uncertainty", "measurement_uncertainty"),
 }
 
 # Commands that don't need file-based data loading
@@ -240,6 +241,7 @@ NO_DATA_COMMANDS = {
     "sensitivity",
     "acceptance_sampling",
     "functional",
+    "measurement_uncertainty",
 }
 
 # Commands that need two-column file loading (x and y)

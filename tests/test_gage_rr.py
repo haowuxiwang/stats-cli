@@ -167,3 +167,39 @@ def test_crossed_with_tolerance():
     )
     assert result["analysis_type"] == "crossed"
     assert "pct_tolerance" in result or "study_variation" in result
+
+
+def test_crossed_2d_format_via_handler():
+    """Crossed Gage R&R 2D format works through handler."""
+    # 3 parts x 4 operators x 3 replicates (2D)
+    np.random.seed(42)
+    measurements = [[100 + np.random.normal(0, 1) for _ in range(3)] for _ in range(3)]
+    result = gage_rr(
+        analysis_type="crossed",
+        measurements=measurements,
+        parts=[f"P{i + 1}" for i in range(3)],
+        operators=["O1", "O2", "O3"],
+    )
+    assert result["analysis_type"] == "crossed"
+    assert "variance_components" in result
+
+
+def test_linearity_analysis():
+    """Linearity analysis returns slope and intercept."""
+    reference = [1.0, 2.0, 3.0, 4.0, 5.0] * 3
+    measurements = [1.1, 2.0, 3.2, 3.9, 5.1, 1.0, 2.1, 3.1, 4.0, 5.0, 1.2, 1.9, 3.0, 4.1, 5.2]
+    result = gage_rr(analysis_type="linearity", measurements=measurements, reference_values=reference)
+    assert result["analysis_type"] == "linearity"
+    assert "slope" in result
+    assert "intercept" in result
+
+
+def test_crossed_2d_format():
+    """Crossed Gage R&R accepts 2D array input (auto-detect flatten)."""
+    # 2 parts x 2 operators x 3 replicates, 2D format
+    measurements = [[10.1, 10.2, 10.0], [10.4, 10.5, 10.3]]
+    parts = ["P1", "P2"]
+    operators = ["A", "B", "C"]
+    result = gage_rr(analysis_type="crossed", measurements=measurements, parts=parts, operators=operators)
+    assert result["analysis_type"] == "crossed"
+    assert "variance_components" in result
