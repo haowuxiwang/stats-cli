@@ -168,9 +168,30 @@ def _simple_linear(x, y, alpha):
     # ANOVA for regression
     ss_reg = np.sum((y_pred - np.mean(y)) ** 2)
     ss_res = np.sum(residuals**2)
+
+    # Perfect fit (ss_res == 0): F statistic is undefined
+    if ss_res == 0:
+        return {
+            "regression_type": "linear",
+            "n": n,
+            "coefficients": {"intercept": r(intercept), "slope": r(slope)},
+            "std_errors": {"intercept": None, "slope": None},
+            "ci_intercept": [None, None],
+            "ci_slope": [None, None],
+            "r_squared": 1.0,
+            "r": r(r_value),
+            "adj_r_squared": None,
+            "f_statistic": None,
+            "p_value": None,
+            "significant": None,
+            "residual_std": None,
+            "equation": f"y = {r(slope)} * x + {r(intercept)}",
+            "_warning": "Perfect fit (R²=1.0): F-statistic and p-value are undefined (zero residual variance)",
+        }
+
     ms_reg = ss_reg / 1
     ms_res = ss_res / (n - 2)
-    f_stat = ms_reg / ms_res if ms_res > 0 else float("inf")
+    f_stat = ms_reg / ms_res
     p_f = 1 - sp_stats.f.cdf(f_stat, 1, n - 2)
 
     # Confidence intervals for coefficients

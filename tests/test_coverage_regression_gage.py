@@ -143,7 +143,7 @@ class TestRegressionEdgeCases:
         x = [1, 2, float("nan"), 4, 5, 6]
         y = [2, 4, 6, float("nan"), 10, 12]
         result = handler({"command": "regression", "params": {"x": x, "y": y, "reg_type": "linear"}})
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
 
 class TestGageRREdgeCases:

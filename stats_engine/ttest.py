@@ -44,6 +44,12 @@ def _one_sample_ttest(arr, mu, alpha):
     mean_val = float(np.mean(arr))
     std_val = float(np.std(arr, ddof=1))
 
+    if std_val == 0:
+        raise ValueError(
+            "t-test requires variable data; all values are identical (zero variance). "
+            "A t-test cannot distinguish from the hypothesized mean when there is no spread."
+        )
+
     t_stat, p_value = sp_stats.ttest_1samp(arr, mu)
 
     se = std_val / np.sqrt(n)
@@ -80,6 +86,12 @@ def _two_sample_ttest(arr1, arr2, alpha):
     n1, n2 = len(arr1), len(arr2)
     mean1, mean2 = float(np.mean(arr1)), float(np.mean(arr2))
     std1, std2 = float(np.std(arr1, ddof=1)), float(np.std(arr2, ddof=1))
+
+    if std1 == 0 and std2 == 0:
+        raise ValueError(
+            "t-test requires variable data; both groups have zero variance (all values identical). "
+            "Cannot compute t-statistic when neither group has spread."
+        )
 
     # Welch's t-test (unequal variances)
     t_stat, p_value = sp_stats.ttest_ind(arr1, arr2, equal_var=False)

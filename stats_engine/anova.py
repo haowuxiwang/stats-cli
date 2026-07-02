@@ -232,6 +232,20 @@ def _n_way_anova(groups, alpha, data=None):
     if interaction_terms:
         formula += " + " + " + ".join(interaction_terms)
 
+    # Pre-check: ensure enough observations for the model degrees of freedom
+    # Model df = number of coefficients (including intercept) - 1 + residuals
+    # For a saturated design (n <= n_params), statsmodels produces inf F-values
+    n_obs = len(df)
+    # Rough upper bound on model parameters: product of factor levels
+    n_params = 1  # intercept
+    for fname in factor_names:
+        n_params *= len(df[fname].unique())
+    if n_obs <= n_params + 1:
+        raise ValueError(
+            f"N-way ANOVA needs more observations ({n_obs}) than model parameters ({n_params + 1}). "
+            f"Provide at least {n_params + 2} observations for the given factor design."
+        )
+
     model = ols(formula, data=df).fit()
     anova_table = sm.stats.anova_lm(model, typ=2)
 
