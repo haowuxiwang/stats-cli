@@ -2,6 +2,30 @@
 
 All notable changes to stats-cli-py will be documented in this file.
 
+## [Unreleased] - 2026-07-02
+
+### Added
+- **measurement_uncertainty**: GUM framework Type A+B uncertainty evaluation with effective degrees of freedom
+- **N-way ANOVA**: 3+ factors with full interaction terms via `anova_type="n_way"`
+- **Repeated measures ANOVA**: Within-subject design with sphericity notes
+- **Auto-ARIMA**: Automatic order selection via AIC/BIC grid search
+- **Cox PH diagnostics**: Schoenfeld residuals, LLR p-value, KM survival curves
+- **REST API server**: `python serve.py --port 8080` with `/api/v1/analyze`, `/api/v1/discover`, `/api/v1/health`
+- **Decision blocks**: Structured decision output for capability, ttest, control_chart
+- **Forecast CIs**: 95% confidence intervals for ARIMA and ETS forecasts
+- **Fisher-z CI**: Confidence intervals for Pearson correlation
+- **ttest CI**: Confidence intervals for mean difference (two-sample)
+- **Western Electric rules**: WE rules 2-3-4 now affect control chart stability verdict
+- **Security hardening**: AST-based script whitelisting, 100KB script limit, resource limits
+- **NaN/Inf handling**: Standardized `_filter_nan_inf` with `n_missing` and `missing_pct` in descriptive
+
+### Changed
+- **1894 tests**, 96.05% coverage (from 1778 / 94.85%)
+- **42 commands** (from 39)
+- CI: Coverage threshold lowered to 93% (Windows compatibility)
+- Performance regression threshold relaxed to 3x
+- Security: Bandit scan integrated
+
 ## [1.4.0] - 2026-06-25
 
 ### Added

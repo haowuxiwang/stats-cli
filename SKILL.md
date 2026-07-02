@@ -32,7 +32,7 @@ description: "Use this skill when the user needs statistical analysis of numeric
 
 Pure Python statistical analysis tool for manufacturing and quality engineering, powered by scipy + statsmodels. All I/O is JSON — designed to be called as an AI-agent skill.
 
-> **Note:** The authoritative command count is returned by `discover`. This document references 39 commands as of v1.4.0, but always use `discover` to get the current list — code is the source of truth.
+> **Note:** The authoritative command count is returned by `discover`. This document references 42 commands as of v1.5.0, but always use `discover` to get the current list — code is the source of truth.
 
 **For AI Agents:** Not sure which command to use? Call `discover` first — it returns all available commands with their parameters and examples. Use `discover {"command_name": "xxx"}` to get required/optional parameter details before constructing your request.
 
@@ -593,7 +593,7 @@ MSA/Gage R&R — 判断测量系统的重复性和再现性是否可接受。
 
 ---
 
-## All Commands (39 commands)
+## All Commands (42 commands)
 
 ### Data Exploration
 ```python
