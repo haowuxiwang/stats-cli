@@ -6,3 +6,4 @@ openpyxl>=3.0,<4
 scikit-learn>=1.0,<2
 matplotlib>=3.5,<4
 fpdf2>=2.8,<3
+lifelines>=0.28,<1
