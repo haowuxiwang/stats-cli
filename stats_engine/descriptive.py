@@ -16,6 +16,12 @@ def descriptive(values):
     Returns:
         Dict with descriptive statistics
     """
+    # Track missing values before filtering
+    raw = np.array(values, dtype=float)
+    n_total = len(raw)
+    n_missing = int(np.sum(~np.isfinite(raw)))
+    missing_pct = (n_missing / n_total * 100) if n_total > 0 else 0.0
+
     arr = to_array(values, min_n=1, name="values")
     n = len(arr)
 
@@ -23,10 +29,13 @@ def descriptive(values):
         val = float(arr[0])
         return {
             "n": 1,
+            "n_missing": n_missing,
+            "missing_pct": r(missing_pct, 2),
             "total": r(val),
             "mean": r(val),
             "median": r(val),
             "std": None,
+            "sem": None,
             "rsd_percent": None,
             "min": r(val),
             "max": r(val),
@@ -66,12 +75,20 @@ def descriptive(values):
         skew = float(sp_stats.skew(arr))
         kurt = float(sp_stats.kurtosis(arr))
 
+    sem_val = std_val / np.sqrt(n)
+    interp = f"n={n}, mean={r(mean_val)}, std={r(std_val)}, RSD={r(rsd, 2)}%, SE={r(sem_val)}"
+    if n < 30:
+        interp += " (small sample, n<30 — use t-distribution)"
+
     result = {
         "n": n,
+        "n_missing": n_missing,
+        "missing_pct": r(missing_pct, 2),
         "total": r(float(np.sum(arr))),
         "mean": r(mean_val),
         "median": r(median_val),
         "std": r(std_val),
+        "sem": r(sem_val),
         "rsd_percent": r(rsd, 2),
         "min": r(np.min(arr)),
         "max": r(np.max(arr)),
@@ -83,7 +100,7 @@ def descriptive(values):
         "ci_95_upper": r(ci_upper),
         "skewness": r(skew),
         "kurtosis": r(kurt),
-        "interpretation": f"n={n}, mean={r(mean_val)}, std={r(std_val)}, RSD={r(rsd, 2)}%",
+        "interpretation": interp,
     }
     if near_constant:
         result["_warning"] = "Data is effectively constant (std < 1e-12); skewness/kurtosis set to 0"

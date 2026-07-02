@@ -7,6 +7,58 @@ from utils.output import PRECISION, p_value_context, r
 from utils.validators import to_array
 
 
+def _effect_size_category(d):
+    """Classify Cohen's d into magnitude category."""
+    ad = abs(d)
+    if ad < 0.2:
+        return "negligible"
+    if ad < 0.5:
+        return "small"
+    if ad < 0.8:
+        return "medium"
+    return "large"
+
+
+def _build_decision(p_value, alpha, cohens_d, test_type, mu=None):
+    """Build decision block for t-test results."""
+    significant = p_value < alpha
+
+    # Confidence based on distance from alpha
+    if significant:
+        confidence = "HIGH" if p_value < alpha * 0.5 else "MEDIUM"
+    else:
+        confidence = "HIGH" if p_value > alpha * 1.5 else "MEDIUM"
+
+    # Effect size
+    es_cat = _effect_size_category(cohens_d)
+    es_note = f" (d={cohens_d})" if abs(cohens_d) >= 0.2 else ""
+
+    if test_type == "one_sample":
+        if significant:
+            action = "REJECT_H0"
+            recommendation = f"Population mean IS different from {mu}{es_note}"
+        else:
+            action = "FAIL_TO_REJECT_H0"
+            recommendation = f"Cannot conclude population mean differs from {mu}"
+    else:  # two_sample or paired
+        if significant:
+            action = "REJECT_H0"
+            recommendation = (
+                f"Groups ARE practically different{es_note}" if es_note else "Groups are statistically different"
+            )
+        else:
+            action = "FAIL_TO_REJECT_H0"
+            recommendation = "No practical difference between groups"
+
+    return {
+        "action": action,
+        "confidence": confidence,
+        "basis": [f"p={p_value} {'<' if significant else '>='} alpha={alpha}"],
+        "effect_size_category": es_cat,
+        "recommendation": recommendation,
+    }
+
+
 def ttest(test_type, values, values2=None, mu=0, alpha=0.05):
     """Perform t-test.
 
@@ -78,6 +130,7 @@ def _one_sample_ttest(arr, mu, alpha):
             else f"No significant difference from {mu} (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    result["decision"] = _build_decision(p_value, alpha, cohens_d, "one_sample", mu=mu)
     return p_value_context(result, p_value, alpha, n)
 
 
@@ -136,6 +189,7 @@ def _two_sample_ttest(arr1, arr2, alpha):
             else f"No significant difference between groups (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    result["decision"] = _build_decision(p_value, alpha, cohens_d, "two_sample")
     return p_value_context(result, p_value, alpha, min(n1, n2))
 
 

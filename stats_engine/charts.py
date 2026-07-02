@@ -14,7 +14,7 @@ def _fig_to_base64(fig):
     """Convert matplotlib figure to base64 PNG string."""
     buf = io.BytesIO()
     try:
-        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight", facecolor="white")
+        fig.savefig(buf, format="png", dpi=150, bbox_inches="tight", facecolor="white")
     finally:
         plt.close(fig)
     buf.seek(0)

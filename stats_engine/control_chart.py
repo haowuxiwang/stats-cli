@@ -110,6 +110,65 @@ def control_chart(
     return result
 
 
+def _build_chart_decision(chart_data, chart_label="Process"):
+    """Build decision block for control chart summary."""
+    ooc = chart_data.get("out_of_control_points", [])
+    violations = chart_data.get("violations", {})
+    stable = _is_process_stable(chart_data)
+
+    # Build breached_rules list
+    breached_rules = []
+    if ooc:
+        breached_rules.append(
+            {
+                "rule": "rule1",
+                "indices": ooc,
+                "description": "Point beyond 3-sigma",
+            }
+        )
+    for rule_id, rule_info in violations.items():
+        if rule_id == "rule1":
+            continue  # already counted as out_of_control_points
+        breached_rules.append(
+            {
+                "rule": rule_id,
+                "indices": rule_info.get("indices", []),
+                "description": rule_info.get("description", rule_id),
+            }
+        )
+
+    # Determine action
+    if stable:
+        action = "RELEASE"
+        recommended_action = f"{chart_label} is in control — continue monitoring"
+    elif ooc:
+        action = "HOLD"
+        # Identify which points breached
+        points_str = ", ".join(str(i) for i in ooc[:5])
+        suffix = f" and {len(ooc) - 5} more" if len(ooc) > 5 else ""
+        recommended_action = (
+            f"HOLD {chart_label}: point(s) beyond 3-sigma at index [{points_str}{suffix}] — "
+            f"investigate special cause before releasing"
+        )
+    else:
+        action = "INVESTIGATE"
+        # Identify which WE rules breached
+        rule_names = [br["description"] for br in breached_rules if br["rule"] != "rule1"]
+        if rule_names:
+            recommended_action = (
+                f"INVESTIGATE {chart_label}: pattern detected — {'; '.join(rule_names)} — "
+                f"check for systematic shift or trend"
+            )
+        else:
+            recommended_action = f"INVESTIGATE {chart_label}: non-random pattern detected"
+
+    return {
+        "action": action,
+        "breached_rules": breached_rules,
+        "recommended_action": recommended_action,
+    }
+
+
 def _is_process_stable(chart_data):
     """Determine process stability considering both Rule 1 and WE rules 2-5.
 
@@ -254,6 +313,7 @@ def _xbar_chart(values, subgroup_size):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "X-bar chart"),
         },
     }
 
@@ -285,6 +345,7 @@ def _r_chart(values, subgroup_size):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "R chart"),
         },
     }
 
@@ -310,6 +371,7 @@ def _imr_chart(values):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "I-MR chart"),
         },
     }
 
@@ -331,6 +393,7 @@ def _p_chart(values, sample_size):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "p chart"),
         },
     }
 
@@ -352,6 +415,7 @@ def _np_chart(values, sample_size):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "np chart"),
         },
     }
 
@@ -371,6 +435,7 @@ def _c_chart(values):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "c chart"),
         },
     }
 
@@ -392,6 +457,7 @@ def _u_chart(values, sample_size):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "u chart"),
         },
     }
 
@@ -432,6 +498,7 @@ def _ewma_chart(values, target, lambda_):
         "summary": {
             "stable": _is_process_stable(chart),
             "message": _stability_message(chart),
+            "decision": _build_chart_decision(chart, "EWMA chart"),
         },
     }
 
@@ -486,16 +553,36 @@ def _cusum_chart(values, target, k, h, fir=False):
         "title": "CUSUM Chart" + (" (FIR)" if fir else ""),
     }
 
+    stable = len(alarm_points) == 0
     return {
         "chart_type": "cusum",
         "chart": chart,
         "summary": {
-            "stable": len(alarm_points) == 0,
+            "stable": stable,
             "message": (
                 "No alarms detected - process appears stable"
-                if len(alarm_points) == 0
+                if stable
                 else f"{len(alarm_points)} alarm(s) detected - process may be out of control"
             ),
+            "decision": {
+                "action": "RELEASE" if stable else "HOLD",
+                "breached_rules": (
+                    []
+                    if stable
+                    else [
+                        {
+                            "rule": "cusum_alarm",
+                            "indices": alarm_points,
+                            "description": "CUSUM decision interval exceeded",
+                        }
+                    ]
+                ),
+                "recommended_action": (
+                    "CUSUM chart is in control — continue monitoring"
+                    if stable
+                    else f"HOLD: CUSUM alarm(s) at index [{', '.join(str(i) for i in alarm_points[:5])}] — investigate mean shift"
+                ),
+            },
         },
     }
 
@@ -564,14 +651,16 @@ def _hotelling_t2_chart(data, alpha):
         "alpha": alpha,
     }
 
+    stable = len(out_of_control) == 0 and not chart.get("violations")
     return {
         "chart_type": "hotelling_t2",
         "chart": chart,
         "mean_vector": [r(v) for v in x_bar],
         "covariance_matrix": [[r(v) for v in row] for row in S],
         "summary": {
-            "stable": len(out_of_control) == 0 and not chart.get("violations"),
+            "stable": stable,
             "message": _stability_message(chart, "Multivariate process"),
+            "decision": _build_chart_decision(chart, "Hotelling T²"),
         },
     }
 
@@ -639,13 +728,15 @@ def _ewma_mv_chart(data, lambda_, alpha):
         "alpha": alpha,
     }
 
+    stable = len(out_of_control) == 0 and not chart.get("violations")
     return {
         "chart_type": "ewma_mv",
         "chart": chart,
         "mean_vector": [r(v) for v in mu],
         "summary": {
-            "stable": len(out_of_control) == 0 and not chart.get("violations"),
+            "stable": stable,
             "message": _stability_message(chart, "EWMA process"),
+            "decision": _build_chart_decision(chart, "MEWMA"),
         },
     }
 
@@ -690,6 +781,9 @@ def _zmr_chart(values, target=None, sigma=None):
 
     stable = len(z_out) == 0 and len(mr_out) == 0
 
+    # Build combined ooc for decision
+    all_ooc = sorted(set(z_out) | {i + 1 for i in mr_out})
+
     return {
         "chart_type": "zmr",
         "target": r(target),
@@ -715,6 +809,42 @@ def _zmr_chart(values, target=None, sigma=None):
                 if stable
                 else f"Process has {len(z_out) + len(mr_out)} out-of-control point(s)"
             ),
+            "decision": {
+                "action": "RELEASE" if stable else "HOLD",
+                "breached_rules": (
+                    []
+                    if stable
+                    else [
+                        *(
+                            [
+                                {
+                                    "rule": "z_beyond_3sigma",
+                                    "indices": z_out,
+                                    "description": "Z-chart point beyond 3-sigma",
+                                }
+                            ]
+                            if z_out
+                            else []
+                        ),
+                        *(
+                            [
+                                {
+                                    "rule": "mr_beyond_ucl",
+                                    "indices": mr_out,
+                                    "description": "MR-chart point beyond UCL",
+                                }
+                            ]
+                            if mr_out
+                            else []
+                        ),
+                    ]
+                ),
+                "recommended_action": (
+                    "Z-MR chart is in control — continue monitoring"
+                    if stable
+                    else f"HOLD: {len(z_out)} Z-chart OOC, {len(mr_out)} MR-chart OOC — investigate special cause at point(s) {all_ooc[:5]}"
+                ),
+            },
         },
         "interpretation": f"Z-MR chart: target={r(target)}, sigma={r(sigma)}, {len(z_out)} Z-chart OOC points, {len(mr_out)} MR-chart OOC points",
     }

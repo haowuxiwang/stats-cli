@@ -70,8 +70,7 @@ def _exp_smoothing(values, alpha=None, frequency=None, n_forecast=0, **kwargs):
         residuals = np.array([values[i] - fitted[i] for i in range(n)])
         res_std = float(np.std(residuals, ddof=1))
         result["forecast_ci_95"] = [
-            [r(last_fitted - 1.96 * res_std * np.sqrt(h)),
-             r(last_fitted + 1.96 * res_std * np.sqrt(h))]
+            [r(last_fitted - 1.96 * res_std * np.sqrt(h)), r(last_fitted + 1.96 * res_std * np.sqrt(h))]
             for h in range(1, n_forecast + 1)
         ]
 

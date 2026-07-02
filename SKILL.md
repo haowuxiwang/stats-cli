@@ -1024,27 +1024,27 @@ All commands return a standard JSON envelope:
 
 **descriptive** — `{"command":"descriptive","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
 ```json
-{"status":"success","data":{"n":5,"mean":10.14,"median":10.1,"std":0.114018,"rsd_percent":1.12,"min":10.0,"max":10.3,"range":0.3,"q1":10.1,"q3":10.2,"iqr":0.1,"ci_95_lower":9.998429,"ci_95_upper":10.281571,"skewness":0.271545,"kurtosis":-1.044379}}
+{"status":"success","version":"1.4.0","timestamp":"<ISO8601>","data":{"n":5,"total":50.7,"mean":10.14,"median":10.1,"std":0.114018,"rsd_percent":1.12,"min":10.0,"max":10.3,"range":0.3,"q1":10.1,"q3":10.2,"iqr":0.1,"ci_95_lower":9.998429,"ci_95_upper":10.281571,"skewness":0.271545,"kurtosis":-1.044379,"interpretation":"n=5, mean=10.14, std=0.114018, RSD=1.12%"}}
 ```
 
 **normality** — `{"command":"normality","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
 ```json
-{"status":"success","data":{"shapiro_wilk":{"statistic":0.987,"p_value":0.97},"anderson_darling":{"statistic":0.22,"critical_values":{}},"lilliefors":{"statistic":0.15,"p_value":0.8},"is_normal":true}}
+{"status":"warning","version":"1.4.0","timestamp":"<ISO8601>","warning":"n=5: normality test has low statistical power with small samples","data":{"n":5,"shapiro_wilk":{"statistic":0.960859,"p_value":0.813952,"normal":true},"anderson_darling":{"statistic":0.231804,"critical_values":{"15.0%":0.72,"10.0%":0.82,"5.0%":0.984,"2.5%":1.148,"1.0%":1.365},"normal":true},"lilliefors":{"statistic":0.23714,"p_value":0.882099,"normal":true},"is_normal":true,"recommended_test":"shapiro_wilk","test_guidance":"n=5: Shapiro-Wilk is most reliable for small samples (n≤50). Data appears normal (SW p=0.813952)","interpretation":"Data appears to be normally distributed"}}
 ```
 
 **ttest** — `{"command":"ttest","params":{"test_type":"two_sample","values":[10.2,10.5],"values2":[11.3,11.5]}}`
 ```json
-{"status":"success","data":{"test_type":"two_sample","n1":10,"n2":10,"mean1":10.31,"mean2":11.31,"std1":0.191195,"std2":0.191195,"mean_difference":-1.0,"t_statistic":-11.695218,"p_value":0.0,"significant":true,"alpha":0.05,"cohens_d":-5.23,"interpretation":"Significant difference between groups (p=0.0)"}}
+{"status":"warning","version":"1.4.0","timestamp":"<ISO8601>","warning":"n=2: statistical power is very low, results may be unreliable","data":{"test_type":"two_sample","n1":2,"n2":2,"mean1":10.35,"mean2":11.4,"std1":0.212132,"std2":0.141421,"mean_difference":-1.05,"ci_difference_95":[-1.946706,-0.153294],"t_statistic":-5.824352,"p_value":0.0384,"significant":true,"alpha":0.05,"cohens_d":-5.824,"interpretation":"Significant difference between groups (p=0.0384)","small_sample_warning":"n=2: statistical power is very low, results may be unreliable"}}
 ```
 
 **capability** — `{"command":"capability","params":{"values":[10.1,10.2,10.0,10.3],"usl":11.0,"lsl":9.0}}`
 ```json
-{"status":"warning","data":{"mean":10.2,"std_within":0.185364,"std_overall":0.153741,"usl":11.0,"lsl":9.0,"n":12,"cp":1.798261,"cpk":1.438609,"pp":2.168145,"ppk":1.734516,"rating":"Good","rating_desc":"Process is capable (pharma minimum)","performance":{"ppm_upper":0.1,"ppm_lower":0.0,"ppm_total":0.1,"yield_pct":99.99999}}}
+{"status":"warning","version":"1.4.0","timestamp":"<ISO8601>","warning":"n=4: capability analysis requires n>=25 for reliable results","data":{"mean":10.15,"std_within":0.177305,"std_overall":0.129099,"sigma_method":"mr","sigma_method_desc":"Moving Range (d2=1.128)","usl":11.0,"lsl":9.0,"target":10.0,"n":4,"cp":1.88,"cpk":1.598,"cpu":1.598,"cpl":2.162,"pp":2.581989,"ppk":2.194691,"ppu":2.194691,"ppl":2.969287,"cpm":1.781742,"cp_ci_lower":1.065,"cp_ci_upper":7.009669,"cpk_ci_lower":-0.012991,"cpk_ci_upper":3.208991,"rating":"Good","rating_desc":"Process is capable (pharma minimum)","decision":{"action":"RELEASE","confidence":"HIGH","basis":["Cpk=1.598","Cp=1.88"],"recommendation":"Process meets capability requirements (Cpk=1.598 ≥ 1.33). Safe to release batch."},"performance":{"z_upper":6.584072,"z_lower":8.907862,"ppm_upper":0.0,"ppm_lower":0.0,"ppm_total":0.0,"yield_pct":100.0},"interpretation":"Cp = 1.88. Cpk = 1.598. Cpm = 1.781742. Process is capable (pharma minimum). Expected yield = 100.0%"}}
 ```
 
 **control_chart** — `{"command":"control_chart","params":{"chart_type":"imr","values":[10.1,10.2,10.0,10.3,10.1]}}`
 ```json
-{"status":"success","data":{"chart_type":"imr","mr_chart":{"points":[null,0.1,0.2,0.3,0.2],"center":0.2,"ucl":0.6534,"lcl":0.0},"summary":{"stable":true,"message":"Process is in statistical control"}}}
+{"status":"success","version":"1.4.0","timestamp":"<ISO8601>","data":{"chart_type":"imr","chart":{"points":[10.1,10.2,10.0,10.3,10.1],"center":10.14,"ucl":10.671915,"lcl":9.608085,"in_control":[true,true,true,true,true],"out_of_control_points":[],"title":"I Chart","violations":{}},"mr_chart":{"points":[null,0.1,0.2,0.3,0.2],"center":0.2,"ucl":0.6534,"lcl":0.0,"in_control":[false,true,true,true,true],"out_of_control_points":[0],"title":"MR Chart"},"summary":{"stable":true,"message":"Process is in statistical control"}}}
 ```
 
 **Notes:**
