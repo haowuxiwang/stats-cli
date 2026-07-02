@@ -1,16 +1,19 @@
 # stats-cli-py
 
-Pure Python statistical analysis CLI/library for manufacturing and quality engineering.
+Pure Python statistical analysis CLI for manufacturing and quality engineering.
+**AI-native · JSON-in/JSON-out · Decision-ready.**
 
-**Version**: 1.4.0
-**Commands**: 39
-**Test Coverage**: 98%
-**Tests**: 1778 passed, 0 failed
-**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, matplotlib, fpdf2
+**Version**: 1.4.0 (Phase 3 complete)
+**Commands**: 40 statistical + 2 utility = 42 endpoints
+**Test Coverage**: 96.08%
+**Tests**: 1894 passed, 0 failed
+**Dependencies**: scipy, statsmodels, pandas, numpy, scikit-learn, openpyxl, matplotlib, fpdf2, lifelines
+**Python**: 3.10, 3.11, 3.12
 
 [![CI](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/haowuxiwang/stats-cli/actions/workflows/ci.yml)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![JMP Parity](https://img.shields.io/badge/JMP%20parity-82%25-green.svg)](OUTLOOK.md)
 
 ---
 
@@ -141,6 +144,7 @@ pip install -r requirements.txt
 | openpyxl | Excel file support |
 | matplotlib | Chart generation |
 | fpdf2 | PDF report export |
+| lifelines | Survival analysis (Cox PH, KM) |
 
 ---
 
@@ -183,16 +187,25 @@ print(result)
 
 ---
 
+## REST API Server
+
+Start an HTTP server for CI/CD integration or programmatic access:
+
+```bash
+python serve.py --port 8080
+```
+
+Endpoints:
+- `GET /api/v1/health` → health check
+- `POST /api/v1/analyze` → run any command: `{"command":"...","params":{...}}`
+- `POST /api/v1/discover` → list all commands
+
 ## Chart Generation
 
-Add `"chart": true` to any command that supports visualization. Charts are saved as PNG files in the current directory.
+Add `"chart": true` to any command that supports visualization. Returns base64-encoded PNG in response.
 
-### Supported Commands
-- `control_chart`: X-bar, R, I-MR charts with control limits
-- `regression`: Scatter plot with fitted line and confidence interval
-- `capability`: Process distribution vs spec limits
-- `correlation`: Correlation heatmap
-- `anova`: Box plots per group
+### 30 Chart-Supporting Commands
+Includes: `descriptive`, `control_chart`, `capability`, `regression`, `correlation`, `anova`, `ttest`, `timeseries`, `distribution`, `reliability`, and more.
 
 ### Example
 
@@ -200,16 +213,35 @@ Add `"chart": true` to any command that supports visualization. Charts are saved
 echo '{"command":"regression","params":{"x":[1,2,3,4,5],"y":[2.1,4.0,5.9,8.1,10.0],"chart":true}}' | python main.py
 ```
 
-Output includes the chart filename in the response:
+Output includes `chart_base64` (base64 PNG) in `data`.
+
+
+
+## Decision Engine
+
+Quality-critical commands return structured decision blocks for autonomous agent action:
+
 ```json
 {
   "status": "success",
   "data": {
-    "slope": 1.98,
-    "intercept": 0.08,
-    "chart": "regression_20260610_120000.png"
+    "cpk": 1.543,
+    "decision": {
+      "action": "RELEASE",
+      "confidence": "HIGH",
+      "basis": ["Cpk=1.543", "Cp=2.1"],
+      "recommendation": "Process meets capability requirements. Safe to release batch."
+    }
   }
 }
+```
+
+| Module | Actions | Use Case |
+|--------|---------|----------|
+| capability | RELEASE / CONDITIONAL_RELEASE / HOLD | Batch disposition |
+| ttest | REJECT_H0 / FAIL_TO_REJECT_H0 | Process change evaluation |
+| control_chart | RELEASE / HOLD / INVESTIGATE | Stability monitoring |
+| normality | NORMAL / NON_NORMAL | Test selection |
 ```
 
 ---
