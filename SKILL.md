@@ -45,7 +45,7 @@ Pure Python statistical analysis tool for manufacturing and quality engineering,
 - [智能引导流程](#智能引导流程用户模糊请求时)
 - [Decision Trees](#decision-tree-1-比较分析两组或多组数据比较)
 - [Scenario-Based Workflows](#scenario-based-workflows)
-- [All Commands (39)](#all-commands-39-commands)
+- [All Commands (40)](#all-commands-40-commands)
 - [Output Interpretation Guide](#output-interpretation-guide)
 - [Performance & Scale Guidance](#performance--scale-guidance)
 - [Output Format](#output-format)
