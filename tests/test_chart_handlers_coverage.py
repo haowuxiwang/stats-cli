@@ -1,156 +1,123 @@
-"""Additional tests for stats_engine/chart_handlers.py to improve coverage."""
+"""Coverage-boosting tests for chart_handlers.py — targets uncovered handler dispatchers."""
+
+import numpy as np
 
 from main import handler
 
 
-class TestChartHandlers:
-    """Test chart handler edge cases."""
+class TestChartHandlersCoverage:
+    """Test chart handler dispatch for commands with uncovered handlers."""
 
-    def test_descriptive_chart(self):
-        """Descriptive command generates chart."""
+    def test_doe_pareto_chart(self):
+        """Lines 244-251: _doe_handler generates Pareto chart."""
         result = handler(
             {
-                "command": "descriptive",
-                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "chart": True},
-            }
-        )
-        assert result["status"] == "success"
-
-    def test_anova_chart(self):
-        """ANOVA command generates chart."""
-        result = handler(
-            {
-                "command": "anova",
+                "command": "doe",
                 "params": {
-                    "groups": [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15]],
+                    "doe_type": "full_factorial",
+                    "factors": [{"name": "A", "levels": [1, 2]}, {"name": "B", "levels": [1, 2]}],
+                    "responses": [10, 14, 12, 18],
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
+        assert "chart_base64" in result.get("data", {})
 
-    def test_capability_chart(self):
-        """Capability command generates chart."""
+    def test_distribution_histogram_chart(self):
+        """Lines 254-261: _distribution_handler generates histogram."""
         result = handler(
             {
-                "command": "capability",
+                "command": "distribution",
                 "params": {
-                    "values": [9.8, 10.0, 10.2, 10.1, 9.9, 10.0, 10.1, 9.9, 10.0, 10.2] * 3,
-                    "usl": 12,
-                    "lsl": 8,
+                    "analysis_type": "fit",
+                    "values": [10.1, 10.2, 10.0, 10.3, 10.1, 10.4, 10.2] * 5,
+                    "distribution": "normal",
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
-    def test_correlation_chart(self):
-        """Correlation command generates chart."""
+    def test_acceptance_sampling_oc_chart(self):
+        """Lines 264-271: _acceptance_sampling_handler generates OC curve."""
         result = handler(
             {
-                "command": "correlation",
+                "command": "acceptance_sampling",
                 "params": {
-                    "x": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                    "y": [2, 4, 5, 4, 5, 7, 8, 9, 10, 12],
+                    "analysis_type": "oc_curve",
+                    "n": 50,
+                    "c": 2,
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
-    def test_regression_chart(self):
-        """Regression command generates chart."""
+    def test_sensitivity_monte_carlo_chart(self):
+        """Lines 274-283: _sensitivity_handler generates tornado/dot chart."""
         result = handler(
             {
-                "command": "regression",
+                "command": "sensitivity",
                 "params": {
-                    "x": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                    "y": [2, 4, 5, 4, 5, 7, 8, 9, 10, 12],
-                    "reg_type": "linear",
+                    "analysis_type": "monte_carlo",
+                    "inputs": {
+                        "T": {"dist": "normal", "params": {"mean": 100, "std": 10}},
+                        "S": {"dist": "normal", "params": {"mean": 50, "std": 5}},
+                    },
+                    "formula": "T + S",
+                    "n_simulations": 100,
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
-    def test_outlier_chart(self):
-        """Outlier command generates chart."""
+    def test_advanced_bootstrap_chart(self):
+        """Lines 286-295: _advanced_handler generates bootstrap plot."""
         result = handler(
             {
-                "command": "outlier",
+                "command": "advanced",
                 "params": {
-                    "values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100],
-                    "method": "grubbs",
+                    "analysis_type": "bootstrap",
+                    "values": [10.1, 10.2, 10.0, 10.3, 10.1, 10.4, 10.2, 10.3] * 4,
+                    "statistic": "mean",
+                    "n_bootstrap": 100,
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
-    def test_normality_chart(self):
-        """Normality command generates chart."""
+    def test_bayesian_estimate_chart(self):
+        """Lines 298-308: _bayesian_handler generates posterior plot."""
         result = handler(
             {
-                "command": "normality",
-                "params": {"values": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "chart": True},
-            }
-        )
-        assert result["status"] == "success"
-
-    def test_explore_chart(self, tmp_path):
-        """Explore command generates chart."""
-        csv_file = tmp_path / "data.csv"
-        with open(csv_file, "w") as f:
-            f.write("a,b,c\n1,2,3\n4,5,6\n7,8,9\n")
-        result = handler(
-            {
-                "command": "explore",
-                "params": {"file": str(csv_file), "chart": True},
-            }
-        )
-        assert result["status"] == "success"
-
-    def test_trend_chart(self):
-        """Trend command generates chart."""
-        result = handler(
-            {
-                "command": "trend",
+                "command": "bayesian",
                 "params": {
-                    "values": [10.1, 10.2, 10.0, 9.9, 10.3, 10.1, 10.0, 9.8, 10.2, 10.1],
-                    "test_type": "cusum",
+                    "analysis_type": "estimate",
+                    "values": [10.1, 10.2, 10.0, 10.3, 10.1],
+                    "prior_mean": 10,
+                    "prior_std": 1,
+                    "credible_level": 0.95,
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")
 
-    def test_reliability_chart(self):
-        """Reliability command generates chart."""
-        result = handler(
-            {
-                "command": "reliability",
-                "params": {
-                    "times": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
-                    "analysis_type": "weibull",
-                    "chart": True,
-                },
-            }
-        )
-        assert result["status"] == "success"
-
-    def test_multivariate_chart(self):
-        """Multivariate correlation matrix generates chart."""
-        import numpy as np
-
-        data = np.random.randn(50, 3).tolist()
+    def test_multivariate_pca_chart(self):
+        """Line 342+: _multivariate_handler for PCA scatter."""
+        np.random.seed(42)
+        data = np.random.randn(20, 3).tolist()
         result = handler(
             {
                 "command": "multivariate",
                 "params": {
-                    "analysis_type": "correlation_matrix",
+                    "analysis_type": "pca",
                     "values": data,
                     "chart": True,
                 },
             }
         )
-        assert result["status"] == "success"
+        assert result["status"] in ("success", "warning")

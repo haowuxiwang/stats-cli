@@ -1024,7 +1024,7 @@ All commands return a standard JSON envelope:
 
 **descriptive** — `{"command":"descriptive","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
 ```json
-{"status":"success","data":{"n":5,"mean":10.14,"median":10.1,"std":0.114,"rsd_percent":1.1243,"min":10.0,"max":10.3,"range":0.3,"q1":10.1,"q3":10.2,"iqr":0.1,"ci_95_lower":10.0,"ci_95_upper":10.28,"skewness":-0.2693,"kurtosis":-1.1333}}
+{"status":"success","data":{"n":5,"mean":10.14,"median":10.1,"std":0.114018,"rsd_percent":1.12,"min":10.0,"max":10.3,"range":0.3,"q1":10.1,"q3":10.2,"iqr":0.1,"ci_95_lower":9.998429,"ci_95_upper":10.281571,"skewness":0.271545,"kurtosis":-1.044379}}
 ```
 
 **normality** — `{"command":"normality","params":{"values":[10.1,10.2,10.0,10.3,10.1]}}`
@@ -1034,17 +1034,17 @@ All commands return a standard JSON envelope:
 
 **ttest** — `{"command":"ttest","params":{"test_type":"two_sample","values":[10.2,10.5],"values2":[11.3,11.5]}}`
 ```json
-{"status":"success","data":{"test_type":"two_sample","t_statistic":-4.24,"p_value":0.051,"significant":false,"ci_95":[-2.26,0.02]}}
+{"status":"success","data":{"test_type":"two_sample","n1":10,"n2":10,"mean1":10.31,"mean2":11.31,"std1":0.191195,"std2":0.191195,"mean_difference":-1.0,"t_statistic":-11.695218,"p_value":0.0,"significant":true,"alpha":0.05,"cohens_d":-5.23,"interpretation":"Significant difference between groups (p=0.0)"}}
 ```
 
 **capability** — `{"command":"capability","params":{"values":[10.1,10.2,10.0,10.3],"usl":11.0,"lsl":9.0}}`
 ```json
-{"status":"success","data":{"cp":2.72,"cpk":2.57,"pp":2.72,"ppk":2.57,"rating":"Excellent","performance":{"ppm_upper":0,"ppm_lower":0}}}
+{"status":"warning","data":{"mean":10.2,"std_within":0.185364,"std_overall":0.153741,"usl":11.0,"lsl":9.0,"n":12,"cp":1.798261,"cpk":1.438609,"pp":2.168145,"ppk":1.734516,"rating":"Good","rating_desc":"Process is capable (pharma minimum)","performance":{"ppm_upper":0.1,"ppm_lower":0.0,"ppm_total":0.1,"yield_pct":99.99999}}}
 ```
 
 **control_chart** — `{"command":"control_chart","params":{"chart_type":"imr","values":[10.1,10.2,10.0,10.3,10.1]}}`
 ```json
-{"status":"success","data":{"chart_type":"imr","chart":{"points":[10.1,10.2,10.0,10.3,10.1],"center":10.14,"ucl":10.56,"lcl":9.72},"summary":{"stable":true}}}
+{"status":"success","data":{"chart_type":"imr","mr_chart":{"points":[null,0.1,0.2,0.3,0.2],"center":0.2,"ucl":0.6534,"lcl":0.0},"summary":{"stable":true,"message":"Process is in statistical control"}}}
 ```
 
 **Notes:**

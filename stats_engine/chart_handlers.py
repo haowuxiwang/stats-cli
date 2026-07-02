@@ -3,14 +3,11 @@
 Each handler takes (result, params) and returns a base64 PNG string or None.
 """
 
-import numpy as np
-
 from stats_engine.charts import (
     acf_plot,
     bootstrap_plot,
     boxplot,
     capability_plot,
-    cluster_scatter_2d,
     control_chart_plot,
     functional_plot,
     heatmap,
@@ -319,15 +316,7 @@ def _functional_handler(result, params):
 
 
 def _mining_handler(result, params):
-    """Chart for mining results."""
-    if result.get("analysis_type") == "cluster" and "cluster_labels" in result:
-        labels = result["cluster_labels"]
-        centers = None
-        if "cluster_centers" in result:
-            centers = np.array(result["cluster_centers"])
-            if centers.shape[1] > 2:
-                centers = centers[:, :2]
-        return cluster_scatter_2d(np.zeros((len(labels), 2)), labels, centers)
+    """Chart for mining results. Mining (classify/anomaly/associate) has no chart output."""
     return None
 
 

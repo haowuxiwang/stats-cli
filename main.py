@@ -79,8 +79,15 @@ def handler(input_data):
     if size_error:
         return size_error
 
-    # Route to command handler
+    # Extract chart customization params (chart_title, chart_bins, etc.)
+    # IMPORTANT: chart_type is a REAL param for some commands (e.g., control_chart) — don't strip it!
     want_chart = params.pop("chart", False)
+    _CHART_RESERVED = {"chart_type"}  # params that start with "chart_" but are real command params
+    chart_custom = {k: v for k, v in list(params.items()) if k.startswith("chart_") and k not in _CHART_RESERVED}
+    # Remove chart custom params so they don't confuse command handlers
+    for k in list(chart_custom.keys()):
+        params.pop(k, None)
+
     try:
         result = _route(command, params)
         # _route may return error dict for unknown commands
@@ -92,12 +99,17 @@ def handler(input_data):
             # Inject raw values for chart generation
             if "values" in params and "_values" not in result:
                 result["_values"] = params["values"]
+            # Inject chart customization
+            if chart_custom:
+                result["_chart_custom"] = chart_custom
             try:
                 result["chart_base64"] = _generate_chart(command, result, params)
             except Exception as chart_exc:
                 chart_error = f"Chart generation failed: {chart_exc}"
                 logging.warning("Chart generation failed for %s: %s", command, chart_exc)
-            result.pop("_values", None)  # Clean up temp field
+            # Clean up temp fields
+            result.pop("_values", None)
+            result.pop("_chart_custom", None)
         # Check for warning marker from module
         if isinstance(result, dict):
             warning_msg = result.pop("_warning", None)
@@ -513,6 +525,11 @@ def _generate_chart(command, result, params):
 
         handler = CHART_HANDLERS.get(command)
         if handler:
+            # Pass chart customization from result metadata
+            custom = result.get("_chart_custom", {}) or {}
+            if custom:
+                # Merge customization into params for handler use
+                params = {**params, **custom}
             return handler(result, params)
     except Exception as e:
         logging.warning("Chart generation failed for %s: %s", command, e)

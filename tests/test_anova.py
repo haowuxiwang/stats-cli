@@ -364,3 +364,27 @@ class TestNWayANOVA:
         )
         assert result["status"] == "success"
         assert result["data"]["anova_type"] == "n_way"
+
+    def test_n_way_single_factor_raises(self):
+        """N-way with < 2 factors raises error."""
+        with pytest.raises(ValueError, match="at least 2 factors"):
+            anova(anova_type="n_way", groups={"factors": {"A": [1, 2, 3, 4]}, "response": [10, 12, 14, 16]})
+
+    def test_n_way_missing_response_raises(self):
+        """N-way with missing response raises error."""
+        with pytest.raises((ValueError, TypeError)):
+            anova(anova_type="n_way", groups={"factors": {"A": [1, 2], "B": [1, 2]}})
+
+    def test_repeated_sphericity_note(self):
+        """Repeated measures includes sphericity note."""
+        import pandas as pd
+
+        df = pd.DataFrame(
+            {
+                "subject": [s for s in range(8) for _ in range(3)],
+                "time": ["T0", "T1", "T2"] * 8,
+                "value": [10, 12, 14] * 8,
+            }
+        )
+        result = anova(anova_type="repeated", data=df, subject="subject", within="time")
+        assert "sphericity_note" in result
