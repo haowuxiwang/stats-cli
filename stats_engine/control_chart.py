@@ -140,32 +140,35 @@ def _build_chart_decision(chart_data, chart_label="Process"):
     # Determine action
     if stable:
         action = "RELEASE"
-        recommended_action = f"{chart_label} is in control — continue monitoring"
+        recommendation = f"{chart_label} is in control — continue monitoring"
     elif ooc:
         action = "HOLD"
         # Identify which points breached
         points_str = ", ".join(str(i) for i in ooc[:5])
         suffix = f" and {len(ooc) - 5} more" if len(ooc) > 5 else ""
-        recommended_action = (
+        # Also mention concurrent WE rules if any
+        we_rules = [br["description"] for br in breached_rules if br["rule"] != "rule1"]
+        extra = f" Also detected: {'; '.join(we_rules)}." if we_rules else ""
+        recommendation = (
             f"HOLD {chart_label}: point(s) beyond 3-sigma at index [{points_str}{suffix}] — "
-            f"investigate special cause before releasing"
+            f"investigate special cause before releasing.{extra}"
         )
     else:
         action = "INVESTIGATE"
         # Identify which WE rules breached
         rule_names = [br["description"] for br in breached_rules if br["rule"] != "rule1"]
         if rule_names:
-            recommended_action = (
+            recommendation = (
                 f"INVESTIGATE {chart_label}: pattern detected — {'; '.join(rule_names)} — "
                 f"check for systematic shift or trend"
             )
         else:
-            recommended_action = f"INVESTIGATE {chart_label}: non-random pattern detected"
+            recommendation = f"INVESTIGATE {chart_label}: non-random pattern detected"
 
     return {
         "action": action,
         "breached_rules": breached_rules,
-        "recommended_action": recommended_action,
+        "recommendation": recommendation,
     }
 
 
@@ -577,7 +580,7 @@ def _cusum_chart(values, target, k, h, fir=False):
                         }
                     ]
                 ),
-                "recommended_action": (
+                "recommendation": (
                     "CUSUM chart is in control — continue monitoring"
                     if stable
                     else f"HOLD: CUSUM alarm(s) at index [{', '.join(str(i) for i in alarm_points[:5])}] — investigate mean shift"
@@ -839,7 +842,7 @@ def _zmr_chart(values, target=None, sigma=None):
                         ),
                     ]
                 ),
-                "recommended_action": (
+                "recommendation": (
                     "Z-MR chart is in control — continue monitoring"
                     if stable
                     else f"HOLD: {len(z_out)} Z-chart OOC, {len(mr_out)} MR-chart OOC — investigate special cause at point(s) {all_ooc[:5]}"

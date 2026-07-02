@@ -110,4 +110,23 @@ def normality(values):
         else "Data appears to be NON-normally distributed — consider transformation or nonparametric test"
     )
 
+    # Structured decision block for AI agents
+    result["decision"] = {
+        "action": "NORMAL" if result["is_normal"] else "NON_NORMAL",
+        "confidence": "HIGH" if n >= 30 else "MEDIUM",
+        "basis": [
+            f"n={n}",
+            f"SW={result.get('shapiro_wilk', {}).get('p_value', 'N/A')}",
+            f"AD={result.get('anderson_darling', {}).get('statistic', 'N/A')}",
+        ],
+        "recommendation": (
+            f"Data passes normality checks ({recommended_test} recommended). "
+            f"Parametric tests (ttest, ANOVA, Pearson correlation) are valid."
+            if result["is_normal"]
+            else f"Data deviates from normal ({recommended_test} recommended). "
+            f"Use non-parametric alternatives (Mann-Whitney, Kruskal-Wallis, Spearman) "
+            f"or apply transformation (log, Box-Cox, Johnson)."
+        ),
+    }
+
     return result

@@ -224,8 +224,14 @@ def capability(
             f"Cp={result.get('cp', 'N/A')}",
         ],
         "recommendation": (
-            f"Process {'meets' if cpk_val >= 1.33 else 'DOES NOT meet'} capability requirements (Cpk={r(cpk_val, 3)} {'≥' if cpk_val >= 1.33 else '<'} 1.33). "
-            f"{'Safe to release batch.' if cpk_val >= 1.33 else 'Investigate process centering or reduce variation before release.'}"
+            f"Process capability is {'excellent' if decision_action == 'RELEASE' and cpk_val >= 1.67 else 'acceptable' if cpk_val >= 1.33 else 'marginal' if cpk_val >= 1.0 else 'unacceptable'} (Cpk={r(cpk_val, 3)}). "
+            + (
+                "Safe to release batch."
+                if cpk_val >= 1.33
+                else "Marginal: release with conditions — monitor lot quality, consider tighter acceptance criteria."
+                if cpk_val >= 1.0
+                else "Investigate process centering or reduce variation before release."
+            )
         ),
     }
 

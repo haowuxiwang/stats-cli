@@ -39,23 +39,30 @@ def _build_decision(p_value, alpha, cohens_d, test_type, mu=None, n=None):
     # Effect size
     es_cat = _effect_size_category(cohens_d)
     es_note = f" (d={cohens_d})" if abs(cohens_d) >= 0.2 else ""
+    trivial_effect_note = (
+        " — effect is negligible, may not be practically significant" if es_cat == "negligible" and significant else ""
+    )
 
     if test_type == "one_sample":
         if significant:
             action = "REJECT_H0"
-            recommendation = f"Population mean IS different from {mu}{es_note}"
+            recommendation = f"Population mean IS different from {mu}{es_note}{trivial_effect_note}"
         else:
             action = "FAIL_TO_REJECT_H0"
-            recommendation = f"Cannot conclude population mean differs from {mu}"
+            recommendation = (
+                f"Cannot conclude population mean differs from {mu} (insufficient evidence, p={p_value:.4f})"
+            )
     else:  # two_sample or paired
         if significant:
             action = "REJECT_H0"
             recommendation = (
-                f"Groups ARE practically different{es_note}" if es_note else "Groups are statistically different"
+                f"Groups ARE practically different{es_note}{trivial_effect_note}"
+                if es_note
+                else f"Groups are statistically different (p={p_value:.4f}){trivial_effect_note}"
             )
         else:
             action = "FAIL_TO_REJECT_H0"
-            recommendation = "No practical difference between groups"
+            recommendation = f"No practical difference between groups (p={p_value:.4f})"
 
     return {
         "action": action,
@@ -239,4 +246,5 @@ def _paired_ttest(arr1, arr2, alpha):
             else f"No significant difference between paired samples (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
+    result["decision"] = _build_decision(p_value, alpha, cohens_d, "paired", n=n)
     return p_value_context(result, p_value, alpha, n)
