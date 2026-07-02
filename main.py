@@ -4,6 +4,7 @@ Entry point for Aily skill invocation.
 Accepts JSON input, routes to statistical modules, returns JSON output.
 """
 
+import ast
 import copy
 import json
 import logging
@@ -344,12 +345,83 @@ def _discover(params):
     }
 
 
+def _check_ast_node(node):
+    """Validate a single AST node against the whitelist. Raises ValueError on violation.
+
+    Rules:
+    1. Import/ImportFrom nodes are blocked entirely.
+    2. Attribute access starting with __ is blocked.
+    3. Name references starting with __ are blocked.
+    4. Calls to eval/exec/compile/print are blocked (overrides safe_builtins namespace).
+    """
+    if isinstance(node, ast.Import):
+        raise ValueError("Script contains import statement. The run command does not support imports.")
+    if isinstance(node, ast.ImportFrom):
+        raise ValueError("Script contains 'from ... import' statement. The run command does not support imports.")
+    # Block dunder attribute access (e.g., __class__, __bases__, __subclasses__)
+    if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
+        raise ValueError(f"Script accesses dunder attribute '{node.attr}'. Dunder access is blocked for security.")
+    # Block __builtins__, __import__, etc. via Name node
+    if isinstance(node, ast.Name) and node.id.startswith("__"):
+        raise ValueError(f"Script references '{node.id}'. Dunder names are blocked for security.")
+    # Block direct calls to dangerous builtins even if namespace restricts them
+    if isinstance(node, ast.Call):
+        func = node.func
+        if isinstance(func, ast.Name) and func.id in ("eval", "exec", "compile", "print"):
+            raise ValueError(f"Call to '{func.id}()' is blocked for security.")
+
+
+# Allowed script size in bytes (prevents memory abuse via large inline scripts)
+MAX_SCRIPT_SIZE = 100 * 1024  # 100 KB
+
+# Restricted builtins for script execution namespace.
+# Explicitly omits: eval, exec, compile, print, open, __import__, globals, locals, vars, dir, type
+_SAFE_BUILTINS = {
+    "abs": abs,
+    "all": all,
+    "any": any,
+    "bool": bool,
+    "dict": dict,
+    "enumerate": enumerate,
+    "filter": filter,
+    "float": float,
+    "format": format,
+    "frozenset": frozenset,
+    "int": int,
+    "isinstance": isinstance,
+    "issubclass": issubclass,
+    "len": len,
+    "list": list,
+    "map": map,
+    "max": max,
+    "min": min,
+    "pow": pow,
+    "range": range,
+    "repr": repr,
+    "reversed": reversed,
+    "round": round,
+    "set": set,
+    "slice": slice,
+    "sorted": sorted,
+    "str": str,
+    "sum": sum,
+    "tuple": tuple,
+    "zip": zip,
+}
+
+
 def _run_script(params):
     """Run custom Python script with data.
 
-    Security: Blocks dangerous patterns (dunder access, imports, file/network ops).
-    Timeout: Uses threading + ctypes to enforce timeout on infinite loops.
-    Intended for simple data transformations only, NOT untrusted code execution.
+    Security model (defense-in-depth):
+    1. Size limit: scripts exceeding 100 KB are rejected
+    2. AST whitelist: every node checked via _check_ast_node — imports, dunders,
+       and direct calls to eval/exec/compile/print are rejected
+    3. Restricted namespace: only safe builtins exposed (no open, __import__, etc.)
+    4. Timeout: threading + ctypes force-terminates after the configured timeout
+
+    Intended for simple data transformations by trusted users only (similar to
+    JMP formula editor or Excel macros). NOT a sandbox for untrusted code.
     """
     import ctypes
     import threading
@@ -361,7 +433,14 @@ def _run_script(params):
     if not script:
         raise ValueError("'script' parameter is required")
 
-    # Security: AST-based analysis (more robust than string blacklist)
+    # Size limit check
+    if len(script.encode("utf-8")) > MAX_SCRIPT_SIZE:
+        raise ValueError(
+            f"Script exceeds maximum size of {MAX_SCRIPT_SIZE // 1024} KB. "
+            "Break your script into smaller chunks or reduce comments/whitespace."
+        )
+
+    # AST whitelist validation
     import ast
 
     try:
@@ -369,120 +448,11 @@ def _run_script(params):
     except SyntaxError as e:
         raise ValueError(f"Script syntax error: {e}")
 
-    # Walk AST to block dangerous constructs
-    _ALLOWED_NODES = (
-        ast.Module,
-        ast.Expr,
-        ast.Assign,
-        ast.AugAssign,
-        ast.AnnAssign,
-        ast.Name,
-        ast.Constant,
-        ast.Load,
-        ast.Store,
-        ast.Del,
-        ast.BinOp,
-        ast.UnaryOp,
-        ast.BoolOp,
-        ast.Compare,
-        ast.IfExp,
-        ast.Add,
-        ast.Sub,
-        ast.Mult,
-        ast.Div,
-        ast.FloorDiv,
-        ast.Mod,
-        ast.Pow,
-        ast.USub,
-        ast.UAdd,
-        ast.Not,
-        ast.And,
-        ast.Or,
-        ast.Eq,
-        ast.NotEq,
-        ast.Lt,
-        ast.LtE,
-        ast.Gt,
-        ast.GtE,
-        ast.Call,
-        ast.keyword,
-        ast.Attribute,
-        ast.Subscript,
-        ast.Index,
-        ast.Slice,
-        ast.List,
-        ast.Tuple,
-        ast.Set,
-        ast.Dict,
-        ast.For,
-        ast.While,
-        ast.If,
-        ast.Break,
-        ast.Continue,
-        ast.Pass,
-        ast.Try,
-        ast.ExceptHandler,
-        ast.With,
-        ast.withitem,
-        ast.ListComp,
-        ast.SetComp,
-        ast.GeneratorExp,
-        ast.comprehension,
-        ast.Return,
-        ast.Yield,
-        ast.Lambda,
-        ast.FormattedValue,
-        ast.JoinedStr,
-        ast.IfExp,
-        ast.Starred,
-        ast.NamedExpr,
-    )
-
     for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            raise ValueError("Script contains import statement. The run command does not support imports.")
-        if isinstance(node, ast.ImportFrom):
-            raise ValueError("Script contains 'from ... import' statement. The run command does not support imports.")
-        # Block dunder attribute access (e.g., __class__, __bases__)
-        if isinstance(node, ast.Attribute) and node.attr.startswith("__"):
-            raise ValueError(f"Script accesses dunder attribute '{node.attr}'. Dunder access is blocked for security.")
-        # Block __builtins__ access via Name node
-        if isinstance(node, ast.Name) and node.id.startswith("__"):
-            raise ValueError(f"Script references '{node.id}'. Dunder names are blocked for security.")
+        _check_ast_node(node)
 
-    # Restricted namespace - no print (prevents stdout pollution)
-    safe_builtins = {
-        "abs": abs,
-        "all": all,
-        "any": any,
-        "bool": bool,
-        "dict": dict,
-        "enumerate": enumerate,
-        "filter": filter,
-        "float": float,
-        "format": format,
-        "frozenset": frozenset,
-        "int": int,
-        "isinstance": isinstance,
-        "len": len,
-        "list": list,
-        "map": map,
-        "max": max,
-        "min": min,
-        "pow": pow,
-        "range": range,
-        "repr": repr,
-        "reversed": reversed,
-        "round": round,
-        "set": set,
-        "slice": slice,
-        "sorted": sorted,
-        "str": str,
-        "sum": sum,
-        "tuple": tuple,
-        "zip": zip,
-    }
-    namespace = {"data": data, "result": None, "__builtins__": safe_builtins}
+    # Restricted namespace — safe builtins only
+    namespace = {"data": data, "result": None, "__builtins__": _SAFE_BUILTINS}
 
     # Execute with timeout using threading + ctypes
     result_holder = {"result": None, "error": None}

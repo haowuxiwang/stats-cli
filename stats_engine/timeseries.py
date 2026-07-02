@@ -87,18 +87,63 @@ def _simple_exp_smooth(values, alpha):
     return fitted
 
 
-def _arima(values, order=None, n_forecast=0, **kwargs):
-    """ARIMA analysis (using statsmodels)."""
+def _select_order_aic(values, criterion="aic"):
+    """Grid search for best ARIMA order by AIC or BIC.
+
+    Tries p in [0,1,2], d in [0,1], q in [0,1,2].
+    Skips combinations that fail to converge.
+    """
+    from statsmodels.tsa.arima.model import ARIMA
+
+    p_range, d_range, q_range = [0, 1, 2], [0, 1], [0, 1, 2]
+    ic_func = "aic" if criterion == "aic" else "bic"
+    best_score = float("inf")
+    best_order = (1, 1, 1)
+    candidates = []
+
+    for p in p_range:
+        for d in d_range:
+            for q in q_range:
+                if p == 0 and q == 0:
+                    continue
+                try:
+                    m = ARIMA(values, order=(p, d, q))
+                    res = m.fit()
+                    score = getattr(res, ic_func)
+                    candidates.append({"order": [p, d, q], ic_func: round(float(score), 6)})
+                    if score < best_score:
+                        best_score = score
+                        best_order = (p, d, q)
+                except Exception:
+                    continue
+
+    return best_order, best_score, candidates
+
+
+def _arima(values, order=None, n_forecast=0, criterion="aic", **kwargs):
+    """ARIMA analysis (using statsmodels).
+
+    If order=None, performs grid search over p∈[0,1,2], d∈[0,1], q∈[0,1,2]
+    to minimise AIC (default) or BIC.
+    """
     values = to_array(values, min_n=5, name="values")
     if n_forecast < 0:
         raise ValueError(f"n_forecast must be >= 0, got {n_forecast}")
+    if criterion not in ("aic", "bic"):
+        raise ValueError(f"criterion must be 'aic' or 'bic', got '{criterion}'")
     try:
         from statsmodels.tsa.arima.model import ARIMA
     except ImportError:
         raise ImportError("statsmodels required for ARIMA")
 
+    selected = None
+    selection_info = None
+
     if order is None:
-        order = (1, 1, 1)
+        best_order, best_score, _ = _select_order_aic(values, criterion=criterion)
+        order = best_order
+        selected = list(order)
+        selection_info = criterion.upper()
 
     model = ARIMA(values, order=order)
     fitted = model.fit()
@@ -113,6 +158,10 @@ def _arima(values, order=None, n_forecast=0, **kwargs):
         "fitted_values": [r(v) for v in fitted.fittedvalues],
         "interpretation": f"ARIMA({','.join(str(o) for o in order)}): {n_forecast}-step forecast",
     }
+
+    if selected is not None:
+        result["selected_order"] = selected
+        result["selection_criteria"] = selection_info
 
     if n_forecast > 0:
         # Use get_forecast() to obtain confidence intervals

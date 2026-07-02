@@ -6,8 +6,29 @@ build-backend = "setuptools.build_meta"
 name = "stats-cli-py"
 version = "1.4.0"
 description = "Pure Python statistical analysis tool for manufacturing and quality engineering"
-requires-python = ">=3.9"
+readme = "README.md"
 license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "stats-cli-py contributors", email = "w36675@gmail.com" },
+]
+keywords = ["statistics", "quality", "spc", "anova", "regression", "manufacturing", "six-sigma"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Manufacturing",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 dependencies = [
     "scipy>=1.10,<3",
     "statsmodels>=0.14,<1",
@@ -23,7 +44,15 @@ dependencies = [
 test = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-benchmark>=4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/w36675/stats-cli-py"
+Documentation = "https://github.com/w36675/stats-cli-py#readme"
+Repository = "https://github.com/w36675/stats-cli-py"
+Issues = "https://github.com/w36675/stats-cli-py/issues"
+Changelog = "https://github.com/w36675/stats-cli-py/blob/main/CHANGELOG.md"
 
 [project.scripts]
 stats-cli = "main:main"

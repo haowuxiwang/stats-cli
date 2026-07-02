@@ -7,6 +7,16 @@ from utils.output import r
 from utils.validators import to_array
 
 
+def _safe_float(val):
+    """Convert value to JSON-safe float, handling NaN/Inf."""
+    if val is None:
+        return None
+    f = float(val)
+    if np.isnan(f) or np.isinf(f):
+        return None
+    return r(f)
+
+
 def reliability(analysis_type, **kwargs):
     """Perform reliability/survival analysis.
 
@@ -459,7 +469,8 @@ def _cox_ph(times, event, covariates=None, alpha=0.05):
     """
     try:
         import pandas as pd
-        from lifelines import CoxPHFitter
+        from lifelines import CoxPHFitter, KaplanMeierFitter
+        from lifelines.statistics import proportional_hazard_test
     except ImportError:
         raise ImportError("lifelines is required for Cox PH analysis. Install with: pip install lifelines")
 
@@ -534,21 +545,89 @@ def _cox_ph(times, event, covariates=None, alpha=0.05):
             }
         )
 
-    results["ph_assumption_note"] = "Cox PH model fitted. Use Schoenfeld residuals for formal PH test."
-
     results["alpha"] = alpha
+
+    # --- 1. Schoenfeld residuals test for PH assumption ---
+    ph_assumptions = {}
+    try:
+        ph_test = proportional_hazard_test(cph, df, time_transform="rank")
+        ph_summary = ph_test.summary
+        for name in covariate_names:
+            if name in ph_summary.index:
+                p_val = float(ph_summary.loc[name, "p"])
+                ph_assumptions[name] = {
+                    "p_value": r(p_val),
+                    "test_statistic": r(float(ph_summary.loc[name, "test_statistic"])),
+                    "passed": bool(p_val >= alpha),
+                }
+        ph_assumptions["_test_method"] = "Schoenfeld residuals (proportional_hazard_test)"
+        ph_assumptions["_note"] = "p >= alpha means PH assumption holds"
+    except Exception as e:
+        ph_assumptions = {"error": f"PH test failed: {str(e)}"}
+
+    results["ph_assumptions"] = ph_assumptions
+
+    # --- 2. Log-likelihood ratio test (overall model significance) ---
+    llr_p_value = None
+    try:
+        llr_test = cph.log_likelihood_ratio_test()
+        # lifelines >=0.28 returns p_value as scalar float, older versions return Series
+        raw_p = llr_test.p_value
+        if hasattr(raw_p, "iloc"):
+            raw_p = raw_p.iloc[0]
+        llr_p_value = _safe_float(raw_p)
+    except Exception:
+        llr_p_value = None
+
+    results["llr_p_value"] = llr_p_value
+
+    # --- 3. Kaplan-Meier survival curve ---
+    survival_curve = {}
+    try:
+        kmf = KaplanMeierFitter()
+        kmf.fit(df["time"], event_observed=df["event"])
+        km_index = kmf.survival_function_.index.tolist()
+        km_values = kmf.survival_function_["KM_estimate"].tolist()
+        # Limit to 50 points to keep output manageable
+        if len(km_index) > 50:
+            step = max(1, len(km_index) // 50)
+            indices = list(range(0, len(km_index), step))
+            km_index = [km_index[i] for i in indices]
+            km_values = [km_values[i] for i in indices]
+
+        median_surv = kmf.median_survival_time_
+        survival_curve = {
+            "times": [_safe_float(t) for t in km_index],
+            "survival_prob": [_safe_float(v) for v in km_values],
+            "median_survival_time": _safe_float(median_surv),
+        }
+    except Exception:
+        survival_curve = {"error": "Survival curve computation failed"}
+
+    results["survival_curve"] = survival_curve
 
     # Build interpretation
     sig_covs = [c for c in results["coefficients"] if c.get("significant")]
+    parts = []
     if sig_covs:
-        parts = []
         for c in sig_covs:
             direction = "increases" if c["hazard_ratio"] > 1 else "decreases"
             parts.append(f"{c['covariate']} {direction} hazard (HR={c['hazard_ratio']:.2f})")
-        results["interpretation"] = (
-            f"Cox PH: significant covariates: {'; '.join(parts)}, C-index={r(cph.concordance_index_)}"
-        )
+        parts.append(f"C-index={r(cph.concordance_index_)}")
     else:
-        results["interpretation"] = f"Cox PH: no significant covariates, C-index={r(cph.concordance_index_)}"
+        parts.append(f"no significant covariates, C-index={r(cph.concordance_index_)}")
+
+    # Add LLR p-value to interpretation if available
+    if llr_p_value is not None:
+        model_sig = "significant" if llr_p_value < alpha else "not significant"
+        parts.append(f"LLR p={llr_p_value} ({model_sig})")
+
+    # Add PH assumption note
+    ph_passed_count = sum(1 for v in ph_assumptions.values() if isinstance(v, dict) and v.get("passed") is True)
+    ph_total = sum(1 for v in ph_assumptions.values() if isinstance(v, dict) and "passed" in v)
+    if ph_total > 0:
+        parts.append(f"PH assumption passed: {ph_passed_count}/{ph_total} covariates")
+
+    results["interpretation"] = f"Cox PH: {', '.join(parts)}"
 
     return results

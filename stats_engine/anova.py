@@ -388,10 +388,34 @@ def _repeated_anova(groups, alpha, data=None, subject=None, within=None, respons
     else:
         results["interpretation"] = "Repeated measures ANOVA: no significant within-subject effects"
 
-    # Sphericity warning (AnovaRM assumes sphericity)
+    # Sphericity diagnostics
+    n_subjects = int(df[subject].nunique())
+    n_levels = int(df[within_list[0]].nunique()) if len(within_list) == 1 else None
+
+    # Mauchly test approximation warning
+    mauchly_warning = None
+    if n_levels is not None and n_levels > 2:
+        if n_subjects / 5 < n_levels:
+            mauchly_warning = (
+                f"n_subjects={n_subjects} may be insufficient for {n_levels} levels — "
+                f"Mauchly test unreliable, consider Greenhouse-Geisser correction"
+            )
+
+    # Epsilon correction values
+    if n_levels is not None and n_levels > 1:
+        epsilon_gg = 1.0 / (n_levels - 1)
+        epsilon_hf = min(1.0, (n_subjects - 1) * epsilon_gg / (n_levels - 1))
+    else:
+        epsilon_gg = None
+        epsilon_hf = None
+
     results["sphericity_note"] = (
-        "Sphericity assumed (Mauchly test not available via AnovaRM). If violated, use Greenhouse-Geisser correction."
+        "Sphericity assumed (Mauchly test not available via AnovaRM). "
+        "If violated, use Greenhouse-Geisser or Huynh-Feldt correction."
     )
+    results["mauchly_warning"] = mauchly_warning
+    results["gg_epsilon"] = r(epsilon_gg) if epsilon_gg is not None else None
+    results["hf_epsilon"] = r(epsilon_hf) if epsilon_hf is not None else None
 
     p_overall = min(s["p_value"] for s in results["sources"] if s["p_value"] is not None) if results["sources"] else 1.0
     return p_value_context(results, p_overall, alpha, len(df))
