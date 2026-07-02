@@ -66,6 +66,14 @@ def _exp_smoothing(values, alpha=None, frequency=None, n_forecast=0, **kwargs):
         forecast = [r(last_fitted)] * n_forecast
         result["forecast"] = forecast
         result["n_forecast"] = n_forecast
+        # Approximate CI using residual standard error
+        residuals = np.array([values[i] - fitted[i] for i in range(n)])
+        res_std = float(np.std(residuals, ddof=1))
+        result["forecast_ci_95"] = [
+            [r(last_fitted - 1.96 * res_std * np.sqrt(h)),
+             r(last_fitted + 1.96 * res_std * np.sqrt(h))]
+            for h in range(1, n_forecast + 1)
+        ]
 
     return result
 
@@ -108,8 +116,19 @@ def _arima(values, order=None, n_forecast=0, **kwargs):
     }
 
     if n_forecast > 0:
-        forecast = fitted.forecast(steps=n_forecast)
-        result["forecast"] = [r(v) for v in forecast]
+        # Use get_forecast() to obtain confidence intervals
+        forecast_obj = fitted.get_forecast(steps=n_forecast)
+        forecast_mean = forecast_obj.predicted_mean
+        conf_int = forecast_obj.conf_int(alpha=0.05)
+        result["forecast"] = [r(v) for v in forecast_mean]
+        # conf_int may be DataFrame (pandas) or ndarray depending on statsmodels version
+        if hasattr(conf_int, "iloc"):
+            ci_pairs = [[r(row.iloc[0]), r(row.iloc[1])] for _, row in conf_int.iterrows()]
+        elif hasattr(conf_int, "shape") and conf_int.ndim == 2:
+            ci_pairs = [[r(row[0]), r(row[1])] for row in conf_int]
+        else:
+            ci_pairs = []
+        result["forecast_ci_95"] = ci_pairs
         result["n_forecast"] = n_forecast
 
     return result

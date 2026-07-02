@@ -110,6 +110,41 @@ def control_chart(
     return result
 
 
+def _is_process_stable(chart_data):
+    """Determine process stability considering both Rule 1 and WE rules 2-5.
+
+    A process is stable only if:
+    - No points beyond 3-sigma (Rule 1 / out_of_control_points)
+    - No Western Electric rule violations (Rules 2-5)
+    """
+    # Check Rule 1: points beyond 3-sigma
+    if len(chart_data.get("out_of_control_points", [])) > 0:
+        return False
+
+    # Check Rules 2-5: Western Electric violations
+    violations = chart_data.get("violations", {})
+    return not violations
+
+
+def _stability_message(chart_data, chart_label="Process"):
+    """Generate stability message incorporating WE rules."""
+    ooc = chart_data.get("out_of_control_points", [])
+    violations = chart_data.get("violations", {})
+
+    issues = []
+    if ooc:
+        issues.append(f"{len(ooc)} point(s) beyond 3-sigma")
+    for rule_id, rule_info in violations.items():
+        desc = rule_info.get("description", rule_id)
+        n_violations = len(rule_info.get("indices", []))
+        issues.append(f"{n_violations} violation(s) of {desc}")
+
+    if not issues:
+        return "Process is in statistical control"
+
+    return f"{chart_label} has " + "; ".join(issues) + " — investigate special cause"
+
+
 def _detect_rules(x, center, ucl, lcl, sigma):
     """Detect Western Electric rules violations."""
     n = len(x)
@@ -217,12 +252,8 @@ def _xbar_chart(values, subgroup_size):
         "n_groups": n_groups,
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -252,12 +283,8 @@ def _r_chart(values, subgroup_size):
         "n_groups": n_groups,
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -281,12 +308,8 @@ def _imr_chart(values):
         "chart": chart,
         "mr_chart": mr_chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -306,12 +329,8 @@ def _p_chart(values, sample_size):
         "sample_size": sample_size,
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -331,12 +350,8 @@ def _np_chart(values, sample_size):
         "sample_size": sample_size,
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -354,12 +369,8 @@ def _c_chart(values):
         "chart_type": "c",
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -379,12 +390,8 @@ def _u_chart(values, sample_size):
         "sample_size": sample_size,
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -423,12 +430,8 @@ def _ewma_chart(values, target, lambda_):
         "chart_type": "ewma",
         "chart": chart,
         "summary": {
-            "stable": len(chart["out_of_control_points"]) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(chart["out_of_control_points"]) == 0
-                else f"Process has {len(chart['out_of_control_points'])} out-of-control point(s)"
-            ),
+            "stable": _is_process_stable(chart),
+            "message": _stability_message(chart),
         },
     }
 
@@ -567,12 +570,8 @@ def _hotelling_t2_chart(data, alpha):
         "mean_vector": [r(v) for v in x_bar],
         "covariance_matrix": [[r(v) for v in row] for row in S],
         "summary": {
-            "stable": len(out_of_control) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(out_of_control) == 0
-                else f"Process has {len(out_of_control)} out-of-control point(s)"
-            ),
+            "stable": len(out_of_control) == 0 and not chart.get("violations"),
+            "message": _stability_message(chart, "Multivariate process"),
         },
     }
 
@@ -645,12 +644,8 @@ def _ewma_mv_chart(data, lambda_, alpha):
         "chart": chart,
         "mean_vector": [r(v) for v in mu],
         "summary": {
-            "stable": len(out_of_control) == 0,
-            "message": (
-                "Process is in statistical control"
-                if len(out_of_control) == 0
-                else f"Process has {len(out_of_control)} out-of-control point(s)"
-            ),
+            "stable": len(out_of_control) == 0 and not chart.get("violations"),
+            "message": _stability_message(chart, "EWMA process"),
         },
     }
 

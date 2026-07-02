@@ -197,15 +197,37 @@ def capability(
     if cpk_val >= 1.67:
         result["rating"] = "Excellent"
         result["rating_desc"] = "Process is highly capable"
+        decision_action = "RELEASE"
+        decision_confidence = "HIGH"
     elif cpk_val >= 1.33:
         result["rating"] = "Good"
         result["rating_desc"] = "Process is capable (pharma minimum)"
+        decision_action = "RELEASE"
+        decision_confidence = "HIGH"
     elif cpk_val >= 1.0:
         result["rating"] = "Marginal"
         result["rating_desc"] = "Process is marginally capable, improvement recommended"
+        decision_action = "CONDITIONAL_RELEASE"
+        decision_confidence = "MEDIUM"
     else:
         result["rating"] = "Poor"
         result["rating_desc"] = "Process is NOT capable, corrective action required"
+        decision_action = "HOLD"
+        decision_confidence = "HIGH"
+
+    # Structured decision block for AI agents
+    result["decision"] = {
+        "action": decision_action,
+        "confidence": decision_confidence,
+        "basis": [
+            f"Cpk={r(cpk_val, 3)}",
+            f"Cp={result.get('cp', 'N/A')}",
+        ],
+        "recommendation": (
+            f"Process meets capability requirements (Cpk={r(cpk_val, 3)} {'≥' if cpk_val >= 1.33 else '<'} 1.33). "
+            f"{'Safe to release batch.' if cpk_val >= 1.33 else 'Investigate process centering or reduce variation before release.'}"
+        ),
+    }
 
     # Performance metrics (PPM)
     if usl is not None and lsl is not None:

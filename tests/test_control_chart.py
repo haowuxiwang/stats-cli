@@ -155,7 +155,7 @@ def test_hotelling_t2_out_of_control(mv_data_with_outlier):
     result = control_chart("hotelling_t2", mv_data_with_outlier)
     assert len(result["chart"]["out_of_control_points"]) > 0
     assert result["summary"]["stable"] is False
-    assert "out-of-control" in result["summary"]["message"]
+    assert "3-sigma" in result["summary"]["message"] or "out-of-control" in result["summary"]["message"]
 
 
 def test_hotelling_t2_stable_data(mv_data):

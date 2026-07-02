@@ -100,6 +100,21 @@ def _two_sample_ttest(arr1, arr2, alpha):
     pooled_std = np.sqrt(((n1 - 1) * std1**2 + (n2 - 1) * std2**2) / (n1 + n2 - 2))
     cohens_d = (mean1 - mean2) / pooled_std if pooled_std > 0 else 0.0
 
+    # Confidence interval for mean difference (Welch-Satterthwaite)
+    se_diff = np.sqrt(std1**2 / n1 + std2**2 / n2)
+    # Welch-Satterthwaite degrees of freedom
+    if se_diff > 0:
+        num = (std1**2 / n1 + std2**2 / n2) ** 2
+        den = (std1**2 / n1) ** 2 / (n1 - 1) + (std2**2 / n2) ** 2 / (n2 - 1)
+        df_welch = num / den if den > 0 else (n1 + n2 - 2)
+        t_crit = float(sp_stats.t.ppf(1 - alpha / 2, df_welch))
+        mean_diff = mean1 - mean2
+        ci_lower = mean_diff - t_crit * se_diff
+        ci_upper = mean_diff + t_crit * se_diff
+        ci_diff = [r(ci_lower), r(ci_upper)]
+    else:
+        ci_diff = [None, None]
+
     result = {
         "test_type": "two_sample",
         "n1": n1,
@@ -109,6 +124,7 @@ def _two_sample_ttest(arr1, arr2, alpha):
         "std1": r(std1),
         "std2": r(std2),
         "mean_difference": r(mean1 - mean2),
+        "ci_difference_95": ci_diff,
         "t_statistic": r(t_stat),
         "p_value": r(p_value, PRECISION["p_value"]),
         "significant": bool(p_value < alpha),

@@ -58,6 +58,19 @@ def correlation(x, y, method="pearson", alpha=0.05):
 
     r_sq = corr**2
 
+    # Fisher z-transform confidence interval (only for Pearson)
+    ci_95 = [None, None]
+    if method == "pearson" and abs(corr) < 1.0:
+        # Fisher z-transform
+        z = np.arctanh(corr)
+        se_z = 1 / np.sqrt(n - 3)
+        z_crit = sp_stats.norm.ppf(1 - alpha / 2)
+        ci_lower = np.tanh(z - z_crit * se_z)
+        ci_upper = np.tanh(z + z_crit * se_z)
+        ci_95 = [r(ci_lower), r(ci_upper)]
+    elif method == "pearson" and abs(corr) == 1.0:
+        ci_95 = [r(corr), r(corr)]
+
     # Interpretation
     abs_r = abs(corr)
     if abs_r >= 0.9:
@@ -78,6 +91,7 @@ def correlation(x, y, method="pearson", alpha=0.05):
         "n": n,
         "correlation": r(corr),
         "r_squared": r(r_sq),
+        "ci_95": ci_95,
         "p_value": r(p),
         "significant": bool(p < alpha),
         "alpha": alpha,

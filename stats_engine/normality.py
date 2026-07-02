@@ -78,10 +78,36 @@ def normality(values):
         normals.append(result["lilliefors"]["normal"])
 
     result["is_normal"] = bool(sum(normals) >= len(normals) / 2)
+
+    # Test selection guidance based on sample size
+    if n <= 50:
+        recommended_test = "shapiro_wilk"
+        guidance = (
+            f"n={n}: Shapiro-Wilk is most reliable for small samples (n≤50). "
+            f"{'Data appears normal' if result.get('shapiro_wilk', {}).get('normal') else 'Data appears non-normal'} "
+            f"(SW p={result.get('shapiro_wilk', {}).get('p_value', 'N/A')})"
+        )
+    elif n <= 500:
+        recommended_test = "shapiro_wilk"
+        guidance = (
+            f"n={n}: Shapiro-Wilk recommended. "
+            f"{'Data appears normal' if result.get('shapiro_wilk', {}).get('normal') else 'Data appears non-normal'} "
+            f"(SW p={result.get('shapiro_wilk', {}).get('p_value', 'N/A')})"
+        )
+    else:
+        recommended_test = "anderson_darling"
+        guidance = (
+            f"n={n}: Anderson-Darling recommended for large samples (n>500). "
+            f"{'Data appears normal' if result.get('anderson_darling', {}).get('normal') else 'Data appears non-normal'} "
+            f"(AD stat={result.get('anderson_darling', {}).get('statistic', 'N/A')})"
+        )
+
+    result["recommended_test"] = recommended_test
+    result["test_guidance"] = guidance
     result["interpretation"] = (
         "Data appears to be normally distributed"
         if result["is_normal"]
-        else "Data appears to be NON-normally distributed"
+        else "Data appears to be NON-normally distributed — consider transformation or nonparametric test"
     )
 
     return result
