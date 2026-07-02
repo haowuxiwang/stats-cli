@@ -7,8 +7,8 @@ name = "stats-cli-py"
 version = "1.4.0"
 description = "Pure Python statistical analysis tool for manufacturing and quality engineering"
 readme = "README.md"
-license = "MIT"
-requires-python = ">=3.9"
+license = { text = "MIT" }
+requires-python = ">=3.10"
 authors = [
     { name = "stats-cli-py contributors", email = "w36675@gmail.com" },
 ]
@@ -17,10 +17,8 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Manufacturing",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -30,14 +28,15 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-    "scipy>=1.10,<3",
+    "scipy>=1.10,<2.0",
     "statsmodels>=0.14,<1",
-    "pandas>=1.5,<4",
-    "numpy>=1.23,<3",
+    "pandas>=1.5,<3",
+    "numpy>=1.23,<2.0",
     "openpyxl>=3.0,<4",
     "scikit-learn>=1.0,<2",
     "matplotlib>=3.5,<4",
     "fpdf2>=2.8,<3",
+    "lifelines>=0.28,<1",
 ]
 
 [project.optional-dependencies]
@@ -65,7 +64,7 @@ include = ["stats_engine*", "utils*"]
 exclude = ["tests*", "docs*", "examples*", "test-output*"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 120
 
 [tool.ruff.lint]
