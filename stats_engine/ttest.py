@@ -19,7 +19,7 @@ def _effect_size_category(d):
     return "large"
 
 
-def _build_decision(p_value, alpha, cohens_d, test_type, mu=None):
+def _build_decision(p_value, alpha, cohens_d, test_type, mu=None, n=None):
     """Build decision block for t-test results."""
     significant = p_value < alpha
 
@@ -28,6 +28,13 @@ def _build_decision(p_value, alpha, cohens_d, test_type, mu=None):
         confidence = "HIGH" if p_value < alpha * 0.5 else "MEDIUM"
     else:
         confidence = "HIGH" if p_value > alpha * 1.5 else "MEDIUM"
+
+    # Downgrade confidence for small samples (low statistical power)
+    if n is not None:
+        if n < 5:
+            confidence = "LOW"
+        elif n < 30 and confidence == "HIGH":
+            confidence = "MEDIUM"
 
     # Effect size
     es_cat = _effect_size_category(cohens_d)
@@ -130,7 +137,7 @@ def _one_sample_ttest(arr, mu, alpha):
             else f"No significant difference from {mu} (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
-    result["decision"] = _build_decision(p_value, alpha, cohens_d, "one_sample", mu=mu)
+    result["decision"] = _build_decision(p_value, alpha, cohens_d, "one_sample", mu=mu, n=n)
     return p_value_context(result, p_value, alpha, n)
 
 
@@ -189,7 +196,7 @@ def _two_sample_ttest(arr1, arr2, alpha):
             else f"No significant difference between groups (p={r(p_value, PRECISION['p_value'])})"
         ),
     }
-    result["decision"] = _build_decision(p_value, alpha, cohens_d, "two_sample")
+    result["decision"] = _build_decision(p_value, alpha, cohens_d, "two_sample", n=min(n1, n2))
     return p_value_context(result, p_value, alpha, min(n1, n2))
 
 
